@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import pydeck as pdk
 import plotly.express as px
+import plotly.graph_objects as go
 import joblib
 import os
 import numpy as np
@@ -14,8 +14,7 @@ MODEL_DIR = os.path.join(PROJECT_ROOT, 'models')
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'))
-        return df
+        return pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'))
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return pd.DataFrame()
@@ -23,253 +22,200 @@ def load_data():
 @st.cache_resource
 def load_model():
     try:
-        model = joblib.load(os.path.join(MODEL_DIR, 'prospectivity_pu_rf.joblib'))
-        return model
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
+        return joblib.load(os.path.join(MODEL_DIR, 'prospectivity_pu_rf.joblib'))
+    except Exception:
         return None
 
-# Main execution
-st.title('🎯 GeoProspect AI - Prospectivity Analysis')
-st.markdown("Analyze multi-spectral indicators and AI-predicted manganese prospectivity.")
+st.title('🎯 GeoProspect AI - Manganese Prospectivity Map')
+st.markdown("Interactive map with AI-predicted overlays for the Nagpur-Bhandara-Balaghat Manganese Belt")
 
 df = load_data()
 model = load_model()
 
 if df.empty:
+    st.warning("No data found. Run the pipeline first.")
     st.stop()
 
 # ================= SIDEBAR =================
-st.sidebar.header('Visualization Controls')
+st.sidebar.header("🗺️ Map Settings")
+map_style = st.sidebar.selectbox("Map Style", [
+    "open-street-map", "carto-positron", "carto-darkmatter"
+], index=0)
 
-layer_selection = st.sidebar.radio(
-    'Spectral Layer',
-    ['Composite Prospectivity (OPI)', 'NDVI Canopy Mask', 'Ferrous Iron Index', 'Clay Alteration Index', 'True Color (RGB)']
-)
+st.sidebar.markdown("---")
+st.sidebar.header("📡 Overlay Layers")
+st.sidebar.caption("Select which data to overlay on the map")
 
-view_mode = st.sidebar.radio('Map View', ['2D Scatter', '3D Columns', 'Heatmap'])
+overlay_choice = st.sidebar.radio("Active Overlay", [
+    "🔴 Manganese Prospectivity",
+    "🌿 NDVI Vegetation",
+    "🟠 Ferrous Iron Index",
+    "🟣 Clay Alteration Index",
+    "None (Map Only)",
+])
 
-st.sidebar.markdown('---')
-st.sidebar.header('Filters')
+show_drill_sites = st.sidebar.checkbox("💎 Show Drill Site Markers", value=True)
 
-prob_threshold = st.sidebar.slider('Probability Threshold', 0.0, 1.0, 0.0, 0.05)
+st.sidebar.markdown("---")
+overlay_radius = st.sidebar.slider("Overlay Spread", 5, 30, 15)
+overlay_opacity = st.sidebar.slider("Overlay Opacity", 0.1, 1.0, 0.6, 0.1)
 
-if 'prospectivity_class' in df.columns:
-    available_classes = sorted(df['prospectivity_class'].dropna().unique().tolist())
-else:
-    available_classes = []
-selected_classes = st.sidebar.multiselect('Prospectivity Class', available_classes, default=available_classes)
+st.sidebar.markdown("---")
+st.sidebar.header("🎯 Filters")
+prob_threshold = st.sidebar.slider("Min Probability", 0.0, 1.0, 0.0, 0.05)
 
-show_veg = st.sidebar.checkbox('Show Vegetation Masked Areas', value=True)
-
-opacity = st.sidebar.slider('Layer Opacity', 0.1, 1.0, 0.8, 0.1)
-
-# ================= FILTER DATA =================
-filtered_df = df.copy()
-
-if 'mn_probability' in filtered_df.columns:
-    filtered_df = filtered_df[filtered_df['mn_probability'] >= prob_threshold]
-
-if selected_classes and 'prospectivity_class' in filtered_df.columns:
-    filtered_df = filtered_df[filtered_df['prospectivity_class'].isin(selected_classes)]
-
-if not show_veg and 'vegetation_masked' in filtered_df.columns:
-    filtered_df = filtered_df[filtered_df['vegetation_masked'] == 0]
-
-# ================= METRICS =================
+# ================= DRILL TARGET SUMMARY =================
 st.subheader("Drill Target Summary")
-col1, col2, col3 = st.columns(3)
-
+c1, c2, c3 = st.columns(3)
 if 'mn_probability' in df.columns:
-    high_pri = df[df['mn_probability'] > 0.8].shape[0]
-    med_pri = df[(df['mn_probability'] > 0.4) & (df['mn_probability'] <= 0.8)].shape[0]
-    low_pri = df[df['mn_probability'] <= 0.4].shape[0]
+    high_pri = int((df['mn_probability'] > 0.8).sum())
+    med_pri = int(((df['mn_probability'] > 0.4) & (df['mn_probability'] <= 0.8)).sum())
+    low_pri = int((df['mn_probability'] <= 0.4).sum())
 else:
     high_pri, med_pri, low_pri = 0, 0, 0
+c1.metric("🔴 High Priority", f"{high_pri} targets")
+c2.metric("🟡 Medium Priority", f"{med_pri} targets")
+c3.metric("🟢 Low Priority", f"{low_pri} targets")
 
-col1.metric("🔴 High Priority Targets", high_pri)
-col2.metric("🟡 Medium Priority Targets", med_pri)
-col3.metric("🟢 Low Priority Targets", low_pri)
+# ================= PREPARE DATA =================
+plot_df = df.copy()
+if 'mn_probability' in plot_df.columns:
+    plot_df = plot_df[plot_df['mn_probability'] >= prob_threshold]
 
-# ================= MAP CONFIGURATION =================
-# We need base columns to handle coloring safely
-if 'mn_probability' not in filtered_df.columns:
-    filtered_df['mn_probability'] = 0.5
-if 'ndvi' not in filtered_df.columns:
-    filtered_df['ndvi'] = 0.5
-if 'iron_oxide_index' not in filtered_df.columns:
-    filtered_df['iron_oxide_index'] = 0.5
-if 'clay_index' not in filtered_df.columns:
-    filtered_df['clay_index'] = 0.5
-if 'elevation_m' not in filtered_df.columns:
-    filtered_df['elevation_m'] = 300
-
-# Set up coloring based on selected layer
-if layer_selection == 'Composite Prospectivity (OPI)':
-    st.caption("**Layer:** AI-Predicted Manganese Probability")
-    # Red for high, yellow for med, green for low
-    filtered_df['color_r'] = (filtered_df['mn_probability'] * 255).astype(int)
-    filtered_df['color_g'] = ((1 - filtered_df['mn_probability']) * 255).astype(int)
-    filtered_df['color_b'] = 0
-    metric_col = 'mn_probability'
-    elevation_factor = 5000
-
-elif layer_selection == 'NDVI Canopy Mask':
-    st.caption("**Layer:** NDVI Canopy Mask `(B08 - B04) / (B08 + B04)`")
-    # Green scale
-    filtered_df['color_r'] = 0
-    ndvi_min, ndvi_max = filtered_df['ndvi'].min(), filtered_df['ndvi'].max()
-    ndvi_norm = (filtered_df['ndvi'] - ndvi_min) / (ndvi_max - ndvi_min + 1e-5)
-    filtered_df['color_g'] = (ndvi_norm * 255).astype(int)
-    filtered_df['color_b'] = 0
-    metric_col = 'ndvi'
-    elevation_factor = 5000
-
-elif layer_selection == 'Ferrous Iron Index':
-    st.caption("**Layer:** Ferrous Iron Index `B04 / B02 — Gossan halo indicator`")
-    # Orange/Red scale
-    fe_min, fe_max = filtered_df['iron_oxide_index'].min(), filtered_df['iron_oxide_index'].max()
-    fe_norm = (filtered_df['iron_oxide_index'] - fe_min) / (fe_max - fe_min + 1e-5)
-    filtered_df['color_r'] = 255
-    filtered_df['color_g'] = ((1 - fe_norm) * 165).astype(int) # Orange is 255,165,0
-    filtered_df['color_b'] = 0
-    metric_col = 'iron_oxide_index'
-    elevation_factor = 5000
-
-elif layer_selection == 'Clay Alteration Index':
-    st.caption("**Layer:** Clay Alteration Index `B11 / B12 — Argillic zone indicator`")
-    # Purple/Blue scale
-    clay_min, clay_max = filtered_df['clay_index'].min(), filtered_df['clay_index'].max()
-    clay_norm = (filtered_df['clay_index'] - clay_min) / (clay_max - clay_min + 1e-5)
-    filtered_df['color_r'] = ((clay_norm) * 128).astype(int) # Purple/Blue
-    filtered_df['color_g'] = 0
-    filtered_df['color_b'] = 255
-    metric_col = 'clay_index'
-    elevation_factor = 5000
-
-else: # True Color
-    st.caption("**Layer:** True Color equivalent (B04/B08/B02 proxy)")
-    # Fallbacks in case bands aren't there
-    for b in ['B04', 'B08', 'B02']:
-        if b not in filtered_df.columns:
-            filtered_df[b] = 0.5
-    
-    b4_norm = (filtered_df['B04'] - filtered_df['B04'].min()) / (filtered_df['B04'].max() - filtered_df['B04'].min() + 1e-5)
-    b8_norm = (filtered_df['B08'] - filtered_df['B08'].min()) / (filtered_df['B08'].max() - filtered_df['B08'].min() + 1e-5)
-    b2_norm = (filtered_df['B02'] - filtered_df['B02'].min()) / (filtered_df['B02'].max() - filtered_df['B02'].min() + 1e-5)
-    filtered_df['color_r'] = (b4_norm * 255).astype(int)
-    filtered_df['color_g'] = (b8_norm * 255).astype(int)
-    filtered_df['color_b'] = (b2_norm * 255).astype(int)
-    metric_col = 'elevation_m'
-    elevation_factor = 10
-
-# Clip colors to 0-255 just in case
-for c in ['color_r', 'color_g', 'color_b']:
-    filtered_df[c] = filtered_df[c].clip(0, 255)
-
-# Handle color lists for PyDeck
-filtered_df['fill_color'] = filtered_df[['color_r', 'color_g', 'color_b']].values.tolist()
-# Add opacity
-filtered_df['fill_color'] = filtered_df['fill_color'].apply(lambda x: x + [int(opacity * 255)])
-
-filtered_df['elevation_viz'] = filtered_df[metric_col] * elevation_factor
-
-# Build PyDeck layer
-layers = []
-if view_mode == '2D Scatter':
-    layers.append(pdk.Layer(
-        "ScatterplotLayer",
-        data=filtered_df,
-        get_position=["longitude", "latitude"],
-        get_fill_color="fill_color",
-        get_radius=250,
-        pickable=True,
-        opacity=1.0, # opacity handled in color
-        auto_highlight=True,
-    ))
-    pitch = 0
-elif view_mode == '3D Columns':
-    layers.append(pdk.Layer(
-        "ColumnLayer",
-        data=filtered_df,
-        get_position=["longitude", "latitude"],
-        get_elevation="elevation_viz",
-        elevation_scale=1,
-        radius=250,
-        get_fill_color="fill_color",
-        pickable=True,
-        auto_highlight=True,
-        extruded=True,
-    ))
-    pitch = 60
-else: # Heatmap
-    layers.append(pdk.Layer(
-        "HeatmapLayer",
-        data=filtered_df,
-        get_position=["longitude", "latitude"],
-        get_weight=metric_col,
-        opacity=opacity,
-        pickable=False,
-    ))
-    pitch = 0
-
-view_state = pdk.ViewState(
-    latitude=21.25,
-    longitude=79.25,
-    zoom=10,
-    pitch=pitch,
-)
-
-r = pdk.Deck(
-    layers=layers,
-    initial_view_state=view_state,
-    tooltip={"text": f"Lat: {{latitude}}\nLon: {{longitude}}\n{metric_col}: {{{metric_col}}}"}
-)
-
-st.pydeck_chart(r, use_container_width=True)
-
-# ================= TOP TARGETS =================
-st.subheader("Top 10 Highest Probability Locations")
-if 'mn_probability' in df.columns:
-    top_10 = df.nlargest(10, 'mn_probability')
-    display_cols = ['latitude', 'longitude', 'elevation_m', 'mn_probability', 'prospectivity_class', 'rock_type', 'ndvi', 'iron_oxide_index', 'clay_index']
-    # Filter only existing columns
-    display_cols = [c for c in display_cols if c in top_10.columns]
-    st.dataframe(top_10[display_cols].reset_index(drop=True), use_container_width=True)
+# Determine which column and colorscale based on overlay
+if "Manganese" in overlay_choice:
+    z_col = 'mn_probability'
+    color_label = "Mn Probability"
+    color_scale = ["rgba(0,0,180,0.2)", "rgba(0,180,255,0.4)", "rgba(0,255,100,0.5)",
+                   "rgba(255,255,0,0.6)", "rgba(255,140,0,0.7)", "rgba(255,0,0,0.9)"]
+elif "NDVI" in overlay_choice:
+    z_col = 'ndvi'
+    color_label = "NDVI"
+    color_scale = ["rgba(139,90,43,0.2)", "rgba(180,180,50,0.3)", "rgba(100,200,50,0.5)",
+                   "rgba(0,150,0,0.7)", "rgba(0,80,0,0.9)"]
+elif "Iron" in overlay_choice:
+    z_col = 'iron_oxide_index'
+    color_label = "Fe Index"
+    color_scale = ["rgba(255,255,200,0.2)", "rgba(255,200,50,0.3)", "rgba(255,120,0,0.6)",
+                   "rgba(200,50,0,0.8)", "rgba(139,0,0,0.9)"]
+elif "Clay" in overlay_choice:
+    z_col = 'clay_index'
+    color_label = "Clay Index"
+    color_scale = ["rgba(200,220,255,0.2)", "rgba(100,100,255,0.4)", "rgba(150,50,200,0.6)",
+                   "rgba(100,0,100,0.9)"]
 else:
-    st.info("Probability data not available.")
+    z_col = None
+
+# ================= BUILD MAP =================
+if z_col and z_col in plot_df.columns:
+    # Plotly 7.x uses px.density_map (not density_mapbox)
+    fig = px.density_map(
+        plot_df,
+        lat='latitude',
+        lon='longitude',
+        z=z_col,
+        radius=overlay_radius,
+        opacity=overlay_opacity,
+        color_continuous_scale=color_scale,
+        center=dict(lat=21.25, lon=79.25),
+        zoom=10,
+        labels={z_col: color_label},
+        hover_data={
+            'latitude': ':.4f',
+            'longitude': ':.4f',
+            z_col: ':.4f',
+        },
+    )
+    fig.update_layout(map_style=map_style)
+else:
+    # No overlay — just base map
+    fig = go.Figure(go.Scattermap(
+        lat=[21.25], lon=[79.25],
+        mode='markers',
+        marker=dict(size=1, opacity=0),
+        showlegend=False,
+    ))
+    fig.update_layout(
+        map=dict(style=map_style, center=dict(lat=21.25, lon=79.25), zoom=10),
+    )
+
+# Add drill site markers colored by probability
+if show_drill_sites and 'mn_probability' in df.columns:
+    drill_df = df[df['mn_probability'] > 0.4].copy()
+    if len(drill_df) > 0:
+        fig.add_trace(go.Scattermap(
+            lat=drill_df['latitude'],
+            lon=drill_df['longitude'],
+            mode='markers',
+            marker=dict(
+                size=9,
+                color=drill_df['mn_probability'],
+                colorscale=[
+                    [0.0, 'rgb(0,100,255)'],     # Blue (low)
+                    [0.3, 'rgb(0,200,100)'],     # Green
+                    [0.5, 'rgb(255,255,0)'],     # Yellow
+                    [0.7, 'rgb(255,165,0)'],     # Orange
+                    [1.0, 'rgb(255,0,0)'],       # Red (high)
+                ],
+                cmin=0.0,
+                cmax=1.0,
+                opacity=0.9,
+            ),
+            text=[f"Prob: {p:.3f} | {c}"
+                  for p, c in zip(
+                      drill_df['mn_probability'],
+                      drill_df.get('prospectivity_class', ['?']*len(drill_df))
+                  )],
+            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>%{text}<extra>Drill Target</extra>',
+            name='Drill Targets',
+        ))
+
+fig.update_layout(
+    height=650,
+    margin=dict(l=0, r=0, t=30, b=0),
+    legend=dict(
+        yanchor="top", y=0.98, xanchor="left", x=0.01,
+        bgcolor="rgba(0,0,0,0.7)", font=dict(color="white", size=12),
+    ),
+    title=dict(
+        text="Nagpur-Bhandara-Balaghat Manganese Belt",
+        font=dict(size=14),
+    ),
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# ================= LOCATION INSPECTOR =================
+st.subheader("📍 Location Inspector — Top 10 Drill Targets")
+if 'mn_probability' in df.columns:
+    top_10 = df.nlargest(10, 'mn_probability').copy()
+    top_10.insert(0, 'Rank', range(1, len(top_10) + 1))
+    display_cols = ['Rank']
+    col_map = {'Rank': '#'}
+    for c, n in [('latitude','Lat °N'),('longitude','Lon °E'),('elevation_m','Elev (m)'),
+                  ('mn_probability','Probability'),('prospectivity_class','Class'),
+                  ('rock_type','Rock Type'),('ndvi','NDVI'),('iron_oxide_index','Fe Index'),
+                  ('clay_index','Clay Index')]:
+        if c in top_10.columns:
+            display_cols.append(c)
+            col_map[c] = n
+    st.dataframe(top_10[display_cols].rename(columns=col_map).reset_index(drop=True),
+                 use_container_width=True, hide_index=True)
 
 # ================= FEATURE IMPORTANCE =================
-st.subheader("Feature Importance")
+st.subheader("🔬 Feature Importance (PU Bagging Random Forest)")
 if model is not None:
     try:
-        # Check if list of models (e.g. bagged/ensemble from PU learning)
-        if isinstance(model, list) and len(model) > 0:
-            base_model = model[0]
-        else:
-            base_model = model
-            
-        if hasattr(base_model, 'feature_importances_'):
-            importances = base_model.feature_importances_
-            feature_names = ['iron_oxide_index', 'clay_index', 'ndvi', 'rock_type_encoded', 'fault_distance_km', 'shear_zone_proximity_km', 'elevation_m', 'slope_deg', 'rainfall_mm', 'soil_moisture']
-            
-            # Pad or truncate feature names if mismatch
-            if len(importances) != len(feature_names):
-                if len(importances) > len(feature_names):
-                    feature_names += [f"feature_{i}" for i in range(len(feature_names), len(importances))]
-                else:
-                    feature_names = feature_names[:len(importances)]
-                    
-            feat_df = pd.DataFrame({
-                'Feature': feature_names,
-                'Importance': importances
-            }).sort_values('Importance', ascending=True)
-            
-            fig = px.bar(feat_df, x='Importance', y='Feature', orientation='h', title='Random Forest Feature Importances')
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("Loaded model does not have feature_importances_ attribute.")
+        base = model[0] if isinstance(model, list) else model
+        if hasattr(base, 'feature_importances_'):
+            imp = base.feature_importances_
+            names = ['iron_oxide_index','clay_index','ndvi','rock_type','fault_distance_km',
+                     'shear_zone_proximity_km','elevation_m','slope_deg','rainfall_mm','soil_moisture']
+            names = names[:len(imp)]
+            feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
+            fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h',
+                           color='Importance', color_continuous_scale='RdYlGn_r')
+            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances")
+            st.plotly_chart(fig_imp, use_container_width=True)
     except Exception as e:
-        st.error(f"Could not extract feature importances: {e}")
-else:
-    st.info("Model not available for feature importance.")
+        st.error(f"Error: {e}")

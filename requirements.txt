@@ -8,3 +8,4 @@ pydeck
 ortools
 shap
 matplotlib
+scipy
