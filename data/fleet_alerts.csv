@@ -1,0 +1,75 @@
+mine_id,month,year,alert_type,alert_message
+Mine_A_Dongri_Buzurg,1,2026,INFO,Dumper D6 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,2,2026,INFO,Dumper D1 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,2,2026,INFO,Dumper D3 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,4,2026,INFO,Dumper D1 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,6,2026,WARNING,High rainfall (369.3mm) expected — possible production dip.
+Mine_A_Dongri_Buzurg,6,2026,WARNING,Haul road condition poor (1.0) — consider alternate route/maintenance.
+Mine_A_Dongri_Buzurg,7,2026,WARNING,High rainfall (354.7mm) expected — possible production dip.
+Mine_A_Dongri_Buzurg,7,2026,WARNING,Haul road condition poor (2.0) — consider alternate route/maintenance.
+Mine_A_Dongri_Buzurg,7,2026,INFO,Dumper D1 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,7,2026,INFO,Dumper D2 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,7,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,7,2026,INFO,Dumper D6 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,8,2026,WARNING,High rainfall (226.1mm) expected — possible production dip.
+Mine_A_Dongri_Buzurg,8,2026,WARNING,Haul road condition poor (1.0) — consider alternate route/maintenance.
+Mine_A_Dongri_Buzurg,8,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,9,2026,WARNING,High rainfall (230.7mm) expected — possible production dip.
+Mine_A_Dongri_Buzurg,9,2026,WARNING,Haul road condition poor (1.0) — consider alternate route/maintenance.
+Mine_A_Dongri_Buzurg,9,2026,INFO,Dumper D3 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,9,2026,INFO,Dumper D7 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,11,2026,INFO,Dumper D3 unavailable — maintenance scheduled.
+Mine_A_Dongri_Buzurg,11,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_B_Chikla,1,2026,INFO,Dumper D5 unavailable — maintenance scheduled.
+Mine_B_Chikla,1,2026,INFO,Dumper D7 unavailable — maintenance scheduled.
+Mine_B_Chikla,2,2026,INFO,Dumper D0 unavailable — maintenance scheduled.
+Mine_B_Chikla,2,2026,INFO,Dumper D1 unavailable — maintenance scheduled.
+Mine_B_Chikla,2,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_B_Chikla,2,2026,INFO,Dumper D6 unavailable — maintenance scheduled.
+Mine_B_Chikla,2,2026,INFO,Dumper D7 unavailable — maintenance scheduled.
+Mine_B_Chikla,3,2026,INFO,Dumper D6 unavailable — maintenance scheduled.
+Mine_B_Chikla,5,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_B_Chikla,6,2026,WARNING,High rainfall (344.5mm) expected — possible production dip.
+Mine_B_Chikla,6,2026,WARNING,Haul road condition poor (1.0) — consider alternate route/maintenance.
+Mine_B_Chikla,6,2026,INFO,Dumper D6 unavailable — maintenance scheduled.
+Mine_B_Chikla,7,2026,WARNING,High rainfall (215.1mm) expected — possible production dip.
+Mine_B_Chikla,7,2026,WARNING,Haul road condition poor (1.0) — consider alternate route/maintenance.
+Mine_B_Chikla,8,2026,WARNING,High rainfall (277.3mm) expected — possible production dip.
+Mine_B_Chikla,8,2026,WARNING,Haul road condition poor (2.0) — consider alternate route/maintenance.
+Mine_B_Chikla,9,2026,WARNING,High rainfall (302.8mm) expected — possible production dip.
+Mine_B_Chikla,9,2026,WARNING,Haul road condition poor (2.0) — consider alternate route/maintenance.
+Mine_B_Chikla,9,2026,INFO,Dumper D0 unavailable — maintenance scheduled.
+Mine_B_Chikla,9,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_B_Chikla,9,2026,INFO,Dumper D5 unavailable — maintenance scheduled.
+Mine_B_Chikla,10,2026,INFO,Dumper D6 unavailable — maintenance scheduled.
+Mine_B_Chikla,12,2026,INFO,Dumper D0 unavailable — maintenance scheduled.
+Mine_C_Munsar,1,2026,INFO,Dumper D0 unavailable — maintenance scheduled.
+Mine_C_Munsar,1,2026,INFO,Dumper D3 unavailable — maintenance scheduled.
+Mine_C_Munsar,4,2026,INFO,Dumper D6 unavailable — maintenance scheduled.
+Mine_C_Munsar,6,2026,WARNING,High rainfall (203.0mm) expected — possible production dip.
+Mine_C_Munsar,6,2026,WARNING,Haul road condition poor (1.0) — consider alternate route/maintenance.
+Mine_C_Munsar,6,2026,INFO,Dumper D2 unavailable — maintenance scheduled.
+Mine_C_Munsar,6,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_C_Munsar,7,2026,WARNING,High rainfall (217.5mm) expected — possible production dip.
+Mine_C_Munsar,7,2026,WARNING,Haul road condition poor (2.0) — consider alternate route/maintenance.
+Mine_C_Munsar,7,2026,INFO,Dumper D5 unavailable — maintenance scheduled.
+Mine_C_Munsar,8,2026,WARNING,High rainfall (375.3mm) expected — possible production dip.
+Mine_C_Munsar,8,2026,WARNING,Haul road condition poor (2.0) — consider alternate route/maintenance.
+Mine_C_Munsar,8,2026,INFO,Dumper D1 unavailable — maintenance scheduled.
+Mine_C_Munsar,8,2026,INFO,Dumper D2 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,WARNING,High rainfall (499.7mm) expected — possible production dip.
+Mine_C_Munsar,9,2026,WARNING,Haul road condition poor (2.0) — consider alternate route/maintenance.
+Mine_C_Munsar,9,2026,INFO,Dumper D0 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,INFO,Dumper D1 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,INFO,Dumper D2 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,INFO,Dumper D3 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,INFO,Dumper D5 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,INFO,Dumper D6 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,INFO,Dumper D7 unavailable — maintenance scheduled.
+Mine_C_Munsar,9,2026,CRITICAL,Throughput at 0.0% of plan — risk of shortfall.
+Mine_C_Munsar,10,2026,INFO,Dumper D2 unavailable — maintenance scheduled.
+Mine_C_Munsar,12,2026,INFO,Dumper D0 unavailable — maintenance scheduled.
+Mine_C_Munsar,12,2026,INFO,Dumper D1 unavailable — maintenance scheduled.
+Mine_C_Munsar,12,2026,INFO,Dumper D4 unavailable — maintenance scheduled.
+Mine_C_Munsar,12,2026,CRITICAL,Throughput at 82.0% of plan — risk of shortfall.

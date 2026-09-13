@@ -1,0 +1,5 @@
+# Extra dependencies ONLY for src/fetch_real_data.py
+# Not needed if using pre-fetched data or synthetic fallback
+pystac-client
+planetary-computer
+rasterio

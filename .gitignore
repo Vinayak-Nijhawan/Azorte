@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+*.pdf
+extract_pdf.py
+pdf_pages/
