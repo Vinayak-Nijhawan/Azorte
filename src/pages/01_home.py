@@ -80,4 +80,14 @@ with col_b:
 with col_c:
     st.page_link("src/pages/04_fleet_dispatch.py", label="Fleet Dispatch", icon="🚛")
 with col_d:
+    st.page_link("src/pages/06_what_if.py", label="What-If Simulator", icon="🎛️")
+
+col_e, col_f, col_g, col_h = st.columns(4)
+with col_e:
+    st.page_link("src/pages/07_explainability.py", label="AI Explainability", icon="🧬")
+with col_f:
+    st.page_link("src/pages/08_ai_assistant.py", label="G-Sync AI", icon="🤖")
+with col_g:
+    st.page_link("src/pages/09_financial.py", label="Financial ROI", icon="💰")
+with col_h:
     st.page_link("src/pages/05_methodology.py", label="Data & Model Info", icon="🔬")

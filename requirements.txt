@@ -6,3 +6,5 @@ joblib
 plotly
 pydeck
 ortools
+shap
+matplotlib
