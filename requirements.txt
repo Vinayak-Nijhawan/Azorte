@@ -9,3 +9,5 @@ ortools
 shap
 matplotlib
 scipy
+folium
+streamlit-folium
