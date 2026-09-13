@@ -92,11 +92,9 @@ if z_col and z_col in df.columns:
         radius=overlay_radius,
         opacity=overlay_opacity,
         color_continuous_scale=color_scale,
-        range_color=[0, 1] if z_col == 'mn_probability' else None,
         center=dict(lat=21.25, lon=79.25),
         zoom=10,
-        labels={z_col: label},
-        histfunc="avg"  # <--- THIS FIXES THE ZOOM OUT RED BLOB ISSUE
+        labels={z_col: label}
     )
     fig.update_layout(map_style=map_style)
 else:
