@@ -11,7 +11,6 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
 MODEL_DIR = os.path.join(PROJECT_ROOT, 'models')
 
-st.set_page_config(layout="wide") if not st.get_option("layout") == "wide" else None
 
 @st.cache_data
 def load_data():
