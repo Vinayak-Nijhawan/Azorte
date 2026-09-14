@@ -75,9 +75,15 @@ with col_map:
 
     # Add all tile layers — user switches via Layer Control on map OR radio button
     if "Dark" in map_choice:
-        folium.TileLayer('cartodbdark_matter', name='Dark', no_wrap=True).add_to(m)
+        folium.TileLayer(
+            tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            attr='© OpenStreetMap © CARTO', name='Dark', no_wrap=True, subdomains='abcd'
+        ).add_to(m)
     elif "Light" in map_choice:
-        folium.TileLayer('cartodbpositron', name='Light', no_wrap=True).add_to(m)
+        folium.TileLayer(
+            tiles='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+            attr='© OpenStreetMap © CARTO', name='Light', no_wrap=True, subdomains='abcd'
+        ).add_to(m)
     elif "Street" in map_choice:
         folium.TileLayer('openstreetmap', name='Street', no_wrap=True).add_to(m)
     elif "Satellite" in map_choice:
