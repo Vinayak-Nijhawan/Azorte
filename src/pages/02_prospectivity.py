@@ -76,13 +76,13 @@ with col_map:
     # Add all tile layers — user switches via Layer Control on map OR radio button
     if "Dark" in map_choice:
         folium.TileLayer(
-            tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            attr='© OpenStreetMap © CARTO', name='Dark', no_wrap=True, subdomains='abcd'
+            tiles='https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri Dark Gray', name='Dark', no_wrap=True
         ).add_to(m)
     elif "Light" in map_choice:
         folium.TileLayer(
-            tiles='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-            attr='© OpenStreetMap © CARTO', name='Light', no_wrap=True, subdomains='abcd'
+            tiles='https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri Light Gray', name='Light', no_wrap=True
         ).add_to(m)
     elif "Street" in map_choice:
         folium.TileLayer('openstreetmap', name='Street', no_wrap=True).add_to(m)
