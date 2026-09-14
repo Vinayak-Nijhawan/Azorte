@@ -61,7 +61,7 @@ with col_ctrl:
 
     st.markdown("---")
     st.markdown("### Heatmap Settings")
-    overlay_radius = st.slider("Spread", 5, 30, 12)
+    overlay_radius = st.slider("Spread", 8, 40, 18)
     overlay_opacity = st.slider("Opacity", 0.1, 1.0, 0.6, 0.1)
 
     st.markdown("---")
@@ -79,22 +79,22 @@ with col_ctrl:
 with col_map:
     fig = go.Figure()
 
-    # ---- LAYER 1: Prospectivity Overlay ----
+    # ---- LAYER 1: Prospectivity Heatmap ----
     if show_heatmap and 'mn_probability' in df.columns:
-        fig.add_trace(go.Scattermap(
-            lat=df['latitude'], lon=df['longitude'],
-            mode='markers',
-            marker=dict(
-                size=overlay_radius,
-                color=df['mn_probability'],
-                colorscale=[[0,'blue'],[0.25,'cyan'],[0.45,'lime'],[0.65,'yellow'],[0.85,'orange'],[1.0,'red']],
-                cmin=0, cmax=1,
-                opacity=overlay_opacity,
-                colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
-            ),
-            name='Prospectivity',
-            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{customdata:.3f}<extra></extra>',
-            customdata=df['mn_probability'],
+        # Only plot medium-to-high probability points
+        # This removes the uniform blue grid background and shows actual hotspots
+        hotspots = df[df['mn_probability'] > 0.35].copy()
+        
+        fig.add_trace(go.Densitymap(
+            lat=hotspots['latitude'], lon=hotspots['longitude'],
+            z=hotspots['mn_probability'],
+            radius=overlay_radius,
+            opacity=overlay_opacity,
+            colorscale=[[0,'blue'],[0.2,'cyan'],[0.4,'lime'],[0.6,'yellow'],[0.8,'orange'],[1.0,'red']],
+            zmin=0.3, zmax=1.0,
+            colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
+            name='Prospectivity', showlegend=True,
+            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{z:.3f}<extra></extra>',
         ))
 
     # ---- LAYER 2: NDVI Vegetation ----
