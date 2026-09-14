@@ -79,18 +79,22 @@ with col_ctrl:
 with col_map:
     fig = go.Figure()
 
-    # ---- LAYER 1: Prospectivity Heatmap ----
+    # ---- LAYER 1: Prospectivity Overlay ----
     if show_heatmap and 'mn_probability' in df.columns:
-        hotspots = df[df['mn_probability'] > 0.2]
-        fig.add_trace(go.Densitymap(
-            lat=hotspots['latitude'], lon=hotspots['longitude'],
-            z=hotspots['mn_probability'],
-            radius=overlay_radius, opacity=overlay_opacity,
-            colorscale=[[0,'blue'],[0.25,'cyan'],[0.45,'lime'],[0.65,'yellow'],[0.85,'orange'],[1.0,'red']],
-            zmin=0, zmax=1,
-            colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
-            name='Prospectivity', showlegend=True,
-            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{z:.3f}<extra></extra>',
+        fig.add_trace(go.Scattermap(
+            lat=df['latitude'], lon=df['longitude'],
+            mode='markers',
+            marker=dict(
+                size=overlay_radius,
+                color=df['mn_probability'],
+                colorscale=[[0,'blue'],[0.25,'cyan'],[0.45,'lime'],[0.65,'yellow'],[0.85,'orange'],[1.0,'red']],
+                cmin=0, cmax=1,
+                opacity=overlay_opacity,
+                colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
+            ),
+            name='Prospectivity',
+            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{customdata:.3f}<extra></extra>',
+            customdata=df['mn_probability'],
         ))
 
     # ---- LAYER 2: NDVI Vegetation ----
