@@ -86,7 +86,7 @@ if GROQ_AVAILABLE:
         st.sidebar.success("✅ Secure API Key loaded from environment.")
         api_key = env_key
     else:
-        api_key = st.sidebar.text_input("Enter Groq API Key", type="password", help="Get a free key from console.groq.com to enable real LLM responses.")
+        api_key = st.sidebar.text_input("Enter Groq API Key", type="password", help="Enter your Groq key to enable real LLM responses.")
 else:
     st.sidebar.warning("Groq package not installed. Using rule-based fallback.")
     api_key = ""
@@ -119,7 +119,7 @@ def process_query(prompt):
             
             chat_completion = client.chat.completions.create(
                 messages=messages,
-                model="llama3-8b-8192",
+                model="openai/gpt-oss-20b",
             )
             return chat_completion.choices[0].message.content, None
         except Exception as e:
