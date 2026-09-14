@@ -132,7 +132,7 @@ with col_map:
         fig.add_trace(go.Scattermap(
             lat=mines_lat, lon=mines_lon,
             mode='markers+text',
-            marker=dict(size=14, color='red', symbol='circle'),
+            marker=dict(size=14, color='red'),
             text=mines_name, textposition='top center',
             textfont=dict(size=11, color='white'),
             name='⛏️ Known Mines',
@@ -145,8 +145,7 @@ with col_map:
         fig.add_trace(go.Scattermap(
             lat=top_drill['latitude'], lon=top_drill['longitude'],
             mode='markers',
-            marker=dict(size=10, color='white', opacity=0.9,
-                        line=dict(width=2, color='red')),
+            marker=dict(size=12, color='yellow', opacity=0.9),
             name='🎯 Drill Priority',
             hovertemplate='Prob: %{customdata:.3f}<extra>Drill Target</extra>',
             customdata=top_drill['mn_probability'],
