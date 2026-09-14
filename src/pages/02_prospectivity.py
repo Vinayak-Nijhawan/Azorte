@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import joblib
 import os
-import folium
-from folium.plugins import HeatMap
-from streamlit_folium import st_folium
+import numpy as np
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
@@ -42,15 +41,28 @@ col_map, col_ctrl = st.columns([3, 1], gap="large")
 with col_ctrl:
     st.markdown("### Layer Control")
     show_heatmap = st.checkbox("🔥 Prospectivity Heatmap", value=True)
-    show_ndvi = st.checkbox("🌿 Geological Layers (NDVI)", value=False)
+    show_ndvi = st.checkbox("🌿 NDVI Vegetation", value=False)
+    show_iron = st.checkbox("🟠 Ferrous Iron Index", value=False)
     show_mines = st.checkbox("⛏️ Known Mines", value=True)
     show_drill = st.checkbox("🎯 Drilling Priority Zones", value=False)
 
     st.markdown("---")
     st.markdown("### Map Style")
-    map_choice = st.radio("Select", [
-        "🌑 Dark", "⬜ Light", "🗺️ Street", "🛰️ Satellite"
+    map_style = st.radio("Select", [
+        "🌑 Dark", "⬜ Light", "🗺️ Street"
     ], index=0, label_visibility="collapsed")
+
+    if "Dark" in map_style:
+        plotly_style = "carto-darkmatter"
+    elif "Light" in map_style:
+        plotly_style = "carto-positron"
+    else:
+        plotly_style = "open-street-map"
+
+    st.markdown("---")
+    st.markdown("### Heatmap Settings")
+    overlay_radius = st.slider("Spread", 5, 30, 12)
+    overlay_opacity = st.slider("Opacity", 0.1, 1.0, 0.6, 0.1)
 
     st.markdown("---")
     st.markdown("### Legend")
@@ -65,81 +77,86 @@ with col_ctrl:
     """, unsafe_allow_html=True)
 
 with col_map:
-    # ---- BASE MAP ----
-    m = folium.Map(
-        location=[21.25, 79.25],
-        zoom_start=10,
-        tiles=None,
-        max_bounds=True,
-    )
+    fig = go.Figure()
 
-    # Add all tile layers — user switches via Layer Control on map OR radio button
-    if "Dark" in map_choice:
-        folium.TileLayer(
-            tiles='https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-            attr='Esri Dark Gray', name='Dark', no_wrap=True
-        ).add_to(m)
-    elif "Light" in map_choice:
-        folium.TileLayer(
-            tiles='https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-            attr='Esri Light Gray', name='Light', no_wrap=True
-        ).add_to(m)
-    elif "Street" in map_choice:
-        folium.TileLayer('openstreetmap', name='Street', no_wrap=True).add_to(m)
-    elif "Satellite" in map_choice:
-        folium.TileLayer(
-            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            attr='Esri Satellite', name='Satellite', no_wrap=True
-        ).add_to(m)
-
-    # ---- OVERLAY 1: Prospectivity Heatmap ----
+    # ---- LAYER 1: Prospectivity Heatmap ----
     if show_heatmap and 'mn_probability' in df.columns:
-        hotspots = df[df['mn_probability'] > 0.25]
-        heat_data = hotspots[['latitude', 'longitude', 'mn_probability']].values.tolist()
-        HeatMap(
-            heat_data, name='Mn Prospectivity',
-            min_opacity=0.25, max_val=1.0,
-            radius=20, blur=15, max_zoom=15,
-            gradient={0.0: 'blue', 0.2: 'cyan', 0.4: 'lime', 0.6: 'yellow', 0.8: 'orange', 1.0: 'red'}
-        ).add_to(m)
+        hotspots = df[df['mn_probability'] > 0.2]
+        fig.add_trace(go.Densitymap(
+            lat=hotspots['latitude'], lon=hotspots['longitude'],
+            z=hotspots['mn_probability'],
+            radius=overlay_radius, opacity=overlay_opacity,
+            colorscale=[[0,'blue'],[0.25,'cyan'],[0.45,'lime'],[0.65,'yellow'],[0.85,'orange'],[1.0,'red']],
+            zmin=0, zmax=1,
+            colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
+            name='Prospectivity', showlegend=True,
+            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{z:.3f}<extra></extra>',
+        ))
 
-    # ---- OVERLAY 2: NDVI / Geological ----
+    # ---- LAYER 2: NDVI Vegetation ----
     if show_ndvi and 'ndvi' in df.columns:
         veg = df[df['ndvi'] > 0.3]
-        ndvi_data = veg[['latitude', 'longitude', 'ndvi']].values.tolist()
-        HeatMap(
-            ndvi_data, name='NDVI Vegetation',
-            min_opacity=0.15, radius=15, blur=10,
-            gradient={0.0: 'rgba(0,0,0,0)', 0.4: 'rgba(173,255,47,0.4)', 1.0: 'rgba(0,100,0,0.7)'}
-        ).add_to(m)
+        fig.add_trace(go.Densitymap(
+            lat=veg['latitude'], lon=veg['longitude'],
+            z=veg['ndvi'],
+            radius=overlay_radius, opacity=overlay_opacity * 0.6,
+            colorscale=[[0,'rgba(139,90,43,0.2)'],[0.5,'rgba(100,200,50,0.5)'],[1.0,'rgba(0,80,0,0.8)']],
+            colorbar=dict(title=dict(text="NDVI"), x=1.08, len=0.3, y=0.3, thickness=10),
+            name='NDVI', showlegend=True,
+            hovertemplate='NDVI: %{z:.3f}<extra></extra>',
+        ))
 
-    # ---- OVERLAY 3: Known Mines ----
+    # ---- LAYER 3: Iron Oxide ----
+    if show_iron and 'iron_oxide_index' in df.columns:
+        fe = df.copy()
+        fe['fe_norm'] = (fe['iron_oxide_index'] - fe['iron_oxide_index'].min()) / (fe['iron_oxide_index'].max() - fe['iron_oxide_index'].min() + 1e-10)
+        fe_high = fe[fe['fe_norm'] > 0.3]
+        fig.add_trace(go.Densitymap(
+            lat=fe_high['latitude'], lon=fe_high['longitude'],
+            z=fe_high['fe_norm'],
+            radius=overlay_radius, opacity=overlay_opacity * 0.6,
+            colorscale=[[0,'rgba(255,255,200,0.2)'],[0.5,'rgba(255,140,0,0.6)'],[1.0,'rgba(180,0,0,0.9)']],
+            colorbar=dict(title=dict(text="Fe Index"), x=1.08, len=0.3, y=0.7, thickness=10),
+            name='Iron Oxide', showlegend=True,
+        ))
+
+    # ---- LAYER 4: Known Mines ----
     if show_mines:
-        mines = [
-            {"name": "Dongri Buzurg Mine", "lat": 21.38, "lon": 79.35},
-            {"name": "Chikla Mine", "lat": 21.22, "lon": 79.42},
-            {"name": "Munsar Mine", "lat": 21.15, "lon": 79.55},
-        ]
-        for mine in mines:
-            folium.Marker(
-                [mine['lat'], mine['lon']],
-                popup=mine['name'], tooltip=mine['name'],
-                icon=folium.Icon(color='red', icon='industry', prefix='fa'),
-            ).add_to(m)
+        mines_lat = [21.38, 21.22, 21.15]
+        mines_lon = [79.35, 79.42, 79.55]
+        mines_name = ["Dongri Buzurg", "Chikla Mine", "Munsar Mine"]
+        fig.add_trace(go.Scattermap(
+            lat=mines_lat, lon=mines_lon,
+            mode='markers+text',
+            marker=dict(size=14, color='red', symbol='circle'),
+            text=mines_name, textposition='top center',
+            textfont=dict(size=11, color='white'),
+            name='⛏️ Known Mines',
+            hovertemplate='%{text}<br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>',
+        ))
 
-    # ---- OVERLAY 4: Drilling Priority Zones ----
+    # ---- LAYER 5: Drilling Priority Zones ----
     if show_drill and 'mn_probability' in df.columns:
-        top_drill = df[df['mn_probability'] > 0.8].nlargest(20, 'mn_probability')
-        for _, row in top_drill.iterrows():
-            folium.CircleMarker(
-                [row['latitude'], row['longitude']],
-                radius=7, color='white', weight=2,
-                fill=True, fill_color='red', fill_opacity=0.9,
-                popup=f"Prob: {row['mn_probability']:.3f}",
-                tooltip=f"🎯 {row['mn_probability']:.3f}",
-            ).add_to(m)
+        top_drill = df[df['mn_probability'] > 0.8].nlargest(25, 'mn_probability')
+        fig.add_trace(go.Scattermap(
+            lat=top_drill['latitude'], lon=top_drill['longitude'],
+            mode='markers',
+            marker=dict(size=10, color='white', opacity=0.9,
+                        line=dict(width=2, color='red')),
+            name='🎯 Drill Priority',
+            hovertemplate='Prob: %{customdata:.3f}<extra>Drill Target</extra>',
+            customdata=top_drill['mn_probability'],
+        ))
 
-    st_folium(m, use_container_width=True, height=550, returned_objects=[])
+    fig.update_layout(
+        map=dict(style=plotly_style, center=dict(lat=21.25, lon=79.25), zoom=10),
+        height=600,
+        margin=dict(l=0, r=0, t=10, b=0),
+        legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01,
+                    bgcolor="rgba(0,0,0,0.7)", font=dict(color="white", size=11)),
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 # ================= TARGET STATS =================
 st.markdown("---")
