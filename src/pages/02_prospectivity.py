@@ -68,28 +68,39 @@ with col_map:
     # Build folium map with ESRI Satellite Tiles
     m = folium.Map(
         location=[21.25, 79.25], 
-        zoom_start=10, 
-        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attr='Esri Satellite'
+        zoom_start=10,
+        tiles=None, # We'll add tiles manually with no_wrap
+        max_bounds=True
     )
+    
+    folium.TileLayer(
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr='Esri Satellite',
+        name='Satellite',
+        no_wrap=True
+    ).add_to(m)
 
     # 1. Prospectivity Heatmap
     if show_heatmap and 'mn_probability' in df.columns:
-        heat_data = df[['latitude', 'longitude', 'mn_probability']].values.tolist()
+        # Filter out the extreme low probability background so it doesn't draw a solid square box
+        hotspots = df[df['mn_probability'] > 0.3]
+        heat_data = hotspots[['latitude', 'longitude', 'mn_probability']].values.tolist()
         HeatMap(
             heat_data,
             name='Mn Prospectivity',
             min_opacity=0.3,
             max_val=1.0,
-            radius=18,
-            blur=12,
+            radius=20,
+            blur=15,
             max_zoom=15,
             gradient={0.0: 'blue', 0.25: 'cyan', 0.5: 'lime', 0.75: 'yellow', 1.0: 'red'}
         ).add_to(m)
 
-    # 2. Geological Layers (NDVI for now, since it shows surface features)
+    # 2. Geological Layers (NDVI)
     if show_geo and 'ndvi' in df.columns:
-        ndvi_data = df[['latitude', 'longitude', 'ndvi']].values.tolist()
+        # Filter negative NDVI (water/barren) to avoid drawing a solid grid box
+        veg_spots = df[df['ndvi'] > 0.2]
+        ndvi_data = veg_spots[['latitude', 'longitude', 'ndvi']].values.tolist()
         HeatMap(
             ndvi_data,
             name='NDVI Vegetation',
