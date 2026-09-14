@@ -174,7 +174,7 @@ def color_risk(val):
         return 'background-color: rgba(241,196,15,0.3)'
     return 'background-color: rgba(46,204,113,0.2)'
 
-styled = table_df.style.applymap(color_risk, subset=['Risk']).format({
+styled = table_df.style.map(color_risk, subset=['Risk']).format({
     'Planned (TPD)': '{:.0f}',
     'Actual (TPD)': '{:.0f}',
     'Equip Avail (%)': '{:.1%}',
