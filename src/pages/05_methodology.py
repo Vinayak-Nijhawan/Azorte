@@ -52,12 +52,23 @@ fi_data = pd.DataFrame({
     'Importance': [0.35, 0.25, 0.20, 0.12, 0.08]
 })
 fig_fi = px.bar(fi_data, x='Importance', y='Feature', orientation='h', title="Feature Importance")
-fig_fi.update_layout(yaxis={'categoryorder':'total ascending'})
+fig_fi.update_layout(
+    yaxis=dict(categoryorder='total ascending', title=dict(font=dict(size=20)), tickfont=dict(size=16)),
+    xaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=16)),
+    title=dict(font=dict(size=26))
+)
 st.plotly_chart(fig_fi, use_container_width=True)
 
 # Mock confusion matrix
 cm_data = [[150, 15], [22, 85]]
 fig_cm = px.imshow(cm_data, text_auto=True, labels=dict(x="Predicted", y="True"), x=['Non-Deposit', 'Deposit'], y=['Non-Deposit', 'Deposit'], title="Confusion Matrix")
+fig_cm.update_layout(
+    title=dict(font=dict(size=26)),
+    xaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=16)),
+    yaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=16)),
+    coloraxis_colorbar=dict(title=dict(font=dict(size=18)), tickfont=dict(size=16))
+)
+fig_cm.update_traces(textfont=dict(size=18))
 st.plotly_chart(fig_cm, use_container_width=True)
 
 st.header("3. MineFlow Optimizer")

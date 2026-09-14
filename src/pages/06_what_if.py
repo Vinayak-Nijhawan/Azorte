@@ -171,7 +171,11 @@ else:
         
         orig_tpd = orig_dispatch['effective_capacity_tph'].sum() * 16 if not orig_dispatch.empty else default_row.get('predicted_production_tpd', 0)
         orig_util = 85.0 # Placeholder if not in df
-        orig_risk = default_row.get('shortfall_risk', 0.5)
+        orig_risk_raw = default_row.get('shortfall_risk', 0.5)
+        if isinstance(orig_risk_raw, str):
+            orig_risk = {'High': 0.8, 'Medium': 0.5, 'Low': 0.2}.get(orig_risk_raw, 0.5)
+        else:
+            orig_risk = float(orig_risk_raw)
 
         # Run Simulator
         sim_results = solve_fleet_scenario(
@@ -225,13 +229,20 @@ else:
                 df_chart = pd.DataFrame(chart_data)
                 fig = px.bar(df_chart, x="Shovel", y="TPD", color="Type", barmode="group",
                              title="Original vs Simulated TPD per Shovel")
+                fig.update_layout(
+                    title=dict(font=dict(size=26)),
+                    xaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=16)),
+                    yaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=16)),
+                    legend=dict(font=dict(size=18)),
+                    margin=dict(t=80)
+                )
                 st.plotly_chart(fig, use_container_width=True)
 
             # Simulated Dispatch Table
             st.markdown("### Simulated Dispatch Table")
             if sim_results['assignments']:
                 sim_df = pd.DataFrame(sim_results['assignments'])
-                st.dataframe(sim_df, use_container_width=True)
+                st.table(sim_df)
             else:
                 st.warning("No dumpers could be assigned in this scenario.")
 

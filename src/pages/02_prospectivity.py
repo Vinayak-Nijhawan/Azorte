@@ -42,14 +42,14 @@ col_map, col_controls = st.columns([3, 1], gap="large")
 
 with col_controls:
     st.markdown("### Layer Control")
-    st.markdown('<div style="background-color: #f0f2f6; padding: 20px; border-radius: 10px;">', unsafe_allow_html=True)
+
     
     show_heatmap = st.checkbox("🔥 Prospectivity Heatmap", value=True)
     show_geo = st.checkbox("🌍 Geological Layers (NDVI)", value=True)
     show_mines = st.checkbox("⛏️ Known Mines", value=True)
     show_drill = st.checkbox("🎯 Drilling Priority Zones", value=False)
     
-    st.markdown('</div>', unsafe_allow_html=True)
+
     
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### Legend")
@@ -159,11 +159,13 @@ if 'mn_probability' in df.columns:
     # Filter only available columns
     available_cols = [c for c in display_cols if c in top_10.columns]
     
-    st.dataframe(
-        top_10[available_cols].rename(columns=renames).reset_index(drop=True),
-        use_container_width=True, 
-        hide_index=True
-    )
+    renamed_df = top_10[available_cols].rename(columns=renames)
+    if '#' in renamed_df.columns:
+        renamed_df = renamed_df.set_index('#')
+    else:
+        renamed_df = renamed_df.reset_index(drop=True)
+        
+    st.table(renamed_df)
 
 # ================= FEATURE IMPORTANCE =================
 st.subheader("🔬 Feature Importance")
@@ -178,7 +180,13 @@ if model is not None:
             feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
             fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h',
                            color='Importance', color_continuous_scale='RdYlGn_r')
-            fig_imp.update_layout(height=350, showlegend=False)
+            fig_imp.update_layout(
+                height=500, 
+                showlegend=False,
+                xaxis=dict(title=dict(text="Importance", font=dict(size=20)), tickfont=dict(size=16)),
+                yaxis=dict(title=dict(text="Feature", font=dict(size=20)), tickfont=dict(size=16)),
+                coloraxis_colorbar=dict(title=dict(text="Importance", font=dict(size=18)), tickfont=dict(size=16))
+            )
             st.plotly_chart(fig_imp, use_container_width=True)
     except Exception as e:
         st.error(f"Error: {e}")

@@ -100,6 +100,13 @@ with tab1:
         importance_df = pd.DataFrame({'Feature': PROSPECT_FEATURES, 'Importance': mean_shap})
         importance_df = importance_df.sort_values(by='Importance', ascending=True)
         fig_bar = px.bar(importance_df, x='Importance', y='Feature', orientation='h', title='Feature Impact Magnitude')
+        fig_bar.update_layout(
+            title=dict(font=dict(size=26)),
+            xaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=16)),
+            yaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=20)),
+            height=500,
+            margin=dict(l=250)
+        )
         st.plotly_chart(fig_bar, use_container_width=True)
 
     st.subheader("Local Explanation")
@@ -131,7 +138,7 @@ with tab1:
         contrib_text = ", ".join([f"{PROSPECT_FEATURES[i]}={point_data.iloc[0, i]:.2f} (contributed {'+' if vals[i] > 0 else ''}{vals[i]:.2f})" for i in top_indices])
         st.info(f"This location at ({prospect_df.loc[point_idx, 'latitude']:.4f}, {prospect_df.loc[point_idx, 'longitude']:.4f}) scored {prob:.2f} ({cls}) because: {contrib_text}...")
         
-        st.dataframe(point_data.T.rename(columns={point_idx: 'Value'}))
+        st.table(point_data.T.rename(columns={point_idx: 'Value'}))
 
 with tab2:
     st.header("MineFlow Explanation")
@@ -158,6 +165,13 @@ with tab2:
         importance_prod_df = pd.DataFrame({'Feature': PROD_FEATURES, 'Importance': mean_shap_prod})
         importance_prod_df = importance_prod_df.sort_values(by='Importance', ascending=True)
         fig_bar_prod = px.bar(importance_prod_df, x='Importance', y='Feature', orientation='h', title='Feature Impact Magnitude')
+        fig_bar_prod.update_layout(
+            title=dict(font=dict(size=26)),
+            xaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=16)),
+            yaxis=dict(title=dict(font=dict(size=20)), tickfont=dict(size=20)),
+            height=500,
+            margin=dict(l=250)
+        )
         st.plotly_chart(fig_bar_prod, use_container_width=True)
 
     st.subheader("Local Explanation")
@@ -175,4 +189,4 @@ with tab2:
         st.pyplot(fig)
         plt.clf()
         
-        st.dataframe(point_data_prod.T.rename(columns={selected_idx: 'Value'}))
+        st.table(point_data_prod.T.rename(columns={selected_idx: 'Value'}))

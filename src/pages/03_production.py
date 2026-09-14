@@ -45,36 +45,36 @@ else:
             
             fig = go.Figure()
             
-            if 'planned_production' in mine_data.columns:
-                fig.add_trace(go.Scatter(x=mine_data['date'], y=mine_data['planned_production'], name='Planned', line=dict(color='blue', dash='dash')))
-            if 'actual_production' in mine_data.columns:
-                fig.add_trace(go.Scatter(x=mine_data['date'], y=mine_data['actual_production'], name='Actual', line=dict(color='blue')))
+            if 'planned_production_tpd' in mine_data.columns:
+                fig.add_trace(go.Scatter(x=mine_data['date'], y=mine_data['planned_production_tpd'], name='Planned', line=dict(color='blue', dash='dash')))
+            if 'actual_production_tpd' in mine_data.columns:
+                fig.add_trace(go.Scatter(x=mine_data['date'], y=mine_data['actual_production_tpd'], name='Actual', line=dict(color='blue')))
                 
             if not df_forecast.empty and 'mine_id' in df_forecast.columns:
                 forecast_data = df_forecast[df_forecast['mine_id'] == selected_mine].copy()
-                if not forecast_data.empty and 'predicted_production' in forecast_data.columns:
+                if not forecast_data.empty and 'predicted_production_tpd' in forecast_data.columns:
                     forecast_data['date'] = pd.to_datetime(forecast_data[year_col].astype(str) + '-' + forecast_data[month_col].astype(str) + '-01')
                     forecast_data = forecast_data.sort_values('date')
-                    fig.add_trace(go.Scatter(x=forecast_data['date'], y=forecast_data['predicted_production'], name='Predicted', line=dict(color='green', dash='dash')))
+                    fig.add_trace(go.Scatter(x=forecast_data['date'], y=forecast_data['predicted_production_tpd'], name='Predicted', line=dict(color='green', dash='dash')))
                     
-            fig.update_layout(title=f"Production Forecast for {selected_mine}", xaxis_title="Date", yaxis_title="Production")
+            fig.update_layout(
+                title=dict(text=f"Production Forecast for {selected_mine}", font=dict(size=28)),
+                xaxis=dict(title=dict(text="Date", font=dict(size=20)), tickfont=dict(size=16)),
+                yaxis=dict(title=dict(text="Production (TPD)", font=dict(size=20)), tickfont=dict(size=16)),
+                legend=dict(font=dict(size=18)),
+                margin=dict(t=80)
+            )
             st.plotly_chart(fig, use_container_width=True)
             
             st.subheader("Risk Indicators (Latest Month)")
             latest = mine_data.iloc[-1]
             risk = latest.get('shortfall_risk', 'N/A')
             
-            r_col1, r_col2, r_col3 = st.columns(3)
+            r_col1, r_col2 = st.columns(2)
             with r_col1:
-                st.metric("Risk Level", str(risk) if pd.notnull(risk) else "N/A")
+                icon = "🔴" if risk == 'High' else "🟡" if risk == 'Medium' else "🟢"
+                st.metric("Risk Level", f"{icon} {risk}" if pd.notnull(risk) else "N/A")
             with r_col2:
-                if risk == 'High':
-                    st.markdown("🔴 **High Risk**")
-                elif risk == 'Medium':
-                    st.markdown("🟡 **Medium Risk**")
-                else:
-                    st.markdown("🟢 **Low Risk**")
-            with r_col3:
                 planned = latest.get('planned_production_tpd', 0)
                 actual = latest.get('actual_production_tpd', latest.get('predicted_production_tpd', 0))
                 shortfall = planned - actual if pd.notnull(planned) and pd.notnull(actual) else 0
@@ -82,10 +82,10 @@ else:
                     
             st.subheader("Shortfall Summary")
             cols_to_show = ['date']
-            if 'planned_production' in mine_data.columns: cols_to_show.append('planned_production')
-            if 'actual_production' in mine_data.columns: cols_to_show.append('actual_production')
+            if 'planned_production_tpd' in mine_data.columns: cols_to_show.append('planned_production_tpd')
+            if 'actual_production_tpd' in mine_data.columns: cols_to_show.append('actual_production_tpd')
             if 'shortfall_risk' in mine_data.columns: cols_to_show.append('shortfall_risk')
-            st.dataframe(mine_data[cols_to_show].tail(10))
+            st.table(mine_data[cols_to_show].tail(10))
             
             st.info("💡 **Business Impact:** 5% reduction in production shortfall across 3 mines = approximately 2,500 tons/month saved (illustrative)")
         else:

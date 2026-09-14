@@ -2,9 +2,21 @@ import streamlit as st
 import pandas as pd
 import os
 
+try:
+    from groq import Groq
+    GROQ_AVAILABLE = True
+except ImportError:
+    GROQ_AVAILABLE = False
+
 # Setup paths
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(PROJECT_ROOT, '.env'), override=True)
+except ImportError:
+    pass
 
 st.title("G-Sync AI Assistant 🤖")
 st.markdown("Ask questions about mines, production, fleet, and prospectivity in natural language")
@@ -46,10 +58,74 @@ for message in st.session_state.messages:
         if "dataframe" in message:
             st.dataframe(message["dataframe"], use_container_width=True)
 
+# Sidebar for API Key
+st.sidebar.markdown("### 🧠 Smart AI Upgrade")
+
+# CSS to forcibly hide the password reveal (eye) icon and prevent copying
+st.sidebar.markdown("""
+<style>
+    /* Hide the Streamlit password visibility toggle */
+    div[data-testid="stTextInput"] button,
+    button[title="Show password text"],
+    button[aria-label="Show password text"] {
+        display: none !important;
+        pointer-events: none !important;
+        visibility: hidden !important;
+    }
+    /* Prevent selection of the input text */
+    input[type="password"] {
+        user-select: none !important;
+        -webkit-user-select: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+if GROQ_AVAILABLE:
+    env_key = os.environ.get("GROQ_API_KEY", "")
+    if env_key and env_key != "your_api_key_here":
+        st.sidebar.success("✅ Secure API Key loaded from environment.")
+        api_key = env_key
+    else:
+        api_key = st.sidebar.text_input("Enter Groq API Key", type="password", help="Get a free key from console.groq.com to enable real LLM responses.")
+else:
+    st.sidebar.warning("Groq package not installed. Using rule-based fallback.")
+    api_key = ""
+
 # Helper for handling user input
 def process_query(prompt):
     query = prompt.lower()
     
+    # Context building
+    ctx_mines = df_prod['mine_id'].nunique() if df_prod is not None else 0
+    ctx_prospect = len(df_prospect[df_prospect['prospectivity_class'] == 'High']) if df_prospect is not None and 'prospectivity_class' in df_prospect.columns else 0
+    
+    if api_key:
+        try:
+            client = Groq(api_key=api_key)
+            system_prompt = f"""You are G-Sync AI, an expert mining analytics assistant for MOIL-GeoSync.
+            Current System Context:
+            - Tracking {ctx_mines} active mines.
+            - Identified {ctx_prospect} high prospectivity zones.
+            Answer the user's query concisely and professionally based on this context and general mining knowledge.
+            """
+            
+            # Format chat history for Groq
+            messages = [{"role": "system", "content": system_prompt}]
+            for msg in st.session_state.messages[-5:]: # Keep last 5 messages for context
+                if msg["role"] in ["user", "assistant"]:
+                    messages.append({"role": msg["role"], "content": msg["content"]})
+                    
+            messages.append({"role": "user", "content": prompt})
+            
+            chat_completion = client.chat.completions.create(
+                messages=messages,
+                model="llama3-8b-8192",
+            )
+            return chat_completion.choices[0].message.content, None
+        except Exception as e:
+            return f"Error communicating with Groq API: {e}. Falling back to rule-based responses.", None
+    
+    # --- Fallback Rule-Based Engine ---
     # 1. Risk/Shortfall
     if any(k in query for k in ['risk', 'shortfall', 'danger', 'problem']):
         data_to_use = df_forecast if df_forecast is not None else df_prod
@@ -129,7 +205,7 @@ def process_query(prompt):
         return "I can help with prospectivity analysis, production forecasting, fleet dispatch, and alerts. Try asking:\n- 'Which mine has the highest risk?'\n- 'Show top 5 drill targets'\n- 'Compare production across all mines'", None
 
     # Default
-    return "I can help with prospectivity analysis, production forecasting, fleet dispatch, and alerts. Try asking: 'Which mine has the highest risk?' or type 'help' for more examples.", None
+    return "I can help with prospectivity analysis, production forecasting, fleet dispatch, and alerts. Try asking: 'Which mine has the highest risk?' or type 'help' for more examples. Alternatively, enter a Groq API Key in the sidebar for true AI responses!", None
 
 
 # Accept user input

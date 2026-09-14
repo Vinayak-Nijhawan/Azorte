@@ -8,6 +8,10 @@ pydeck
 ortools
 shap
 matplotlib
+folium
+streamlit-folium
 scipy
 folium
 streamlit-folium
+groq
+python-dotenv

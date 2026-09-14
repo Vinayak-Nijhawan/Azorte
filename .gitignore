@@ -8,3 +8,4 @@ env/
 *.pdf
 extract_pdf.py
 pdf_pages/
+PROTOTYPE_EXPLANATION.txt
