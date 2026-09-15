@@ -171,7 +171,12 @@ else:
         
         orig_tpd = orig_dispatch['effective_capacity_tph'].sum() * 16 if not orig_dispatch.empty else default_row.get('predicted_production_tpd', 0)
         orig_util = 85.0 # Placeholder if not in df
-        orig_risk = default_row.get('shortfall_risk', 0.5)
+        orig_risk_raw = default_row.get('shortfall_risk', 0.5)
+        if isinstance(orig_risk_raw, str):
+            risk_map = {'High': 0.8, 'Medium': 0.5, 'Low': 0.2}
+            orig_risk = risk_map.get(orig_risk_raw, 0.5)
+        else:
+            orig_risk = float(orig_risk_raw)
 
         # Run Simulator
         sim_results = solve_fleet_scenario(
