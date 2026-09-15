@@ -163,8 +163,7 @@ with col_map:
             marker=dict(
                 size=14, 
                 color='#FF00FF',  # Neon Purple/Magenta
-                opacity=1.0,
-                line=dict(width=2, color='white')  # White border to pop
+                opacity=1.0
             ),
             name='🎯 Drill Priority',
             hovertemplate='Prob: %{customdata:.3f}<extra>Drill Target</extra>',
