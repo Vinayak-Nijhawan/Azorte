@@ -146,12 +146,39 @@ efficiency = total_factor * 100
 shortfall = max(0, planned_tpd - actual_tpd)
 change = actual_tpd - default_tpd
 
+# ML Model prediction (for cross-validation)
+ml_pred = None
+if prod_model:
+    FEATURES = ['planned_production_tpd','rainfall_mm','equipment_availability_pct','blasting_days',
+                'haul_road_condition','crusher_capacity_tpd','num_dumpers','num_shovels','lag_1','lag_2','lag_3']
+    scenario = {f: float(row.get(f, 0)) for f in FEATURES}
+    scenario.update({'rainfall_mm': rain, 'equipment_availability_pct': equip, 'blasting_days': blast,
+                     'haul_road_condition': road, 'num_dumpers': dump, 'num_shovels': shov})
+    ml_pred = max(0, float(prod_model.predict(pd.DataFrame([scenario])[FEATURES])[0]))
+
 # ================= KPI ROW =================
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("📋 Planned", f"{planned_tpd:.0f} TPD")
 k2.metric("⛏️ Achievable", f"{actual_tpd:.0f} TPD", f"{change:+.0f} vs forecast")
 k3.metric("📊 Efficiency", f"{efficiency:.0f}%")
 k4.metric("⚠️ Shortfall", f"{shortfall:.0f} TPD")
+
+# ================= ML vs FORMULA COMPARISON =================
+if ml_pred is not None:
+    st.markdown("---")
+    mc1, mc2, mc3 = st.columns(3)
+    mc1.metric("🧮 Formula Prediction", f"{actual_tpd:.0f} TPD")
+    mc2.metric("🤖 ML Model Prediction", f"{ml_pred:.0f} TPD")
+    diff = abs(actual_tpd - ml_pred)
+    agreement = max(0, 100 - (diff / planned_tpd * 100))
+    mc3.metric("🤝 Agreement", f"{agreement:.0f}%")
+    
+    if agreement > 85:
+        st.success(f"✅ Formula and ML model **agree** (within {diff:.0f} TPD). High confidence in this prediction.")
+    elif agreement > 70:
+        st.warning(f"⚠️ Formula and ML model have moderate divergence ({diff:.0f} TPD). Results are indicative.")
+    else:
+        st.info(f"ℹ️ Formula and ML model diverge by {diff:.0f} TPD. ML model may not generalize well for extreme scenarios.")
 
 # ================= GAUGE METERS =================
 g1, g2 = st.columns(2)
