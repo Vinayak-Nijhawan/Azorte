@@ -39,6 +39,15 @@ if df.empty:
 col_map, col_ctrl = st.columns([3, 1], gap="large")
 
 with col_ctrl:
+    st.markdown("### Region")
+    region = st.selectbox("Jump to", ["Central India (Nagpur)", "Eastern India (Odisha)", "Southern India (Karnataka)"], label_visibility="collapsed")
+    if "Central" in region:
+        map_center = dict(lat=21.25, lon=79.25)
+    elif "Eastern" in region:
+        map_center = dict(lat=22.05, lon=85.25)
+    else:
+        map_center = dict(lat=15.15, lon=76.55)
+
     st.markdown("### Layer Control")
     show_heatmap = st.checkbox("🔥 Prospectivity Heatmap", value=True)
     show_ndvi = st.checkbox("🌿 NDVI Vegetation", value=False)
@@ -152,7 +161,7 @@ with col_map:
         ))
 
     fig.update_layout(
-        map=dict(style=plotly_style, center=dict(lat=21.25, lon=79.25), zoom=10),
+        map=dict(style=plotly_style, center=map_center, zoom=10),
         height=600,
         margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01,
