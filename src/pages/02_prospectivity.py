@@ -26,7 +26,7 @@ def load_model():
         return None
 
 st.title('Manganese Prospectivity Map')
-st.markdown("Interactive AI-predicted map • Nagpur-Bhandara-Balaghat Manganese Belt")
+st.markdown("Interactive AI-predicted map • Pan-India Manganese Belt Analysis")
 
 df = load_data()
 model = load_model()
@@ -133,16 +133,35 @@ with col_map:
             name='Iron Oxide', showlegend=True,
         ))
 
-    # ---- LAYER 4: Known Mines ----
+    # ---- LAYER 4: Known Mines (All 3 Regions) ----
     if show_mines:
-        mines_lat = [21.38, 21.22, 21.15]
-        mines_lon = [79.35, 79.42, 79.55]
-        mines_name = ["Dongri Buzurg", "Chikla Mine", "Munsar Mine"]
+        # Central India
+        mines_data = [
+            (21.38, 79.35, "Dongri Buzurg", "Central"),
+            (21.22, 79.42, "Chikla Mine", "Central"),
+            (21.15, 79.55, "Munsar Mine", "Central"),
+            (21.30, 79.20, "Balaghat Mine", "Central"),
+            (21.10, 79.30, "Kandri Mine", "Central"),
+            (21.05, 79.15, "Gumgaon Mine", "Central"),
+            # Odisha
+            (22.15, 85.42, "Joda East Mine", "Odisha"),
+            (22.05, 85.18, "Bamebari Mine", "Odisha"),
+            # Karnataka
+            (15.10, 76.55, "Sandur Mine", "Karnataka"),
+            (15.30, 76.40, "Hospet Mine", "Karnataka"),
+        ]
+        
+        m_lats = [m[0] for m in mines_data]
+        m_lons = [m[1] for m in mines_data]
+        m_names = [m[2] for m in mines_data]
+        m_regions = [m[3] for m in mines_data]
+        m_colors = ['red' if r == 'Central' else 'cyan' if r == 'Odisha' else 'lime' for r in m_regions]
+        
         fig.add_trace(go.Scattermap(
-            lat=mines_lat, lon=mines_lon,
+            lat=m_lats, lon=m_lons,
             mode='markers+text',
-            marker=dict(size=14, color='red'),
-            text=mines_name, textposition='top center',
+            marker=dict(size=14, color=m_colors),
+            text=m_names, textposition='top center',
             textfont=dict(size=11, color='white'),
             name='⛏️ Known Mines',
             hovertemplate='%{text}<br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>',
@@ -173,20 +192,42 @@ with col_map:
 # ================= TARGET STATS =================
 st.markdown("---")
 st.subheader("Target Statistics")
-c1, c2, c3 = st.columns(3)
+
+# Add region column to df for filtering
+def get_region(lat, lon):
+    if lat >= 21.0 and lat <= 22.0 and lon >= 78.5 and lon <= 80.0:
+        return "Central India"
+    elif lat >= 21.5 and lon >= 84.5:
+        return "Odisha"
+    elif lat < 16.0:
+        return "Karnataka"
+    return "Other"
+
 if 'mn_probability' in df.columns:
+    df['region'] = [get_region(lat, lon) for lat, lon in zip(df['latitude'], df['longitude'])]
+    
+    # Overall stats
+    c1, c2, c3 = st.columns(3)
     c1.metric("🔴 High Priority", f"{int((df['mn_probability'] > 0.8).sum())} targets")
     c2.metric("🟡 Medium Priority", f"{int(((df['mn_probability'] > 0.4) & (df['mn_probability'] <= 0.8)).sum())} targets")
     c3.metric("🟢 Low Priority", f"{int((df['mn_probability'] <= 0.4).sum())} targets")
+    
+    # Region-wise breakdown
+    st.markdown("**Region-wise High Priority Targets:**")
+    rc1, rc2, rc3 = st.columns(3)
+    for col, reg, emoji in [(rc1, "Central India", "🟥"), (rc2, "Odisha", "🟦"), (rc3, "Karnataka", "🟩")]:
+        reg_df = df[df['region'] == reg]
+        high_count = int((reg_df['mn_probability'] > 0.8).sum()) if len(reg_df) > 0 else 0
+        col.metric(f"{emoji} {reg}", f"{high_count} targets")
 
 # ================= TOP DRILL TARGETS =================
 st.subheader("📍 Top 10 Drill Targets")
 if 'mn_probability' in df.columns:
     top_10 = df.nlargest(10, 'mn_probability').copy()
     top_10.insert(0, 'Rank', range(1, len(top_10) + 1))
-    display_cols = ['Rank', 'latitude', 'longitude', 'elevation_m', 'mn_probability', 'prospectivity_class', 'rock_type']
+    display_cols = ['Rank', 'latitude', 'longitude', 'region', 'elevation_m', 'mn_probability', 'prospectivity_class', 'rock_type']
     available = [c for c in display_cols if c in top_10.columns]
-    renames = {'Rank':'#','latitude':'Lat °N','longitude':'Lon °E','elevation_m':'Elev (m)',
+    renames = {'Rank':'#','latitude':'Lat °N','longitude':'Lon °E','region':'Region','elevation_m':'Elev (m)',
                'mn_probability':'Probability','prospectivity_class':'Class','rock_type':'Rock Type'}
     st.dataframe(top_10[available].rename(columns=renames).reset_index(drop=True),
                  use_container_width=True, hide_index=True)
