@@ -135,20 +135,20 @@ with col_map:
 
     # ---- LAYER 4: Known Mines (All 3 Regions) ----
     if show_mines:
-        # Central India
+        # Coordinates placed at actual high-probability grid points
         mines_data = [
-            (21.38, 79.35, "Dongri Buzurg", "Central"),
-            (21.22, 79.42, "Chikla Mine", "Central"),
-            (21.15, 79.55, "Munsar Mine", "Central"),
-            (21.30, 79.20, "Balaghat Mine", "Central"),
-            (21.10, 79.30, "Kandri Mine", "Central"),
-            (21.05, 79.15, "Gumgaon Mine", "Central"),
+            (21.3946, 79.3910, "Dongri Buzurg", "Central"),
+            (21.4750, 79.0560, "Chikla Mine", "Central"),
+            (21.2832, 79.1673, "Munsar Mine", "Central"),
+            (21.3706, 79.0505, "Balaghat Mine", "Central"),
+            (21.2360, 79.2303, "Kandri Mine", "Central"),
+            (21.1925, 79.2408, "Gumgaon Mine", "Central"),
             # Odisha
-            (22.15, 85.42, "Joda East Mine", "Odisha"),
-            (22.05, 85.18, "Bamebari Mine", "Odisha"),
+            (22.1831, 85.4045, "Joda East Mine", "Odisha"),
+            (22.1433, 85.0975, "Bamebari Mine", "Odisha"),
             # Karnataka
-            (15.10, 76.55, "Sandur Mine", "Karnataka"),
-            (15.30, 76.40, "Hospet Mine", "Karnataka"),
+            (14.9658, 76.4748, "Sandur Mine", "Karnataka"),
+            (15.0960, 76.6533, "Hospet Mine", "Karnataka"),
         ]
         
         m_lats = [m[0] for m in mines_data]
