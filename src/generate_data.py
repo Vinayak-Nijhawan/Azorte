@@ -125,13 +125,37 @@ def main():
             num_dumpers = np.random.randint(5, 9)
             num_shovels = np.random.randint(2, 5)
             
-            # arbitrary factors for actual production
-            weather_factor = 0.8 if is_monsoon else 1.0
-            blasting_factor = blasting_days / 25.0
+            # REALISTIC production factors — each parameter directly affects output
+            # 1. Equipment availability: direct multiplier (50% avail → ~50% output)
+            equip_factor = equipment_availability
             
-            noise = np.random.normal(0, 0.05)
-            actual_factor = equipment_availability * blasting_factor * weather_factor + noise
-            actual_factor = np.clip(actual_factor, 0.5, 1.1)
+            # 2. Rainfall impact: heavy rain reduces production significantly
+            #    0-50mm: no impact, 50-200mm: mild, 200-400mm: severe, 400+: critical
+            if rainfall_mm < 50:
+                rain_factor = 1.0
+            elif rainfall_mm < 200:
+                rain_factor = 1.0 - (rainfall_mm - 50) * 0.001  # up to 15% loss
+            elif rainfall_mm < 400:
+                rain_factor = 0.85 - (rainfall_mm - 200) * 0.0015  # up to 30% more loss
+            else:
+                rain_factor = 0.55 - (rainfall_mm - 400) * 0.001  # severe
+            rain_factor = max(0.3, rain_factor)
+            
+            # 3. Blasting days: proportional (0 days → ~40% capacity from existing stock, 25 → full)
+            blast_factor = 0.4 + 0.6 * (blasting_days / 25.0)
+            
+            # 4. Road condition: bad roads slow hauling (1=40% penalty, 5=no penalty)
+            road_factor = 0.6 + 0.1 * haul_road_condition  # range: 0.7 to 1.1
+            
+            # 5. Fleet size: more dumpers/shovels = more throughput (diminishing returns)
+            #    Baseline: 6 dumpers, 3 shovels
+            dumper_factor = min(1.2, 0.5 + 0.1 * num_dumpers)  # 5dum=1.0, 8dum=1.2 (capped)
+            shovel_factor = min(1.15, 0.55 + 0.2 * num_shovels)  # 2shov=0.95, 4shov=1.15
+            
+            # Combine all factors with small random noise
+            noise = np.random.normal(0, 0.03)
+            actual_factor = equip_factor * rain_factor * blast_factor * road_factor * dumper_factor * shovel_factor + noise
+            actual_factor = np.clip(actual_factor, 0.2, 1.15)
             
             actual_tpd = planned_tpd * actual_factor
             
