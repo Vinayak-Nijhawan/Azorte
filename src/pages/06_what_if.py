@@ -2,130 +2,19 @@ import os
 import pandas as pd
 import numpy as np
 import streamlit as st
-import plotly.express as px
 import plotly.graph_objects as go
+import plotly.express as px
 from ortools.linear_solver import pywraplp
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 @st.cache_data
 def load_data():
-    forecast_path = os.path.join(PROJECT_ROOT, 'data', 'production_forecast.csv')
-    dispatch_path = os.path.join(PROJECT_ROOT, 'data', 'dispatch_plan.csv')
-    
-    try:
-        forecast_df = pd.read_csv(forecast_path)
-    except FileNotFoundError:
-        forecast_df = pd.DataFrame()
-        
-    try:
-        dispatch_df = pd.read_csv(dispatch_path)
-    except FileNotFoundError:
-        dispatch_df = pd.DataFrame()
-        
-    return forecast_df, dispatch_df
-
-def solve_fleet_scenario(num_dumpers, num_shovels, rainfall_mm, equipment_availability_pct, haul_road_condition, crusher_capacity_tpd, planned_tpd):
-    np.random.seed(42)
-    
-    dumper_base_caps = np.random.uniform(30, 40, num_dumpers)
-    shovel_base_caps = np.random.uniform(150, 250, num_shovels)
-    
-    # Weather penalty
-    weather_penalty = 0
-    if rainfall_mm > 100:
-        weather_penalty = (rainfall_mm / 500) * 0.30
-    weather_loss_tpd = planned_tpd * weather_penalty
-        
-    # Road penalty
-    road_penalty = (5 - haul_road_condition) * 0.10
-    road_loss_tpd = planned_tpd * road_penalty
-    
-    total_penalty = weather_penalty + road_penalty
-    efficiency = max(0.1, 1.0 - total_penalty)
-    
-    # Equipment availability
-    available_dumpers = []
-    unavailable_count = 0
-    for i in range(num_dumpers):
-        if np.random.rand() <= equipment_availability_pct:
-            available_dumpers.append((i, dumper_base_caps[i] * efficiency))
-        else:
-            unavailable_count += 1
-            
-    available_shovels = []
-    for j in range(num_shovels):
-        available_shovels.append((j, shovel_base_caps[j] * efficiency))
-        
-    # Solve MILP
-    solver = pywraplp.Solver.CreateSolver('SCIP')
-    if not solver:
-        return None
-        
-    x = {}
-    for _, (i, d_cap) in enumerate(available_dumpers):
-        for _, (j, s_cap) in enumerate(available_shovels):
-            x[i, j] = solver.IntVar(0, 1, f'x_{i}_{j}')
-            
-    for _, (i, d_cap) in enumerate(available_dumpers):
-        solver.Add(solver.Sum([x[i, j] for _, (j, s_cap) in enumerate(available_shovels)]) <= 1)
-        
-    for _, (j, s_cap) in enumerate(available_shovels):
-        solver.Add(solver.Sum([x[i, j] * dumper_base_caps[i] * efficiency for _, (i, d_cap) in enumerate(available_dumpers)]) <= s_cap)
-        
-    objective = solver.Objective()
-    for _, (i, d_cap) in enumerate(available_dumpers):
-        for _, (j, s_cap) in enumerate(available_shovels):
-            objective.SetCoefficient(x[i, j], float(d_cap))
-    objective.SetMaximization()
-    
-    solver.Solve()
-    
-    assignments = []
-    total_tpd = 0
-    per_shovel_throughput = {j: 0 for _, (j, s_cap) in enumerate(available_shovels)}
-    for _, (i, d_cap) in enumerate(available_dumpers):
-        for _, (j, s_cap) in enumerate(available_shovels):
-            if x[i, j].solution_value() > 0.5:
-                eff_tpd = d_cap * 16
-                assignments.append({
-                    'dumper_id': f'Dumper_{i}',
-                    'shovel_id': f'Shovel_{j}',
-                    'effective_capacity_tpd': round(eff_tpd, 1)
-                })
-                total_tpd += eff_tpd
-                per_shovel_throughput[j] += eff_tpd
-
-    # Equipment loss = what we'd lose from unavailable dumpers
-    equip_loss_tpd = (unavailable_count / max(1, num_dumpers)) * planned_tpd * 0.5
-                
-    crusher_loss_tpd = 0
-    if total_tpd > crusher_capacity_tpd:
-        crusher_loss_tpd = total_tpd - crusher_capacity_tpd
-        ratio = crusher_capacity_tpd / total_tpd
-        total_tpd = crusher_capacity_tpd
-        for a in assignments:
-            a['effective_capacity_tpd'] = round(a['effective_capacity_tpd'] * ratio, 1)
-        for j in per_shovel_throughput:
-            per_shovel_throughput[j] *= ratio
-            
-    util_pct = (len(assignments) / max(1, num_dumpers)) * 100
-    
-    return {
-        'total_tpd': total_tpd,
-        'assignments': assignments,
-        'per_shovel_throughput': per_shovel_throughput,
-        'utilization_pct': util_pct,
-        'weather_loss': weather_loss_tpd,
-        'road_loss': road_loss_tpd,
-        'equip_loss': equip_loss_tpd,
-        'crusher_loss': crusher_loss_tpd,
-        'unavailable_dumpers': unavailable_count
-    }
-
-
-st.title("What-If Scenario Simulator 🎛️")
-st.markdown("Adjust operational parameters and see how production and fleet respond **in real-time**")
+    fp = os.path.join(PROJECT_ROOT, 'data', 'production_forecast.csv')
+    dp = os.path.join(PROJECT_ROOT, 'data', 'dispatch_plan.csv')
+    forecast = pd.read_csv(fp) if os.path.exists(fp) else pd.DataFrame()
+    dispatch = pd.read_csv(dp) if os.path.exists(dp) else pd.DataFrame()
+    return forecast, dispatch
 
 forecast_df, dispatch_df = load_data()
 
@@ -133,262 +22,235 @@ if forecast_df.empty:
     st.error("Missing `production_forecast.csv`. Run the pipeline first.")
     st.stop()
 
-# ================= SIDEBAR =================
-st.sidebar.header("⚙️ Scenario Settings")
+# ================= PAGE HEADER =================
+st.title("What-If Scenario Simulator 🎛️")
+st.markdown("Change mine conditions below and instantly see the impact on production, fleet, and revenue.")
+
+# ================= SIDEBAR — MINE SELECTION =================
+st.sidebar.header("Mine & Month")
 mines = forecast_df['mine_id'].unique().tolist()
+selected_mine = st.sidebar.selectbox("Mine", mines)
+months = forecast_df[forecast_df['mine_id'] == selected_mine]['month'].unique().tolist()
+selected_month = st.sidebar.selectbox("Month (2026)", months)
 
-selected_mine = st.sidebar.selectbox("Select Mine", mines)
-available_months = forecast_df[forecast_df['mine_id'] == selected_mine]['month'].unique().tolist()
-selected_month = st.sidebar.selectbox("Select Month (2026)", available_months)
-
-default_row = forecast_df[(forecast_df['mine_id'] == selected_mine) & (forecast_df['month'] == selected_month)]
-
-if default_row.empty:
-    st.warning("No forecast data for selected mine/month.")
+row = forecast_df[(forecast_df['mine_id'] == selected_mine) & (forecast_df['month'] == selected_month)]
+if row.empty:
+    st.warning("No data for this selection.")
     st.stop()
+row = row.iloc[0]
 
-default_row = default_row.iloc[0]
+planned_tpd = float(row.get('planned_production_tpd', 1000))
 
-# ================= ONE-CLICK PRESETS =================
+# ================= QUICK PRESETS =================
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🚀 Quick Scenarios")
+st.sidebar.markdown("### ⚡ Quick Presets")
 
-preset_cols = st.sidebar.columns(3)
+def set_preset(rain, equip, road, dump, shov):
+    st.session_state.update({'rain': rain, 'equip': equip, 'road': road, 'dump': dump, 'shov': shov})
 
-def apply_preset(rain, equip, road, dumpers, shovels, crusher):
-    st.session_state.sim_rainfall = rain
-    st.session_state.sim_equip_avail = equip
-    st.session_state.sim_road_cond = road
-    st.session_state.sim_dumpers = dumpers
-    st.session_state.sim_shovels = shovels
-    st.session_state.sim_crusher = crusher
+p1, p2, p3 = st.sidebar.columns(3)
+p1.button("⛈️ Monsoon", on_click=set_preset, args=(350, 0.60, 1, int(row.get('num_dumpers',6)), int(row.get('num_shovels',3))), use_container_width=True)
+p2.button("🔧 Breakdown", on_click=set_preset, args=(50, 0.50, 3, 3, 1), use_container_width=True)
+p3.button("☀️ Best Case", on_click=set_preset, args=(0, 0.98, 5, 8, 4), use_container_width=True)
 
-with preset_cols[0]:
-    if st.button("⛈️ Monsoon", use_container_width=True):
-        apply_preset(350, 0.65, 1, int(default_row.get('num_dumpers', 6)), int(default_row.get('num_shovels', 3)), int(default_row.get('crusher_capacity_tpd', 1500)))
+# Defaults
+if 'rain' not in st.session_state:
+    set_preset(int(row.get('rainfall_mm',100)), float(row.get('equipment_availability_pct',0.85)),
+               int(row.get('haul_road_condition',3)), int(row.get('num_dumpers',6)), int(row.get('num_shovels',3)))
 
-with preset_cols[1]:
-    if st.button("🔧 Breakdown", use_container_width=True):
-        apply_preset(50, 0.50, 3, 3, 1, int(default_row.get('crusher_capacity_tpd', 1500)))
+st.sidebar.button("🔄 Reset", on_click=lambda: set_preset(
+    int(row.get('rainfall_mm',100)), float(row.get('equipment_availability_pct',0.85)),
+    int(row.get('haul_road_condition',3)), int(row.get('num_dumpers',6)), int(row.get('num_shovels',3))
+), use_container_width=True)
 
-with preset_cols[2]:
-    if st.button("☀️ Ideal", use_container_width=True):
-        apply_preset(0, 0.98, 5, 8, 4, 2000)
-
-# Reset button
-def reset_defaults():
-    st.session_state.sim_rainfall = int(default_row.get('rainfall_mm', 0))
-    st.session_state.sim_equip_avail = float(default_row.get('equipment_availability_pct', 0.85))
-    st.session_state.sim_road_cond = int(default_row.get('haul_road_condition', 3))
-    st.session_state.sim_dumpers = int(default_row.get('num_dumpers', 5))
-    st.session_state.sim_shovels = int(default_row.get('num_shovels', 2))
-    st.session_state.sim_crusher = int(default_row.get('crusher_capacity_tpd', 1500))
-
-st.sidebar.button("🔄 Reset to Defaults", on_click=reset_defaults, use_container_width=True)
-
-# Initialize if not set
-if 'sim_rainfall' not in st.session_state:
-    reset_defaults()
-
-# ================= GROUPED SLIDERS =================
+# ================= SLIDERS =================
 st.sidebar.markdown("---")
+st.sidebar.markdown("### 🎚️ Adjust Parameters")
 
-with st.sidebar.expander("🌧️ Weather Conditions", expanded=True):
-    sim_rainfall = st.slider("Rainfall (mm)", 0, 500, int(st.session_state.sim_rainfall), key="sim_rainfall")
-    sim_road_cond = st.slider("Haul Road Condition", 1, 5, int(st.session_state.sim_road_cond), key="sim_road_cond",
-                              help="1 = Waterlogged/Muddy, 5 = Dry & Excellent")
+rain = st.sidebar.slider("🌧️ Rainfall (mm)", 0, 500, key="rain")
+road = st.sidebar.slider("🛤️ Road Condition (1=Bad → 5=Good)", 1, 5, key="road")
+equip = st.sidebar.slider("⚙️ Equipment Availability %", 0.40, 1.00, step=0.05, key="equip")
+dump = st.sidebar.slider("🚛 Dumpers Available", 2, 10, key="dump")
+shov = st.sidebar.slider("⛏️ Shovels Available", 1, 5, key="shov")
+crusher_cap = int(row.get('crusher_capacity_tpd', 1500))
 
-with st.sidebar.expander("🚛 Fleet Assets", expanded=True):
-    sim_dumpers = st.slider("Number of Dumpers", 3, 10, int(st.session_state.sim_dumpers), key="sim_dumpers")
-    sim_shovels = st.slider("Number of Shovels", 1, 5, int(st.session_state.sim_shovels), key="sim_shovels")
-    sim_crusher = st.slider("Crusher Capacity (TPD)", 500, 3000, int(st.session_state.sim_crusher), step=100, key="sim_crusher")
+# ================= CALCULATE PRODUCTION (Transparent) =================
+# Step 1: Start with planned
+base = planned_tpd
 
-with st.sidebar.expander("⚙️ Operational Status", expanded=True):
-    sim_equip_avail = st.slider("Equipment Availability", 0.50, 1.00, float(st.session_state.sim_equip_avail), 0.05, key="sim_equip_avail",
-                                help="Percentage of fleet that is operational")
+# Step 2: Weather penalty (rain > 100mm starts hurting)
+weather_factor = 1.0
+if rain > 100:
+    weather_factor = max(0.4, 1.0 - (rain / 500) * 0.30)
+weather_loss = base * (1 - weather_factor)
+after_weather = base - weather_loss
 
-planned_tpd = default_row.get('planned_production_tpd', 1000)
+# Step 3: Road penalty (bad roads slow everything)
+road_factor = 1.0 - (5 - road) * 0.08
+road_loss = after_weather * (1 - road_factor)
+after_road = after_weather - road_loss
 
-# ================= RUN SIMULATION =================
-sim_results = solve_fleet_scenario(
-    num_dumpers=sim_dumpers, num_shovels=sim_shovels,
-    rainfall_mm=sim_rainfall, equipment_availability_pct=sim_equip_avail,
-    haul_road_condition=sim_road_cond, crusher_capacity_tpd=sim_crusher,
-    planned_tpd=planned_tpd
-)
+# Step 4: Equipment availability (some machines are down)
+equip_loss = after_road * (1 - equip)
+after_equip = after_road - equip_loss
 
-if not sim_results:
-    st.error("Solver failed. Try different parameters.")
-    st.stop()
+# Step 5: Fleet size impact (fewer dumpers = less throughput)
+default_dumpers = int(row.get('num_dumpers', 6))
+fleet_ratio = min(1.0, dump / max(1, default_dumpers))
+fleet_loss = after_equip * (1 - fleet_ratio)
+after_fleet = after_equip - fleet_loss
 
-sim_tpd = sim_results['total_tpd']
-sim_util = sim_results['utilization_pct']
-sim_risk = max(0, min(1, 1.0 - (sim_tpd / planned_tpd)))
+# Step 6: Crusher bottleneck
+crusher_loss = max(0, after_fleet - crusher_cap)
+final_tpd = min(after_fleet, crusher_cap)
 
-# Original values
-orig_dispatch = dispatch_df[(dispatch_df['mine_id'] == selected_mine) & (dispatch_df['month'] == selected_month)] if not dispatch_df.empty else pd.DataFrame()
-orig_tpd = orig_dispatch['effective_capacity_tph'].sum() * 16 if not orig_dispatch.empty else default_row.get('predicted_production_tpd', 0)
-orig_util = 85.0
+efficiency = (final_tpd / planned_tpd) * 100 if planned_tpd > 0 else 0
+shortfall = max(0, planned_tpd - final_tpd)
+risk_pct = max(0, min(100, 100 - efficiency))
 
-orig_risk_raw = default_row.get('shortfall_risk', 0.5)
-if isinstance(orig_risk_raw, str):
-    risk_map = {'High': 0.8, 'Medium': 0.5, 'Low': 0.2}
-    orig_risk = risk_map.get(orig_risk_raw, 0.5)
-else:
-    orig_risk = float(orig_risk_raw)
+# ================= TOP KPI ROW =================
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("📋 Planned", f"{planned_tpd:.0f} TPD")
+k2.metric("⛏️ Achievable", f"{final_tpd:.0f} TPD", f"{final_tpd - planned_tpd:+.0f}")
+k3.metric("📊 Efficiency", f"{efficiency:.0f}%")
+k4.metric("⚠️ Shortfall", f"{shortfall:.0f} TPD")
 
-# ================= METRICS ROW =================
-st.markdown("### 📊 Metrics Comparison")
-col1, col2, col3, col4 = st.columns(4)
-
-tpd_delta = sim_tpd - orig_tpd
-col1.metric("Achievable TPD", f"{sim_tpd:.0f}", f"{tpd_delta:+.0f}", delta_color="normal")
-
-col2.metric("Planned TPD", f"{planned_tpd:.0f}")
-
-risk_delta = sim_risk - orig_risk
-col3.metric("Shortfall Risk", f"{sim_risk:.0%}", f"{risk_delta:+.0%}", delta_color="inverse")
-
-shortfall = max(0, planned_tpd - sim_tpd)
-col4.metric("Production Gap", f"{shortfall:.0f} TPD")
-
-# ================= GAUGE CHART =================
-st.markdown("### 🎛️ Fleet Utilization")
+# ================= GAUGE METERS =================
 g1, g2 = st.columns(2)
 
 with g1:
-    fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number+delta",
-        value=sim_util,
-        delta={'reference': orig_util, 'suffix': '%'},
-        title={'text': "Fleet Utilization %"},
-        gauge={
-            'axis': {'range': [0, 100]},
-            'bar': {'color': '#2ecc71' if sim_util >= 75 else '#e67e22' if sim_util >= 50 else '#e74c3c'},
-            'steps': [
-                {'range': [0, 50], 'color': 'rgba(231,76,60,0.15)'},
-                {'range': [50, 75], 'color': 'rgba(230,126,34,0.15)'},
-                {'range': [75, 100], 'color': 'rgba(46,204,113,0.15)'}
-            ],
-            'threshold': {'line': {'color': 'white', 'width': 3}, 'thickness': 0.8, 'value': orig_util}
-        }
+    color = '#2ecc71' if efficiency >= 80 else '#e67e22' if efficiency >= 60 else '#e74c3c'
+    fig_g = go.Figure(go.Indicator(
+        mode="gauge+number", value=efficiency,
+        number={'suffix': '%'},
+        title={'text': "Production Efficiency"},
+        gauge={'axis': {'range': [0, 100]}, 'bar': {'color': color},
+               'steps': [{'range': [0,60], 'color': 'rgba(231,76,60,0.12)'},
+                         {'range': [60,80], 'color': 'rgba(230,126,34,0.12)'},
+                         {'range': [80,100], 'color': 'rgba(46,204,113,0.12)'}]}
     ))
-    fig_gauge.update_layout(height=280, margin=dict(l=30, r=30, t=50, b=10))
-    st.plotly_chart(fig_gauge, use_container_width=True)
+    fig_g.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=10))
+    st.plotly_chart(fig_g, use_container_width=True)
 
 with g2:
-    fig_risk_gauge = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=sim_risk * 100,
-        title={'text': "Shortfall Risk %"},
-        gauge={
-            'axis': {'range': [0, 100]},
-            'bar': {'color': '#e74c3c' if sim_risk >= 0.5 else '#e67e22' if sim_risk >= 0.2 else '#2ecc71'},
-            'steps': [
-                {'range': [0, 20], 'color': 'rgba(46,204,113,0.15)'},
-                {'range': [20, 50], 'color': 'rgba(230,126,34,0.15)'},
-                {'range': [50, 100], 'color': 'rgba(231,76,60,0.15)'}
-            ]
-        }
+    r_color = '#e74c3c' if risk_pct >= 40 else '#e67e22' if risk_pct >= 20 else '#2ecc71'
+    fig_r = go.Figure(go.Indicator(
+        mode="gauge+number", value=risk_pct,
+        number={'suffix': '%'},
+        title={'text': "Shortfall Risk"},
+        gauge={'axis': {'range': [0, 100]}, 'bar': {'color': r_color},
+               'steps': [{'range': [0,20], 'color': 'rgba(46,204,113,0.12)'},
+                         {'range': [20,40], 'color': 'rgba(230,126,34,0.12)'},
+                         {'range': [40,100], 'color': 'rgba(231,76,60,0.12)'}]}
     ))
-    fig_risk_gauge.update_layout(height=280, margin=dict(l=30, r=30, t=50, b=10))
-    st.plotly_chart(fig_risk_gauge, use_container_width=True)
+    fig_r.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=10))
+    st.plotly_chart(fig_r, use_container_width=True)
 
 # ================= WATERFALL CHART =================
-st.markdown("### 🌊 Production Breakdown — Where is TPD Lost?")
+st.subheader("🌊 Production Breakdown — Where TPD is Lost")
+st.markdown("This waterfall shows how your **planned production gets reduced** step-by-step due to different factors.")
 
-waterfall_data = {
-    'Step': ['Planned TPD', 'Weather Impact', 'Road Condition', 'Equipment Downtime', 'Crusher Cap Limit', 'Simulated TPD'],
-    'Value': [planned_tpd, -sim_results['weather_loss'], -sim_results['road_loss'], 
-              -sim_results['equip_loss'], -sim_results['crusher_loss'], sim_tpd],
-    'Type': ['absolute', 'relative', 'relative', 'relative', 'relative', 'total']
-}
-
-fig_waterfall = go.Figure(go.Waterfall(
-    x=waterfall_data['Step'],
-    y=waterfall_data['Value'],
-    measure=waterfall_data['Type'],
+fig_wf = go.Figure(go.Waterfall(
+    x=['Planned TPD', '🌧️ Weather', '🛤️ Road', '⚙️ Equipment', '🚛 Fleet Size', '🏭 Crusher Limit', 'Final TPD'],
+    y=[planned_tpd, -round(weather_loss), -round(road_loss), -round(equip_loss), -round(fleet_loss), -round(crusher_loss), final_tpd],
+    measure=['absolute', 'relative', 'relative', 'relative', 'relative', 'relative', 'total'],
+    text=[f"{planned_tpd:.0f}", f"-{weather_loss:.0f}", f"-{road_loss:.0f}", f"-{equip_loss:.0f}", 
+          f"-{fleet_loss:.0f}", f"-{crusher_loss:.0f}", f"{final_tpd:.0f}"],
     textposition="outside",
-    text=[f"{v:+.0f}" if t != 'absolute' and t != 'total' else f"{v:.0f}" for v, t in zip(waterfall_data['Value'], waterfall_data['Type'])],
-    connector={"line": {"color": "rgba(255,255,255,0.3)"}},
-    increasing={"marker": {"color": "#2ecc71"}},
+    connector={"line": {"color": "rgba(255,255,255,0.2)"}},
     decreasing={"marker": {"color": "#e74c3c"}},
+    increasing={"marker": {"color": "#2ecc71"}},
     totals={"marker": {"color": "#3498db"}}
 ))
-fig_waterfall.update_layout(
-    height=400, title="Production Loss Waterfall",
-    yaxis_title="TPD", showlegend=False,
-    margin=dict(l=60, r=20, t=60, b=60)
-)
-st.plotly_chart(fig_waterfall, use_container_width=True)
+fig_wf.update_layout(height=420, yaxis_title="Production (TPD)", showlegend=False)
+st.plotly_chart(fig_wf, use_container_width=True)
 
-# ================= SHOVEL COMPARISON ============================
-st.markdown("### 📊 Shovel Throughput — Original vs Simulated")
-
-if not orig_dispatch.empty:
-    orig_shovel_tpd = orig_dispatch.groupby('assigned_shovel')['effective_capacity_tph'].sum() * 16
-    max_shovels = max(len(orig_shovel_tpd), len(sim_results['per_shovel_throughput']))
-    
-    chart_data = []
-    for idx in range(max_shovels):
-        shovel_name = f"Shovel_{idx}"
-        o_val = orig_shovel_tpd.iloc[idx] if idx < len(orig_shovel_tpd) else 0
-        s_val = sim_results['per_shovel_throughput'].get(idx, 0)
-        chart_data.append({"Shovel": shovel_name, "TPD": round(o_val, 1), "Type": "Original"})
-        chart_data.append({"Shovel": shovel_name, "TPD": round(s_val, 1), "Type": "Simulated"})
-        
-    fig_bar = px.bar(pd.DataFrame(chart_data), x="Shovel", y="TPD", color="Type", barmode="group",
-                     color_discrete_map={"Original": "#3498db", "Simulated": "#e67e22"})
-    fig_bar.update_layout(height=350)
-    st.plotly_chart(fig_bar, use_container_width=True)
+# Explain the biggest loss
+losses = {'Weather': weather_loss, 'Road Condition': road_loss, 'Equipment Downtime': equip_loss, 
+          'Fleet Size': fleet_loss, 'Crusher Limit': crusher_loss}
+biggest = max(losses, key=losses.get)
+if losses[biggest] > 0:
+    st.warning(f"⚠️ **Biggest loss factor: {biggest}** — causing {losses[biggest]:.0f} TPD reduction. Fix this first for maximum impact!")
 else:
-    st.info("No original dispatch plan available for comparison.")
+    st.success("✅ No significant losses! Production is running at optimal levels.")
 
-# ================= DISPATCH TABLE =================
-st.markdown("### 📋 Simulated Dispatch Assignments")
-if sim_results['assignments']:
-    sim_df = pd.DataFrame(sim_results['assignments'])
-    sim_df.columns = ['Dumper', 'Assigned Shovel', 'Effective TPD']
-    st.dataframe(sim_df, use_container_width=True, hide_index=True)
+# ================= FLEET DISPATCH (MILP) =================
+st.subheader("📋 Optimized Fleet Dispatch")
+st.markdown("OR-Tools MILP solver assigns each available dumper to the best shovel for maximum throughput.")
+
+np.random.seed(42)
+dumper_caps = np.random.uniform(30, 40, dump)
+shovel_caps = np.random.uniform(150, 250, shov)
+eff = max(0.3, weather_factor * road_factor)
+
+# Build assignments
+solver = pywraplp.Solver.CreateSolver('SCIP')
+if solver:
+    avail_d = [(i, dumper_caps[i] * eff) for i in range(dump) if np.random.RandomState(42+i).rand() <= equip]
     
-    st.caption(f"**{len(sim_results['assignments'])}** / {sim_dumpers} dumpers assigned | "
-               f"**{sim_results['unavailable_dumpers']}** dumpers unavailable due to maintenance")
-else:
-    st.warning("No dumpers could be assigned in this scenario.")
-
-# ================= RECOMMENDATIONS =================
-st.markdown("### 💡 Auto-Generated Recommendations")
-
-recs = []
-if sim_rainfall > 200:
-    recs.append(("🌧️", f"Heavy rainfall ({sim_rainfall}mm) detected. Consider delaying non-critical haul operations and deploying water pumps.", "warning"))
-if sim_results['unavailable_dumpers'] > 1:
-    recs.append(("🔧", f"{sim_results['unavailable_dumpers']} dumpers are down. Schedule preventive maintenance in dry season to avoid simultaneous failures.", "warning"))
-if sim_road_cond <= 2:
-    recs.append(("🛤️", f"Road condition is poor ({sim_road_cond}/5). Invest in road grading and drainage to recover ~{sim_results['road_loss']:.0f} TPD.", "warning"))
-if sim_tpd > planned_tpd * 0.95:
-    recs.append(("✅", f"Simulated production meets {(sim_tpd/planned_tpd*100):.0f}% of planned target. This configuration is optimal!", "success"))
-if sim_tpd < planned_tpd * 0.7:
-    recs.append(("🚨", f"Production is at {(sim_tpd/planned_tpd*100):.0f}% of target — critical shortfall! Deploy backup fleet immediately.", "error"))
-if sim_results['crusher_loss'] > 0:
-    recs.append(("🏭", f"Crusher is bottlenecking {sim_results['crusher_loss']:.0f} TPD. Consider upgrading crusher capacity or adding a secondary crusher.", "info"))
-
-if not recs:
-    recs.append(("📊", "Parameters are within normal operating range. No immediate action required.", "info"))
-
-for icon, text, level in recs:
-    getattr(st, level)(f"{icon} {text}")
+    x = {}
+    for i, _ in avail_d:
+        for j in range(shov):
+            x[i, j] = solver.IntVar(0, 1, f'x_{i}_{j}')
+    
+    for i, _ in avail_d:
+        solver.Add(solver.Sum([x[i, j] for j in range(shov)]) <= 1)
+    
+    for j in range(shov):
+        solver.Add(solver.Sum([x[i, j] * dumper_caps[i] * eff for i, _ in avail_d]) <= shovel_caps[j] * eff)
+    
+    obj = solver.Objective()
+    for i, d_cap in avail_d:
+        for j in range(shov):
+            obj.SetCoefficient(x[i, j], float(d_cap))
+    obj.SetMaximization()
+    solver.Solve()
+    
+    assignments = []
+    for i, d_cap in avail_d:
+        for j in range(shov):
+            if x[i, j].solution_value() > 0.5:
+                assignments.append({
+                    'Dumper': f'Dumper {i+1}',
+                    'Assigned Shovel': f'Shovel {j+1}',
+                    'Capacity (TPH)': f'{d_cap:.1f}',
+                    'Daily Output (TPD)': f'{d_cap * 16:.0f}'
+                })
+    
+    if assignments:
+        d1, d2 = st.columns([2, 1])
+        with d1:
+            st.dataframe(pd.DataFrame(assignments), use_container_width=True, hide_index=True)
+        with d2:
+            st.metric("Dumpers Working", f"{len(assignments)} / {dump}")
+            st.metric("Dumpers Down", f"{dump - len(avail_d)}")
+            st.metric("Shovels Active", f"{shov}")
+    else:
+        st.warning("No dumpers could be assigned. Equipment availability too low!")
 
 # ================= FINANCIAL IMPACT =================
-st.markdown("### 💰 Estimated Financial Impact")
-mn_price_per_ton = 12000  # ₹ per ton (approximate manganese ore price)
-daily_loss = max(0, planned_tpd - sim_tpd)
-monthly_loss = daily_loss * 25  # ~25 working days
-annual_loss = monthly_loss * 12
+st.subheader("💰 Financial Impact")
+mn_price = 12000  # ₹/ton approx
+
+daily_loss_rs = shortfall * mn_price
+monthly_loss_rs = daily_loss_rs * 25
+annual_loss_rs = monthly_loss_rs * 12
 
 f1, f2, f3 = st.columns(3)
-f1.metric("Daily Revenue Loss", f"₹{daily_loss * mn_price_per_ton / 100000:.1f}L")
-f2.metric("Monthly Loss (est.)", f"₹{monthly_loss * mn_price_per_ton / 10000000:.2f}Cr")
-f3.metric("Annual Loss (est.)", f"₹{annual_loss * mn_price_per_ton / 10000000:.1f}Cr")
+f1.metric("Daily Loss", f"₹{daily_loss_rs/100000:.1f} Lakh")
+f2.metric("Monthly Loss", f"₹{monthly_loss_rs/10000000:.2f} Cr")
+f3.metric("Annual Loss", f"₹{annual_loss_rs/10000000:.1f} Cr")
 
-st.caption("*Based on approximate manganese ore price of ₹12,000/ton. Actual prices vary by grade and market conditions.*")
+st.caption("*Estimated at ₹12,000/ton manganese ore. Actual prices vary by grade (30-48% Mn content).*")
+
+# ================= RECOMMENDATIONS =================
+st.subheader("💡 Recommendations")
+
+if weather_loss > equip_loss and weather_loss > road_loss:
+    st.info("🌧️ **Weather is the #1 bottleneck.** Defer non-critical operations during heavy rain. Invest in covered haul roads and drainage systems.")
+elif equip_loss > road_loss:
+    st.info("🔧 **Equipment downtime is the #1 bottleneck.** Schedule preventive maintenance during dry season. Keep standby dumpers ready for monsoon months.")
+elif road_loss > 0:
+    st.info("🛤️ **Road condition is the #1 bottleneck.** Grade haul roads regularly. Use laterite/gravel surfacing for wet-weather resilience.")
+else:
+    st.success("✅ Operations are running near optimal. Consider increasing fleet size to exceed planned targets.")
