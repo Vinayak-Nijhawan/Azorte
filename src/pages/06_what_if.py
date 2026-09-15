@@ -81,7 +81,18 @@ def calculate_production(planned_tpd, rainfall_mm, equipment_pct, blasting_days,
     }
 
 # ================= PAGE =================
-st.title("What-If Scenario Simulator 🎛️")
+st.markdown("""
+<div class="fd-header">
+    <div class="fd-header-left">
+        <h1>🎛️ What-If Scenario Simulator</h1>
+        <div class="fd-subtitle">Interactive Operational Planning · MOIL Manganese Operations</div>
+    </div>
+    <div class="fd-header-right">
+        <div class="fd-tag">⚙️ Simulation</div>
+        <div class="fd-live"><div class="fd-live-dot"></div> ACTIVE</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 st.markdown("Predictions powered by our **trained GradientBoosting model** (R² = 0.977, trained on 720 data points) — verified to respond accurately to all parameters.")
 
 # ================= SIDEBAR =================

@@ -30,7 +30,18 @@ def load_model():
         return None
 
 # Main execution
-st.title('🎯 GeoProspect AI - Prospectivity Analysis')
+st.markdown("""
+<div class="fd-header">
+    <div class="fd-header-left">
+        <h1>🎯 GeoProspect AI - Prospectivity Analysis</h1>
+        <div class="fd-subtitle">AI-Powered Mineral Exploration · MOIL Manganese Operations</div>
+    </div>
+    <div class="fd-header-right">
+        <div class="fd-tag">🗺️ Exploration</div>
+        <div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 st.markdown("Analyze multi-spectral indicators and AI-predicted manganese prospectivity.")
 
 df = load_data()

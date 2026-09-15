@@ -4,7 +4,18 @@ import plotly.graph_objects as go
 import plotly.express as px
 import os
 
-st.title("MineFlow Optimizer - Production Forecast & Risk")
+st.markdown("""
+<div class="fd-header">
+    <div class="fd-header-left">
+        <h1>📈 MineFlow Optimizer - Production Forecast</h1>
+        <div class="fd-subtitle">Predictive Output & Risk Mitigation · MOIL Manganese Operations</div>
+    </div>
+    <div class="fd-header-right">
+        <div class="fd-tag">⛏️ Production</div>
+        <div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')

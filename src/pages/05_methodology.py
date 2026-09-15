@@ -9,7 +9,18 @@ PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 REAL_SPECTRAL_PATH = os.path.join(DATA_DIR, "real_spectral.csv")
 
-st.title('Data & Model Provenance')
+st.markdown("""
+<div class="fd-header">
+    <div class="fd-header-left">
+        <h1>🔬 Data & Model Provenance</h1>
+        <div class="fd-subtitle">Scientific Foundation & Validation · MOIL-GeoSync</div>
+    </div>
+    <div class="fd-header-right">
+        <div class="fd-tag">📊 Methodology</div>
+        <div class="fd-live"><div class="fd-live-dot"></div> VERIFIED</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 def check_data_type():
     if os.path.exists(REAL_SPECTRAL_PATH):

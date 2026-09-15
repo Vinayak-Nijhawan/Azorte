@@ -1,0 +1,798 @@
+================================================================================
+        MOIL-GeoSync (G-Sync) — COMPLETE PROTOTYPE EXPLANATION
+        Team Azorte | Smart India Hackathon 2026 | PS 26009
+================================================================================
+
+
+================================================================================
+PART 1 — THE PROBLEM (IN DETAIL)
+================================================================================
+
+MOIL Limited is India's largest manganese ore producer, operating multiple mines
+in the Nagpur-Bhandara-Balaghat belt of central India (Maharashtra and Madhya
+Pradesh). Manganese is a critical mineral — it is essential for steel production,
+battery technology, and numerous industrial applications. India is one of the
+world's top manganese producers, and MOIL alone accounts for roughly 50% of the
+country's manganese output. Any inefficiency at MOIL directly impacts the
+national supply chain.
+
+MOIL faces two interconnected, critical challenges:
+
+
+CHALLENGE 1: EXPLORATION UNCERTAINTY
+-------------------------------------
+Finding new manganese deposits is extraordinarily difficult. The traditional
+approach relies on:
+
+  - Manual geological field surveys: Geologists physically walk the terrain,
+    collect rock samples, and visually inspect outcrops. This is slow (weeks to
+    months per area), expensive (requires teams, equipment, travel), and covers
+    limited ground.
+
+  - Random or experience-based drilling: Without precise targeting, companies
+    drill exploratory boreholes at locations chosen by intuition or rough
+    geological maps. Each borehole costs Rs 15-30 lakh (roughly Rs 1.5-3 million),
+    and the success rate of hitting an economically viable deposit is often
+    below 20%.
+
+  - Under-utilization of satellite data: India has access to vast amounts of
+    free satellite imagery (Sentinel-2, Landsat, etc.) and geospatial data
+    (geological maps from GSI Bhukosh, elevation data from SRTM). These
+    datasets contain signatures that correlate with manganese deposits —
+    specific spectral indices (Iron Oxide Index, Clay Mineral Index) visible
+    from space, vegetation patterns (NDVI), terrain features (elevation, slope),
+    and geological structures (faults, shear zones). Despite this, most mining
+    companies including MOIL do NOT systematically use AI/ML to combine these
+    data sources and generate predictive prospectivity maps.
+
+The result: MOIL spends crores of rupees on blind exploration, drills in
+locations that yield nothing, disturbs forest ecosystems unnecessarily, and
+misses high-potential zones hiding in plain sight in satellite data.
+
+
+CHALLENGE 2: PRODUCTION SHORTFALLS & FLEET INEFFICIENCY
+--------------------------------------------------------
+Even at existing, operational mines, MOIL faces significant production
+challenges:
+
+  - Reactive management: Production plans are set monthly, but disruptions
+    (monsoon rains, equipment breakdowns, road deterioration) are handled
+    reactively — AFTER they cause damage. By the time a shortfall is detected,
+    tons of ore have been lost and targets missed.
+
+  - Monsoon impact: During the 4-month monsoon season (June-September), heavy
+    rainfall degrades haul roads, reduces equipment availability, limits
+    blasting days, and slows dumper movement. Production can drop 20-40% in
+    these months, and mines scramble to compensate.
+
+  - Fleet misallocation: MOIL operates fleets of dumpers (ore-carrying trucks)
+    and shovels (excavators) at each mine. The assignment of "which dumper goes
+    to which shovel" determines throughput. Sub-optimal assignment — too many
+    dumpers at one shovel (causing queuing), too few at another (causing idle
+    time), assigning a broken dumper — leads to wasted fuel, idle equipment
+    costs (Rs 5,000/hour per idle dumper), and missed production targets.
+
+  - No predictive warning system: Mine managers lack a system that predicts
+    shortfalls BEFORE they happen and recommends corrective actions (deploy
+    backup fleet, fix road, reroute dumpers) proactively.
+
+The result: Production shortfalls cost MOIL an estimated 5-15% of planned
+output annually, translating to crores of rupees in lost revenue, wasted diesel,
+and idle equipment costs.
+
+
+================================================================================
+PART 2 — THE SOLUTION: MOIL-GeoSync
+================================================================================
+
+MOIL-GeoSync is an integrated AI-powered platform that addresses BOTH problems
+with two complementary AI sub-modules, unified in a single interactive Streamlit
+dashboard:
+
+
+MODULE 1: GeoProspect AI (Exploration)
+---------------------------------------
+A machine-learning-based mineral prospectivity mapping system that combines
+satellite imagery with geological data to predict where manganese deposits are
+most likely to be found.
+
+HOW IT WORKS:
+  1. Fetches real Sentinel-2 satellite imagery from Microsoft Planetary Computer
+     (or falls back to realistic synthetic data when real imagery is unavailable)
+  2. Computes spectral indices: NDVI (vegetation), Iron Oxide Index (laterite/
+     manganese signature), Clay Mineral Index (alteration zones)
+  3. Combines spectral data with geological features: rock type, fault distance,
+     shear zone proximity, elevation, slope, rainfall, soil moisture
+  4. Uses a Positive-Unlabeled (PU) Bagging Random Forest — a specialized ML
+     algorithm designed for cases where you only have "known deposit" labels
+     (positives) and "unknown" labels (not necessarily negatives). Standard
+     classification would treat unknowns as negatives, biasing the model.
+     PU Bagging corrects this by bootstrap-sampling from the unlabeled data.
+  5. Validates with Spatial Block Cross-Validation — prevents spatial data
+     leakage where nearby points in train/test sets inflate metrics artificially
+  6. Applies NDVI vegetation masking — reduces confidence in predictions under
+     dense forest canopy (Sal/Teak forests) where satellite spectral signatures
+     are obscured by vegetation
+  7. Outputs a prospectivity score (0.0 to 1.0) for each grid point, classified
+     as High (>0.8), Medium (0.4-0.8), or Low (<0.4)
+
+KEY METRICS (ILLUSTRATIVE):
+  - 2,500 grid points analyzed at ~1 km resolution
+  - F1 Score: 0.91 (Spatial Block Cross-Validation)
+  - Precision: 0.85 | Recall: 0.79
+
+
+MODULE 2: MineFlow Optimizer (Production)
+------------------------------------------
+An AI-driven production forecasting and fleet optimization system that predicts
+shortfalls and generates optimal dumper-shovel dispatch plans.
+
+HOW IT WORKS:
+  1. Uses a Gradient Boosting Regressor (150 estimators, max_depth=5) trained on
+     historical production data: planned production, rainfall, equipment
+     availability, blasting days, haul road condition, crusher capacity, fleet
+     size, and 3-month lag features
+  2. Predicts actual production for upcoming months and flags shortfall risk:
+     High (predicted/planned < 90%), Medium (< 95%), Low (>= 95%)
+  3. Feeds predictions into a Mixed-Integer Linear Programming (MILP) optimizer
+     using Google OR-Tools (SCIP solver) to generate optimal dumper-to-shovel
+     assignments that maximize throughput while respecting constraints:
+       - Each available dumper assigned to exactly one shovel
+       - Maximum 4 dumpers per shovel
+       - Shovel throughput cannot exceed shovel capacity
+       - Total daily output cannot exceed crusher capacity
+       - Weather penalties reduce effective dumper capacity
+       - Road condition penalties reduce effective dumper capacity
+       - Equipment availability determines which dumpers are active
+  4. Generates automated alerts: CRITICAL (throughput <90% of plan), WARNING
+     (heavy rain, poor road), INFO (dumper unavailable for maintenance)
+
+KEY METRICS (ILLUSTRATIVE):
+  - R2 = 0.90 | MAE = 112.5 TPD | RMSE = 145.2 TPD
+  - 193 optimized fleet dispatch assignments with 74 automated alerts
+  - 5% shortfall reduction across 3 mines
+
+
+================================================================================
+PART 3 — EVERY COMPONENT EXPLAINED
+================================================================================
+
+
+--------------------------------------------------------------------------------
+BACKEND PIPELINE SCRIPTS (src/)
+--------------------------------------------------------------------------------
+
+These scripts form a staged pipeline that must be run in order before launching
+the dashboard. Each script produces data files that the next one consumes.
+
+
+3.1  src/fetch_real_data.py — STAGE 1: Satellite Data Acquisition
+-----------------------------------------------------------------
+
+WHAT IT DOES:
+  - Builds a regular latitude/longitude grid (0.01 degree spacing, ~1 km) over
+    the study area: 21.0-21.5 N, 79.0-79.5 E (Nagpur-Bhandara-Balaghat belt)
+  - Connects to Microsoft Planetary Computer's STAC API (zero authentication,
+    free, open-access satellite data catalog)
+  - Searches for recent Sentinel-2 Level-2A scenes with <20% cloud cover
+  - Downloads 5 spectral bands (B02-Blue, B04-Red, B08-NIR, B11-SWIR1,
+    B12-SWIR2) as Cloud-Optimized GeoTIFFs streamed via HTTP
+  - Samples band values at each grid point by transforming lat/lon to the
+    scene's native UTM coordinate system
+  - Computes 3 spectral indices from the raw bands:
+      NDVI = (B08 - B04) / (B08 + B04)  -> vegetation density
+      Iron Oxide Index = B04 / B02       -> laterite/iron-bearing surfaces
+      Clay Mineral Index = B11 / B12     -> clay-altered zones
+  - If the real fetch fails (network, partial tile coverage), falls back to
+    generating synthetic spectral data with realistic distributions modeled
+    after actual Sentinel-2 values for the Deccan Plateau
+
+OUTPUT: data/real_spectral.csv
+
+WHY IT IS IMPORTANT:
+  Satellite spectral indices are the foundation of mineral prospectivity
+  mapping. NDVI reveals where vegetation is too dense to see the ground (low
+  confidence zones). Iron Oxide Index and Clay Mineral Index are direct proxies
+  for the surface expressions of manganese-bearing formations. Without this
+  data, the entire exploration AI module would have no remote sensing input.
+  The dual real/synthetic approach ensures the prototype always works — judges
+  can see the pipeline in action even without internet access, while the real-
+  data path proves the architecture is production-ready.
+
+
+3.2  src/generate_data.py — STAGE 2: Training Dataset Generation
+----------------------------------------------------------------
+
+WHAT IT DOES:
+  - Loads the spectral data from Stage 1 (data/real_spectral.csv)
+  - Augments it with synthetic geological features:
+      rock_type: Assigned based on lat/lon rules simulating GSI Bhukosh data
+                 (5 types: Mn_bearing_schist, Laterite, Gondwana_sediment,
+                 Deccan_basalt, Granite_gneiss)
+      fault_distance_km: Random 0-30 km (simulating distance to nearest fault)
+      shear_zone_proximity_km: Random 0-20 km
+      elevation_m: Random 200-600 m (Deccan Plateau range)
+      slope_deg: Derived from elevation with noise
+      rainfall_mm: 800-1600 mm with latitude gradient
+      soil_moisture: Derived from rainfall
+  - Creates PU (Positive-Unlabeled) labels: ~15% of points labeled as
+    "mn_occurrence = 1" based on favorable conditions (right rock type, high
+    iron oxide, high clay, close to faults). 10-15% label noise injected to
+    prevent artificially perfect model performance.
+  - Generates a vegetation mask (NDVI > 0.7)
+  - Creates the production dataset: 60 months (Jan 2021 - Dec 2025) of
+    simulated operational data for 3 mines (Dongri Buzurg, Chikla, Munsar),
+    including planned/actual production, rainfall, equipment availability,
+    blasting days, haul road condition, crusher capacity, fleet counts
+  - Generates lag features (lag_1, lag_2, lag_3) for time-series awareness
+  - Computes shortfall risk categories based on actual/planned ratio
+  - Creates a 12-month production forecast dataset for 2026
+
+OUTPUTS:
+  - data/prospectivity_dataset.csv (with labels, for training)
+  - data/prospectivity_grid.csv (without labels, for prediction)
+  - data/production_dataset.csv (historical production)
+  - data/production_forecast.csv (future forecast template)
+
+WHY IT IS IMPORTANT:
+  This script is the data backbone of the entire system. It bridges the gap
+  between raw satellite observations and ML-ready training data. The PU labeling
+  strategy is critically important because in real-world mineral exploration,
+  you know where deposits HAVE been found (positives), but you do NOT know that
+  all other locations are deposit-free (they are "unlabeled", not "negative").
+  Standard classification would treat unlabeled as negative, causing the model
+  to miss potential deposits. The production dataset simulates realistic
+  operational patterns including monsoon seasonality, equipment variability,
+  and shortfall dynamics — enabling the forecasting model to learn real-world
+  production patterns.
+
+
+3.3  src/train_prospectivity.py — STAGE 3: GeoProspect AI Training
+------------------------------------------------------------------
+
+WHAT IT DOES:
+  - Loads prospectivity_dataset.csv
+  - Encodes categorical rock_type using LabelEncoder
+  - Implements the PUBaggingRF class (Positive-Unlabeled Bagging Random Forest):
+      K=30 bootstrap iterations
+      Each iteration: samples n_pos unlabeled examples, combines with all
+      positive examples, trains a RandomForestClassifier (100 estimators)
+      Final prediction: average probability across all 30 models
+  - Validates using Spatial Block Cross-Validation:
+      Creates spatial blocks by quantizing lat/lon to 0.1 degree bins
+      Uses GroupKFold (k=5) so that nearby points are never split across
+      train and test sets — prevents spatial autocorrelation from inflating
+      metrics
+  - Trains the final model on all data
+  - Predicts mn_probability on the prospectivity_grid.csv
+  - Applies NDVI vegetation masking: areas with NDVI > 0.7 get a 30% confidence
+    penalty (score * 0.7), and are flagged as "Low (Veg)" confidence
+  - Classifies scores into High/Medium/Low prospectivity classes
+  - Saves the model ensemble as models/prospectivity_pu_rf.joblib
+
+OUTPUT: models/prospectivity_pu_rf.joblib + updated prospectivity_grid.csv
+
+WHY IT IS IMPORTANT:
+  This is the core AI engine for exploration. The PU Bagging approach is
+  specifically designed for mineral prospectivity mapping — a technique
+  validated in peer-reviewed research (referenced in the README). Spatial Block
+  CV is essential because geological data is spatially autocorrelated: nearby
+  points are inherently similar. Without spatial blocking, a model that simply
+  memorizes local patterns would score 0.99+ F1 but be useless for predicting
+  new areas. The NDVI masking adds domain-specific intelligence — in the
+  Nagpur-Bhandara belt, dense Sal/Teak forests obscure the ground surface,
+  making spectral signatures unreliable. Reducing confidence in these areas
+  prevents false-positive drill recommendations in forested zones.
+
+
+3.4  src/train_production.py — STAGE 4a: Production Forecaster Training
+-----------------------------------------------------------------------
+
+WHAT IT DOES:
+  - Loads production_dataset.csv (180 records: 3 mines x 60 months)
+  - Defines 11 features: planned_production_tpd, rainfall_mm,
+    equipment_availability_pct, blasting_days, haul_road_condition,
+    crusher_capacity_tpd, num_dumpers, num_shovels, lag_1, lag_2, lag_3
+  - Target: actual_production_tpd
+  - Splits 80/20 train/test
+  - Trains a Gradient Boosting Regressor (150 estimators, max_depth=5,
+    learning_rate=0.1)
+  - Reports MAE, RMSE, R2 on the test set
+  - Predicts on the forecast dataset (production_forecast.csv) for 2026
+  - Computes shortfall_risk for each forecast month
+  - Saves the model as models/production_gb.joblib
+
+OUTPUT: models/production_gb.joblib + updated production_forecast.csv
+
+WHY IT IS IMPORTANT:
+  This model enables PROACTIVE production management. Instead of reacting to a
+  shortfall after it happens, mine managers can see predicted production for each
+  upcoming month and identify high-risk periods (typically monsoon months) in
+  advance. The lag features (lag_1, lag_2, lag_3) capture production momentum —
+  if the last 3 months were bad, the next one is likely at risk too. Gradient
+  Boosting was chosen because it handles non-linear interactions between
+  features (e.g., the combined effect of heavy rain + poor road + low equipment
+  availability) better than linear models.
+
+
+3.5  src/optimize_fleet.py — STAGE 4b: Fleet Dispatch Optimization
+------------------------------------------------------------------
+
+WHAT IT DOES:
+  - Loads production_forecast.csv (with predictions from Stage 4a)
+  - For each mine-month combination, formulates and solves a Mixed-Integer
+    Linear Programming (MILP) problem using Google OR-Tools (SCIP solver):
+
+    DECISION VARIABLES:
+      x[d,s] in {0,1} — whether dumper d is assigned to shovel s
+      y[s] in [0, shovel_cap] — throughput of shovel s (continuous)
+
+    CONSTRAINTS:
+      - Each available dumper assigned to exactly 1 shovel
+      - Unavailable dumpers assigned to 0 shovels
+      - Maximum 4 dumpers per shovel (prevents queuing)
+      - y[s] <= sum of assigned dumper effective capacities (flow limit)
+      - y[s] <= shovel_capacity (shovel limit)
+      - Total daily throughput <= crusher capacity (bottleneck)
+
+    PENALTIES:
+      - Weather: if rainfall > 100mm, penalty = (rainfall/500) x 30%
+      - Road: penalty = (5 - road_condition) x 10%
+      - Combined penalty reduces effective dumper capacity
+
+    OBJECTIVE: Maximize total daily throughput
+      = Sum of y[s] x operating_hours (16 hours/day, 2 shifts x 8 hours)
+
+  - Generates automated alerts:
+      CRITICAL: achievable throughput < 90% of planned
+      WARNING: heavy rainfall expected, poor haul road condition
+      INFO: dumper unavailable for maintenance
+
+OUTPUTS: data/dispatch_plan.csv + data/fleet_alerts.csv
+
+WHY IT IS IMPORTANT:
+  This is where AI meets operations research. The MILP formulation guarantees
+  an OPTIMAL assignment — not just a good one. Unlike heuristic approaches
+  (e.g., "assign each dumper to the nearest shovel"), MILP explores all possible
+  assignments and finds the one that maximizes throughput while respecting every
+  constraint simultaneously. This is critical in a mine where a single sub-
+  optimal assignment cascades: a shovel starved of dumpers idles (Rs 10,000+/hour
+  wasted), while another shovel has dumpers queuing (wasted diesel, driver time).
+  The alert system transforms raw optimization output into actionable intelligence
+  that mine managers can immediately act on.
+
+
+--------------------------------------------------------------------------------
+DASHBOARD PAGES (src/pages/)
+--------------------------------------------------------------------------------
+
+
+3.6  app.py — Main Entry Point & Navigation
+--------------------------------------------
+
+WHAT IT DOES:
+  - Configures Streamlit with wide layout, page title "MOIL-GeoSync", and the
+    pickaxe icon
+  - Defines the multi-page navigation with 9 pages, each with a title and icon
+  - Runs the selected page via st.navigation() and pg.run()
+
+WHY IT IS IMPORTANT:
+  This is the single entry point that unifies all modules into one cohesive
+  application. The multi-page architecture keeps the dashboard organized — users
+  navigate to the specific analysis they need without overwhelming them with
+  everything at once. The wide layout maximizes screen real estate for maps,
+  charts, and data tables.
+
+
+3.7  src/pages/01_home.py — Overview / Landing Page (Home)
+----------------------------------------------------------
+
+WHAT IT DOES:
+  - Displays the project title and context ("AI-Powered Manganese Exploration &
+    Production Optimization")
+  - Shows an expandable "Problem Context" section explaining the dual challenge
+  - Loads data from both prospectivity_grid.csv and production_dataset.csv
+  - Displays 4 KPI metrics:
+      Total Grid Points (number of analyzed locations)
+      High Prospectivity Zones (locations with mn_probability > 0.8)
+      Mines Tracked (unique mine_id count)
+      Average Shortfall Risk
+  - Shows 4 "Key Outcomes" columns: Focused Exploration, Reduced Delays,
+    Better Resource Utilization, Lower Environmental Disturbance
+  - Provides Quick Navigation links to all other pages
+
+WHY IT IS IMPORTANT:
+  First impressions matter. This page immediately communicates what the system
+  does, why it matters, and what the current state is — all in under 5 seconds
+  of looking at it. The KPIs give judges/stakeholders instant quantitative
+  evidence of the system's scope. The quick navigation enables efficient
+  exploration of the dashboard during time-limited presentations/demos.
+
+
+3.8  src/pages/02_prospectivity.py — GeoProspect AI Map (Map)
+-------------------------------------------------------------
+
+WHAT IT DOES:
+  - Loads the prospectivity_grid.csv data and the trained PU-RF model
+  - Renders a 2-column layout: interactive satellite map (left) + controls
+    (right)
+  - Map uses Folium with ESRI Satellite base tiles, centered on the study area
+    (21.25 N, 79.25 E)
+  - 4 toggleable map layers:
+      Prospectivity Heatmap: HeatMap of mn_probability scores with a
+         blue to cyan to lime to yellow to red gradient
+      Geological Layers (NDVI): Green heatmap showing vegetation density
+      Known Mines: Markers for Dongri Buzurg, Chikla, and Munsar mines
+      Drilling Priority Zones: Top 20 highest-probability points shown as
+         red circle markers with tooltips showing exact probability
+  - Displays a visual color gradient legend
+  - Shows Target Statistics: count of High/Medium/Low priority targets
+  - Lists Top 10 Drill Targets in a sortable table with lat, lon, elevation,
+    probability, class, rock type
+  - Renders Feature Importance chart from the trained model (horizontal bar
+    chart showing which features matter most for predictions)
+
+WHY IT IS IMPORTANT:
+  This is the hero page of the exploration module. It transforms abstract ML
+  predictions into a visual, geospatial tool that geologists can directly use
+  to plan field campaigns. The satellite basemap provides real-world context
+  (terrain, roads, settlements). The toggleable layers let users build up
+  understanding incrementally — start with the heatmap, overlay known mines to
+  validate, then toggle drill targets to identify new exploration areas. The
+  Top 10 Drill Targets table gives precise coordinates that can be directly
+  input into GPS equipment for field teams. Feature importance explains WHY
+  the model predicts high prospectivity at certain locations, building trust
+  in the AI's recommendations.
+
+
+3.9  src/pages/03_production.py — Production Forecast & Risk (Chart)
+--------------------------------------------------------------------
+
+WHAT IT DOES:
+  - Loads production_dataset.csv (historical) and production_forecast.csv
+    (predicted)
+  - Provides a sidebar mine selector
+  - Creates a time-series chart with 3 traces:
+      Blue dashed: Planned production
+      Blue solid: Actual production (historical)
+      Green dashed: Predicted production (forecast)
+  - Shows Risk Indicators for the latest month:
+      Risk Level (High/Medium/Low)
+      Color-coded indicator (Red/Yellow/Green)
+      Latest Shortfall in TPD
+  - Displays a Shortfall Summary table (last 10 months)
+  - Shows a business impact note: "5% reduction in shortfall across 3 mines =
+    ~2,500 tons/month saved"
+
+WHY IT IS IMPORTANT:
+  This page enables proactive production management. By overlaying planned,
+  actual, and predicted production on the same chart, mine managers can
+  immediately see patterns: monsoon dips, recovery periods, and whether the
+  AI's forecast aligns with historical trends. The risk indicators provide
+  at-a-glance actionable intelligence — a mine flagged "High Risk" for next
+  month triggers preemptive action (deploy backup fleet, stockpile ore, fix
+  roads). The shortfall table provides the detailed data behind the indicators
+  for managers who want to dig deeper.
+
+
+3.10  src/pages/04_fleet_dispatch.py — Fleet Dispatch (Truck)
+-------------------------------------------------------------
+
+WHAT IT DOES:
+  - Loads dispatch_plan.csv and fleet_alerts.csv
+  - Provides sidebar filters: Mine, Month, Year
+  - Displays 3 top-level metrics:
+      Achievable TPD vs Planned (with delta)
+      Total Dumpers Active
+      Total Shovels Active
+  - Renders a Dumper-to-Shovel Dispatch Matrix as a heatmap (using Plotly
+    imshow) showing which dumpers are assigned to which shovels
+  - Shows a Shovel Throughput vs Capacity bar chart comparing actual throughput
+    to maximum shovel capacity (revealing bottlenecks)
+  - Displays Alerts & Recommendations with color-coded severity:
+      CRITICAL -> red error box
+      WARNING -> yellow warning box
+      INFO -> blue info box
+
+WHY IT IS IMPORTANT:
+  This page is the operations control center. The dispatch matrix is the core
+  deliverable of the MILP optimizer — it tells mine supervisors exactly which
+  dumper should go to which shovel, right now. The throughput vs capacity chart
+  instantly reveals bottlenecks: if a shovel's throughput bar is much shorter
+  than its capacity bar, it's being under-fed with dumpers and production is
+  being lost. The alert system acts as an intelligent assistant, surfacing the
+  most critical issues without requiring managers to manually analyze data. In
+  a real deployment, these alerts could be pushed as SMS/email notifications.
+
+
+3.11  src/pages/06_what_if.py — What-If Scenario Simulator (Sliders)
+--------------------------------------------------------------------
+
+WHAT IT DOES:
+  - Loads forecast and dispatch data
+  - Provides sidebar controls to select a mine and month, then ADJUST:
+      Rainfall (mm): 0-500
+      Equipment Availability: 50%-100%
+      Haul Road Condition: 1-5
+      Number of Dumpers: 3-10
+      Number of Shovels: 1-5
+      Crusher Capacity (TPD): 500-3000
+  - A "Reset to Defaults" button restores original forecast values
+  - Runs the MILP optimizer IN REAL-TIME with the adjusted parameters
+  - Shows Metrics Comparison: Original vs Simulated for:
+      Achievable TPD (with delta)
+      Fleet Utilization % (with delta)
+      Shortfall Risk (with delta, inverse color — higher risk is bad)
+  - Impact Comparison Chart: grouped bar chart of Original vs Simulated TPD
+    per shovel
+  - Simulated Dispatch Table: shows the new dumper-to-shovel assignments
+  - Auto-generated Recommendations:
+      Heavy rainfall warning
+      Production drop warning with % decrease
+      Production increase notification with % improvement
+      Neutral assessment
+
+WHY IT IS IMPORTANT:
+  This is the most powerful decision-support tool in the entire prototype. It
+  lets mine managers ask "what if" questions BEFORE committing resources:
+    "What if monsoon is heavier than predicted?" -> Slide rainfall up, see impact
+    "What if we add 2 more dumpers?" -> Slide dumpers up, see if it helps
+    "What if 3 dumpers break down?" -> Slide availability down, see the damage
+    "What if we repair the haul road?" -> Slide road condition up, quantify ROI
+  The real-time MILP solving means every slider change produces a mathematically
+  OPTIMAL result, not a rough estimate. This enables data-driven resource
+  allocation decisions and provides quantitative justification for capital
+  expenditure (e.g., "repairing the road increases output by 12%, paying for
+  itself in 3 weeks").
+
+
+3.12  src/pages/07_explainability.py — AI Explainability / XAI (DNA)
+--------------------------------------------------------------------
+
+WHAT IT DOES:
+  - Uses the SHAP (SHapley Additive exPlanations) library for model
+    interpretability
+  - Has 2 tabs: GeoProspect AI (prospectivity) and MineFlow (production)
+  - For EACH model:
+    GLOBAL EXPLANATIONS:
+      - SHAP Beeswarm Plot: shows how each feature pushes predictions up/down
+        across all samples. Each dot is one data point. Color = feature value,
+        position = SHAP value (impact on prediction)
+      - Mean |SHAP| Importance: bar chart showing the average absolute impact
+        of each feature on predictions
+    LOCAL EXPLANATIONS:
+      - User selects a specific grid point (prospectivity) or mine-month
+        (production)
+      - SHAP Waterfall Plot: shows exactly which features pushed that specific
+        prediction up or down, and by how much
+      - Natural language explanation: "This location scored 0.87 (High) because:
+        iron_oxide_index=2.34 (contributed +0.15), fault_distance_km=3.2
+        (contributed +0.12), clay_index=1.89 (contributed +0.08)..."
+      - Feature values table for the selected point
+
+WHY IT IS IMPORTANT:
+  AI explainability is CRITICAL for adoption in the mining industry. Geologists
+  and mine managers will NOT trust a black-box AI that says "drill here" without
+  explaining why. SHAP provides mathematically rigorous explanations grounded in
+  game theory (Shapley values). The global plots show the overall behavior of
+  the model — "Iron Oxide Index is the most important feature" builds confidence
+  that the model has learned geologically meaningful patterns (high iron oxide
+  DOES correlate with manganese deposits in reality). The local plots explain
+  individual predictions — "this specific location is high-priority because it
+  has high iron oxide, is near a fault, and has favorable clay minerals." This
+  directly addresses the "trust gap" that prevents AI adoption in traditional
+  industries. Without this page, the prototype would be a black box; WITH it,
+  every prediction is transparent and auditable.
+
+
+3.13  src/pages/08_ai_assistant.py — G-Sync AI Chatbot (Robot)
+--------------------------------------------------------------
+
+WHAT IT DOES:
+  - Provides a natural-language chat interface using Streamlit's chat_input
+    and chat_message components
+  - Loads ALL datasets: production, prospectivity, forecast, dispatch, alerts
+  - Maintains conversation history in session state
+  - Processes queries using keyword-based NLP to route to appropriate handlers:
+      Risk/Shortfall queries: identifies high-risk mines from forecast data
+      Fleet/Dispatch queries: summarizes fleet assignments, filterable by mine
+      Alert/Warning queries: displays active fleet alerts
+      Prospectivity/Exploration queries: counts high-prospectivity zones, lists
+        top 5 drill targets
+      Compare/Rank queries: ranks mines by average production
+      Summary/Status queries: provides system-wide overview
+      Weather/Rain queries: analyzes rainfall impact on production
+      Help queries: lists available question types
+  - Responses include both text AND interactive DataFrames where appropriate
+
+WHY IT IS IMPORTANT:
+  Not all stakeholders are comfortable navigating dashboards and interpreting
+  charts. The AI assistant provides an accessible, conversational interface
+  where anyone can ask questions in plain English and get instant answers backed
+  by real data. This dramatically lowers the barrier to adoption — a mine
+  superintendent can type "which mine has the highest risk?" and get the answer
+  without learning to use the dashboard. The conversation history maintains
+  context, enabling follow-up questions. In a production deployment, this could
+  be enhanced with an LLM (GPT/Gemini) for true natural language understanding.
+
+
+3.14  src/pages/09_financial.py — Financial Impact & ROI (Money)
+---------------------------------------------------------------
+
+WHAT IT DOES:
+  - Provides adjustable sidebar cost assumptions:
+      Manganese ore price (Rs/ton)
+      Diesel cost per litre
+      Dumper fuel consumption (litres/hour)
+      Idle cost per dumper per hour
+      Exploration drill cost per site
+      Working days per month
+      AI-driven shortfall reduction percentage
+  - Calculates 5 financial impact areas:
+
+    1. EXPLORATION COST SAVINGS (GeoProspect AI):
+       Compares 100 traditional blind drill sites vs AI-targeted sites
+       Savings = avoided_sites x drill_cost_per_site
+
+    2. PRODUCTION REVENUE PROTECTION (MineFlow):
+       Calculates historic revenue loss from production shortfalls
+       AI recovery = total_loss x shortfall_reduction_percentage
+       Annualized recovery projection
+
+    3. FLEET OPTIMIZATION SAVINGS:
+       Reduces idle dumper costs (15% route optimization improvement)
+       Diesel savings from optimized routes
+       Monthly and annual fleet cost savings
+
+    4. ESG & CARBON IMPACT:
+       CO2 avoided from diesel savings (2.68 kg CO2/litre)
+       Forest saved from avoided exploratory drilling (0.5 hectares/site)
+       Equivalent trees preserved (400 trees/hectare)
+
+    5. TOTAL ROI SUMMARY:
+       Sum of all annual savings
+       System development cost (Rs 50 lakh)
+       Break-even period in months
+
+WHY IT IS IMPORTANT:
+  Technical excellence alone does not drive adoption — financial justification
+  does. This page translates every technical improvement (better prospectivity
+  mapping, reduced shortfalls, optimized fleet) into rupees. When a MOIL
+  executive sees "the system pays for itself in X months" with adjustable
+  assumptions, the business case writes itself. The ESG section addresses a
+  growing regulatory and investor concern — mining companies face increasing
+  pressure to demonstrate environmental responsibility. Quantifying CO2
+  reductions and forest preservation provides ESG reporting data. The adjustable
+  sliders let stakeholders plug in their own numbers, preventing the "those
+  aren't realistic assumptions" objection.
+
+
+3.15  src/pages/05_methodology.py — Data & Model Provenance (Microscope)
+------------------------------------------------------------------------
+
+WHAT IT DOES:
+  - Documents all data sources in a table with Source, Type (REAL vs SYNTHETIC),
+    and Purpose
+  - Checks if real spectral data exists and labels accordingly
+  - Details GeoProspect AI architecture: PU Bagging RF, Spatial Block CV, NDVI
+    masking with metrics (F1, Precision, Recall)
+  - Displays feature importance chart and confusion matrix
+  - Details MineFlow Optimizer: Gradient Boosting Regressor, MILP Fleet Dispatch
+    with metrics (MAE, RMSE, R2)
+  - Lists all research references
+  - Documents reproducibility: random_state=42, directory structure, staged
+    pipeline
+
+WHY IT IS IMPORTANT:
+  Transparency and reproducibility are non-negotiable in a hackathon and in any
+  production AI system. This page serves as the "scientific methods section" —
+  it tells judges and stakeholders EXACTLY what data was used, where it came
+  from, whether it's real or synthetic, what models were trained, how they were
+  validated, and how to reproduce the results. The real-vs-synthetic distinction
+  is prominently displayed because intellectual honesty about data provenance
+  is critical. The research references demonstrate that the approaches used
+  (PU learning, spatial CV, spectral indices for mineral mapping) are grounded
+  in peer-reviewed science, not invented ad hoc.
+
+
+--------------------------------------------------------------------------------
+CONFIGURATION & SUPPORT FILES
+--------------------------------------------------------------------------------
+
+
+3.16  requirements.txt — Python Dependencies
+---------------------------------------------
+
+CONTENTS:
+  streamlit>=1.36, pandas, numpy, scikit-learn, joblib, plotly, pydeck, ortools,
+  shap, matplotlib, folium, streamlit-folium
+
+WHY IT IS IMPORTANT:
+  Ensures reproducible environment setup. Anyone can clone the repo and
+  pip install -r requirements.txt to get an identical environment.
+
+
+3.17  requirements-fetch.txt — Optional Satellite Data Dependencies
+-------------------------------------------------------------------
+
+CONTENTS:
+  pystac-client, planetary-computer, rasterio, pyproj, shapely
+
+WHY IT IS IMPORTANT:
+  These are heavier geospatial packages needed only for fetching real Sentinel-2
+  data. Keeping them separate means the dashboard runs without them (using
+  synthetic data), reducing setup friction for demos.
+
+
+3.18  .gitignore — Git Ignore Rules
+------------------------------------
+
+PURPOSE: Prevents committing Python caches, virtual environments, IDE configs,
+and generated data/model files to version control.
+
+
+3.19  data/ directory — Generated Data Files
+--------------------------------------------
+
+Contains all CSV files generated by the pipeline:
+  - real_spectral.csv (satellite data)
+  - prospectivity_dataset.csv (training data with labels)
+  - prospectivity_grid.csv (prediction grid with scores)
+  - production_dataset.csv (historical production)
+  - production_forecast.csv (predicted production with risk)
+  - dispatch_plan.csv (MILP-optimized fleet assignments)
+  - fleet_alerts.csv (automated operational alerts)
+
+
+3.20  models/ directory — Trained ML Models
+-------------------------------------------
+
+Contains saved model artifacts:
+  - prospectivity_pu_rf.joblib (PU Bagging Random Forest ensemble)
+  - production_gb.joblib (Gradient Boosting Regressor)
+
+
+================================================================================
+PART 4 — SUMMARY OF COMPONENT IMPORTANCE
+================================================================================
+
+COMPONENT                      | WHY IT IS CRITICAL
+-------------------------------|-----------------------------------------------------
+fetch_real_data.py             | Connects prototype to real satellite data;
+                               | synthetic fallback ensures demo always works
+-------------------------------|-----------------------------------------------------
+generate_data.py               | Bridges raw spectral data to ML-ready datasets;
+                               | PU labeling reflects real-world exploration
+-------------------------------|-----------------------------------------------------
+train_prospectivity.py         | Core exploration AI — finds manganese deposits
+                               | from satellite + geological data
+-------------------------------|-----------------------------------------------------
+train_production.py            | Enables proactive shortfall prediction before
+                               | production losses occur
+-------------------------------|-----------------------------------------------------
+optimize_fleet.py              | Mathematically optimal fleet assignments that
+                               | maximize throughput under real constraints
+-------------------------------|-----------------------------------------------------
+01_home.py (Overview)          | First impression — KPIs, context, navigation
+-------------------------------|-----------------------------------------------------
+02_prospectivity.py (Map)      | Visual geospatial tool for exploration planning
+-------------------------------|-----------------------------------------------------
+03_production.py (Forecast)    | Time-series forecasting with risk indicators
+-------------------------------|-----------------------------------------------------
+04_fleet_dispatch.py (Fleet)   | Operations control center for fleet management
+-------------------------------|-----------------------------------------------------
+06_what_if.py (Simulator)      | Decision-support via real-time scenario testing
+-------------------------------|-----------------------------------------------------
+07_explainability.py (XAI)     | Builds trust through transparent, auditable AI
+-------------------------------|-----------------------------------------------------
+08_ai_assistant.py (Chat)      | Accessible interface for non-technical users
+-------------------------------|-----------------------------------------------------
+09_financial.py (ROI)          | Translates technical gains into Rs business case
+-------------------------------|-----------------------------------------------------
+05_methodology.py (Info)       | Scientific transparency and reproducibility
+-------------------------------|-----------------------------------------------------
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================

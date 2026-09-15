@@ -22,7 +22,18 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
 MODEL_DIR = os.path.join(PROJECT_ROOT, 'models')
 
-st.title("🧬 AI Model Explainability & Validation")
+st.markdown("""
+<div class="fd-header">
+    <div class="fd-header-left">
+        <h1>🧬 AI Model Explainability & Validation</h1>
+        <div class="fd-subtitle">Transparent AI Decision Making · MOIL-GeoSync</div>
+    </div>
+    <div class="fd-header-right">
+        <div class="fd-tag">🧠 SHAP Engine</div>
+        <div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 st.markdown("Model accuracy proof + SHAP-based AI decision explanations")
 
 PROSPECT_FEATURES = ['iron_oxide_index','clay_index','ndvi','rock_type_encoded','fault_distance_km',
