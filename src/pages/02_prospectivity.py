@@ -63,7 +63,7 @@ with col_ctrl:
     st.markdown("**Layers**")
     show_heatmap = st.toggle("🔥 Prospectivity", value=True)
     show_ndvi = st.toggle("🌿 NDVI Vegetation", value=False)
-    show_iron = st.toggle("⛏️ Iron Index", value=False)
+    show_iron = st.toggle("🟠 Iron Index", value=False)
     show_mines = st.toggle("⛏️ Known Mines", value=True)
     show_drill = st.toggle("🎯 Drill Zones", value=False)
 
@@ -88,6 +88,8 @@ with col_map:
 
     # ---- LAYER 1: Prospectivity Heatmap ----
     if show_heatmap and 'mn_probability' in df.columns:
+        # Only plot medium-to-high probability points
+        # This removes the uniform blue grid background and shows actual hotspots
         hotspots = df[df['mn_probability'] > 0.35].copy()
         
         fig.add_trace(go.Densitymap(
@@ -131,6 +133,7 @@ with col_map:
 
     # ---- LAYER 4: Known Mines (Real MOIL Locations) ----
     if show_mines:
+        # Real coordinates from forestsclearance.nic.in, ResearchGate, Mapcarta
         mines_data = [
             (21.550, 79.717, "Dongri Buzurg", "Central"),
             (21.517, 79.750, "Chikla Mine", "Central"),
@@ -170,7 +173,7 @@ with col_map:
             mode='markers',
             marker=dict(
                 size=14, 
-                color='#FF00FF',
+                color='#FF00FF',  # Neon Purple/Magenta
                 opacity=1.0
             ),
             name='🎯 Drill Priority',
@@ -192,6 +195,7 @@ with col_map:
 st.markdown("---")
 st.subheader("Target Statistics")
 
+# Add region column to df for filtering
 def get_region(lat, lon):
     if lat >= 21.0 and lat <= 22.0 and lon >= 78.5 and lon <= 80.5:
         return "Central India"
@@ -204,20 +208,22 @@ def get_region(lat, lon):
 if 'mn_probability' in df.columns:
     df['region'] = [get_region(lat, lon) for lat, lon in zip(df['latitude'], df['longitude'])]
     
+    # Overall stats
     c1, c2, c3 = st.columns(3)
     c1.metric("🔴 High Priority", f"{int((df['mn_probability'] > 0.8).sum())} targets")
     c2.metric("🟡 Medium Priority", f"{int(((df['mn_probability'] > 0.4) & (df['mn_probability'] <= 0.8)).sum())} targets")
     c3.metric("🟢 Low Priority", f"{int((df['mn_probability'] <= 0.4).sum())} targets")
     
+    # Region-wise breakdown
     st.markdown("**Region-wise High Priority Targets:**")
     rc1, rc2, rc3 = st.columns(3)
-    for col, reg, emoji in [(rc1, "Central India", "🏭"), (rc2, "Odisha", "🏔️"), (rc3, "Karnataka", "🏞️")]:
+    for col, reg, emoji in [(rc1, "Central India", "🟥"), (rc2, "Odisha", "🟦"), (rc3, "Karnataka", "🟩")]:
         reg_df = df[df['region'] == reg]
         high_count = int((reg_df['mn_probability'] > 0.8).sum()) if len(reg_df) > 0 else 0
         col.metric(f"{emoji} {reg}", f"{high_count} targets")
 
 # ================= TOP DRILL TARGETS =================
-st.subheader("📋 Top 10 Drill Targets")
+st.subheader("📍 Top 10 Drill Targets")
 if 'mn_probability' in df.columns:
     top_10 = df.nlargest(10, 'mn_probability').copy()
     top_10.insert(0, 'Rank', range(1, len(top_10) + 1))
@@ -240,9 +246,7 @@ if model is not None:
             feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
             fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h',
                            color='Importance', color_continuous_scale='RdYlGn_r')
-            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances", font=dict(size=18))
-            fig_imp.update_yaxes(tickfont_size=18, title_font_size=18)
-            fig_imp.update_xaxes(tickfont_size=18, title_font_size=18)
+            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances")
             st.plotly_chart(fig_imp, use_container_width=True)
     except Exception as e:
         st.error(f"Error: {e}")

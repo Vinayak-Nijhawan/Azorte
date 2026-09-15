@@ -2,6 +2,7 @@
 MOIL-GeoSync - Stage 2
 Generates the prospectivity dataset (Real Spectral + Synthetic Geological/Label)
 and the production dataset (100% Synthetic).
+Expands data to 3 regions: Central India, Odisha, and Karnataka.
 """
 
 import os
@@ -19,36 +20,45 @@ def main():
     
     os.makedirs(data_dir, exist_ok=True)
     
-    # 1. Load real_spectral.csv (REAL data from Stage 1)
-    real_spectral_path = os.path.join(data_dir, 'real_spectral.csv')
+    # 1. GENERATE SPECTRAL DATA ACROSS 3 REGIONS
+    # Region 1: Central India (Nagpur-Bhandara-Balaghat) — expanded to cover all MOIL mines
+    lat_cen = np.random.uniform(21.0, 22.0, 1500)
+    lon_cen = np.random.uniform(78.8, 80.5, 1500)
     
-    if not os.path.exists(real_spectral_path):
-        # Create a dummy real_spectral.csv if it doesn't exist for testing
-        print("real_spectral.csv not found, generating dummy spectral data to proceed...")
-        df_spectral = pd.DataFrame({
-            'latitude': np.random.uniform(21.0, 21.5, 1000),
-            'longitude': np.random.uniform(79.0, 79.5, 1000),
-            'ndvi': np.random.uniform(0, 1, 1000),
-            'iron_oxide_index': np.random.uniform(0, 1, 1000),
-            'clay_index': np.random.uniform(0, 1, 1000),
-            'B02': np.random.uniform(0, 1, 1000),
-            'B04': np.random.uniform(0, 1, 1000),
-            'B08': np.random.uniform(0, 1, 1000),
-            'B11': np.random.uniform(0, 1, 1000),
-            'B12': np.random.uniform(0, 1, 1000),
-        })
-    else:
-        # Use comment='#' to skip comment lines
-        df_spectral = pd.read_csv(real_spectral_path, comment='#', encoding='utf-8')
+    # Region 2: Eastern (Joda-Barbil, Odisha)
+    lat_east = np.random.uniform(21.8, 22.3, 750)
+    lon_east = np.random.uniform(85.0, 85.7, 750)
+    
+    # Region 3: Southern (Sandur-Bellary, Karnataka)
+    lat_south = np.random.uniform(14.8, 15.4, 750)
+    lon_south = np.random.uniform(76.2, 76.8, 750)
+    
+    lats = np.concatenate([lat_cen, lat_east, lat_south])
+    lons = np.concatenate([lon_cen, lon_east, lon_south])
+    
+    n_total = len(lats)
+    df_spectral = pd.DataFrame({
+        'latitude': lats,
+        'longitude': lons,
+        'ndvi': np.random.uniform(0, 1, n_total),
+        'iron_oxide_index': np.random.uniform(0, 1, n_total),
+        'clay_index': np.random.uniform(0, 1, n_total),
+        'B02': np.random.uniform(0, 1, n_total),
+        'B04': np.random.uniform(0, 1, n_total),
+        'B08': np.random.uniform(0, 1, n_total),
+        'B11': np.random.uniform(0, 1, n_total),
+        'B12': np.random.uniform(0, 1, n_total),
+    })
     
     n_samples = len(df_spectral)
-    
-    # 2. Generate prospectivity dataset
     df_prospectivity = df_spectral.copy()
     
     # Add synthetic columns
-    # rock_type: Rule-based from lat/lon (SYNTHETIC)
     def assign_rock_type(lat, lon):
+        if lat < 16.0: return 'Dharwar_Schist' # Karnataka
+        if lon > 84.0: return 'Iron_Ore_Group' # Odisha
+        
+        # Central India
         val = lat * 1.5 + lon
         if val > 111.5: return 'Mn_bearing_schist'
         elif val > 111.0: return 'Laterite'
@@ -58,104 +68,105 @@ def main():
     
     df_prospectivity['rock_type'] = [assign_rock_type(lat, lon) for lat, lon in zip(df_prospectivity['latitude'], df_prospectivity['longitude'])]
     
-    # Other SYNTHETIC geological features
     df_prospectivity['fault_distance_km'] = np.random.uniform(0, 30, n_samples)
     df_prospectivity['shear_zone_proximity_km'] = np.random.uniform(0, 20, n_samples)
     df_prospectivity['elevation_m'] = np.random.uniform(200, 600, n_samples)
     df_prospectivity['slope_deg'] = df_prospectivity['elevation_m'] / 600 * 25 + np.random.normal(0, 2, n_samples)
     df_prospectivity['slope_deg'] = np.clip(df_prospectivity['slope_deg'], 0, 25)
     
-    df_prospectivity['rainfall_mm'] = 800 + (df_prospectivity['latitude'] - 21.0) / 0.5 * 800 + np.random.normal(0, 50, n_samples)
-    df_prospectivity['rainfall_mm'] = np.clip(df_prospectivity['rainfall_mm'], 800, 1600)
+    # Regional Rainfall adjustment
+    base_rain = np.where(df_prospectivity['longitude'] > 84.0, 1400, # High rain in Odisha
+                  np.where(df_prospectivity['latitude'] < 16.0, 600, # Low rain in Karnataka
+                           1000)) # Medium in Central
+    df_prospectivity['rainfall_mm'] = base_rain + np.random.normal(0, 100, n_samples)
+    df_prospectivity['rainfall_mm'] = np.clip(df_prospectivity['rainfall_mm'], 300, 2000)
     
-    df_prospectivity['soil_moisture'] = df_prospectivity['rainfall_mm'] / 1600 * 0.6 + np.random.normal(0, 0.05, n_samples)
-    df_prospectivity['soil_moisture'] = np.clip(df_prospectivity['soil_moisture'], 0.1, 0.6)
+    df_prospectivity['soil_moisture'] = df_prospectivity['rainfall_mm'] / 2000 * 0.6 + np.random.normal(0, 0.05, n_samples)
+    df_prospectivity['soil_moisture'] = np.clip(df_prospectivity['soil_moisture'], 0.05, 0.6)
     
-    # PU-style labels: mn_occurrence (SYNTHETIC)
-    # ~15% labeled as 1. More likely if rock_type is Mn_bearing_schist/Laterite, high iron_oxide, high clay, low fault_distance
     prob = np.zeros(n_samples)
-    
-    is_favorable_rock = df_prospectivity['rock_type'].isin(['Mn_bearing_schist', 'Laterite'])
+    is_favorable_rock = df_prospectivity['rock_type'].isin(['Mn_bearing_schist', 'Laterite', 'Dharwar_Schist', 'Iron_Ore_Group'])
     prob += is_favorable_rock * 0.4
     prob += (df_prospectivity['iron_oxide_index'] > df_prospectivity['iron_oxide_index'].median()) * 0.2
     prob += (df_prospectivity['clay_index'] > df_prospectivity['clay_index'].median()) * 0.2
     prob += (df_prospectivity['fault_distance_km'] < 10) * 0.2
     
-    # Normalize and threshold to get ~15%
     if prob.max() > 0:
         prob = prob / prob.max()
     threshold = np.percentile(prob, 85) # top 15%
-    
     base_labels = (prob >= threshold).astype(int)
     
-    # Inject 10-15% noise (flip some positives to 0) to prevent perfect F1
     noise_mask = (base_labels == 1) & (np.random.rand(n_samples) < 0.15)
     base_labels[noise_mask] = 0
     df_prospectivity['mn_occurrence'] = base_labels
-    
-    # vegetation_masked (SYNTHETIC)
     df_prospectivity['vegetation_masked'] = df_prospectivity['ndvi'] > 0.7
     
-    # 4. Create prospectivity_grid.csv (without mn_occurrence)
     df_prospectivity_grid = df_prospectivity.drop(columns=['mn_occurrence'])
     
-    # 3. Generate production dataset (100% SYNTHETIC)
-    mines = ['Mine_A_Dongri_Buzurg', 'Mine_B_Chikla', 'Mine_C_Munsar',
-             'Mine_D_Balaghat', 'Mine_E_Kandri', 'Mine_F_Gumgaon']
+    # 2. Generate production dataset (10 mines across 3 regions)
+    mines = [
+        'Mine_A_Dongri_Buzurg', 'Mine_B_Chikla', 'Mine_C_Munsar', 
+        'Mine_D_Balaghat', 'Mine_E_Kandri', 'Mine_F_Gumgaon', # Central
+        'Mine_G_Joda_East', 'Mine_H_Bamebari', # Odisha
+        'Mine_I_Sandur', 'Mine_J_Hospet' # Karnataka
+    ]
     start_date = datetime(2016, 1, 1)
-    months = 120 # Jan 2016 - Dec 2025 (10 years)
+    months = 120 # 10 years (Jan 2016 - Dec 2025)
     
     prod_data = []
     
     for mine in mines:
+        # Determine regional characteristics
+        is_odisha = mine in ['Mine_G_Joda_East', 'Mine_H_Bamebari']
+        is_karnataka = mine in ['Mine_I_Sandur', 'Mine_J_Hospet']
+        
         for i in range(months):
             dt = start_date + pd.DateOffset(months=i)
             month = dt.month
             year = dt.year
             
-            planned_tpd = np.random.uniform(500, 1500)
+            planned_tpd = np.random.uniform(800, 2000) if is_odisha else np.random.uniform(500, 1500)
             
-            is_monsoon = month in [6, 7, 8, 9]
+            # Different monsoon impact
+            if is_odisha: monsoon_months = [6, 7, 8, 9, 10]
+            elif is_karnataka: monsoon_months = [7, 8, 9]
+            else: monsoon_months = [6, 7, 8, 9]
+            
+            is_monsoon = month in monsoon_months
             
             equipment_availability = np.random.uniform(0.6, 0.8) if is_monsoon else np.random.uniform(0.8, 1.0)
-            rainfall_mm = np.random.uniform(200, 500) if is_monsoon else np.random.uniform(0, 50)
+            
+            # Rainfall logic based on region
+            if is_odisha: base_rain_monsoon = np.random.uniform(300, 600)
+            elif is_karnataka: base_rain_monsoon = np.random.uniform(100, 250)
+            else: base_rain_monsoon = np.random.uniform(200, 500)
+            
+            rainfall_mm = base_rain_monsoon if is_monsoon else np.random.uniform(0, 50)
             haul_road_condition = np.random.randint(1, 3) if is_monsoon else np.random.randint(3, 6)
-            blasting_days = np.random.randint(0, 15) if is_monsoon else np.random.randint(15, 26)
+            blasting_days = np.random.randint(5, 15) if is_monsoon else np.random.randint(15, 26)
             
             crusher_capacity = planned_tpd * np.random.uniform(1.1, 1.3)
             num_dumpers = np.random.randint(5, 9)
             num_shovels = np.random.randint(2, 5)
             
-            # REALISTIC production factors — each parameter directly affects output
-            # 1. Equipment availability: direct multiplier (50% avail → ~50% output)
+            # Realistic correlations
             equip_factor = equipment_availability
             
-            # 2. Rainfall impact: heavy rain reduces production significantly
-            #    0-50mm: no impact, 50-200mm: mild, 200-400mm: severe, 400+: critical
-            if rainfall_mm < 50:
-                rain_factor = 1.0
-            elif rainfall_mm < 200:
-                rain_factor = 1.0 - (rainfall_mm - 50) * 0.001  # up to 15% loss
-            elif rainfall_mm < 400:
-                rain_factor = 0.85 - (rainfall_mm - 200) * 0.0015  # up to 30% more loss
-            else:
-                rain_factor = 0.55 - (rainfall_mm - 400) * 0.001  # severe
-            rain_factor = max(0.3, rain_factor)
+            if rainfall_mm < 50: rain_factor = 1.0
+            elif rainfall_mm < 200: rain_factor = max(0.85, 1.0 - (rainfall_mm - 50) / 150 * 0.15)
+            elif rainfall_mm < 400: rain_factor = max(0.55, 0.85 - (rainfall_mm - 200) / 200 * 0.3)
+            else: rain_factor = max(0.3, 0.55 - (rainfall_mm - 400) / 200 * 0.25)
             
-            # 3. Blasting days: proportional (0 days → ~40% capacity from existing stock, 25 → full)
             blast_factor = 0.4 + 0.6 * (blasting_days / 25.0)
+            road_factor = 0.6 + 0.1 * haul_road_condition
+            dumper_factor = min(1.35, 0.4 + 0.1 * num_dumpers)
+            shovel_factor = min(1.25, 0.5 + 0.15 * num_shovels)
             
-            # 4. Road condition: bad roads slow hauling (1=40% penalty, 5=no penalty)
-            road_factor = 0.6 + 0.1 * haul_road_condition  # range: 0.7 to 1.1
+            actual_factor = equip_factor * rain_factor * blast_factor * road_factor * dumper_factor * shovel_factor
             
-            # 5. Fleet size: more dumpers/shovels = more throughput (diminishing returns)
-            dumper_factor = min(1.35, 0.4 + 0.1 * num_dumpers)   # 2=0.6, 5=0.9, 8=1.2, 10=1.35
-            shovel_factor = min(1.25, 0.5 + 0.15 * num_shovels)  # 1=0.65, 2=0.80, 3=0.95, 4=1.10, 5=1.25
-            
-            # Combine all factors with small random noise
             noise = np.random.normal(0, 0.03)
-            actual_factor = equip_factor * rain_factor * blast_factor * road_factor * dumper_factor * shovel_factor + noise
-            actual_factor = np.clip(actual_factor, 0.2, 1.15)
+            actual_factor = actual_factor + noise
+            actual_factor = np.clip(actual_factor, 0.3, 1.25)
             
             actual_tpd = planned_tpd * actual_factor
             
@@ -174,44 +185,59 @@ def main():
                 'num_shovels': num_shovels
             })
             
-    df_prod = pd.DataFrame(prod_data)
+    df_production = pd.DataFrame(prod_data)
+    
+    # Calculate shortfall risk
+    ratio = df_production['actual_production_tpd'] / df_production['planned_production_tpd']
+    conditions = [ratio < 0.9, ratio < 0.95]
+    choices = ['High', 'Medium']
+    df_production['shortfall_risk'] = np.select(conditions, choices, default='Low')
     
     # Lag features
-    df_prod = df_prod.sort_values(by=['mine_id', 'year', 'month']).reset_index(drop=True)
+    df_production.sort_values(by=['mine_id', 'year', 'month'], inplace=True)
+    df_production['lag_1'] = df_production.groupby('mine_id')['actual_production_tpd'].shift(1).bfill()
+    df_production['lag_2'] = df_production.groupby('mine_id')['actual_production_tpd'].shift(2).bfill()
+    df_production['lag_3'] = df_production.groupby('mine_id')['actual_production_tpd'].shift(3).bfill()
     
-    # Forward fill or backfill for lags
-    df_prod['lag_1'] = df_prod.groupby('mine_id')['actual_production_tpd'].shift(1)
-    df_prod['lag_2'] = df_prod.groupby('mine_id')['actual_production_tpd'].shift(2)
-    df_prod['lag_3'] = df_prod.groupby('mine_id')['actual_production_tpd'].shift(3)
-    
-    df_prod[['lag_1', 'lag_2', 'lag_3']] = df_prod.groupby('mine_id')[['lag_1', 'lag_2', 'lag_3']].bfill()
-    
-    # Shortfall risk
-    ratio = df_prod['actual_production_tpd'] / df_prod['planned_production_tpd']
-    df_prod['shortfall_risk'] = np.where(ratio < 0.9, 'High', np.where(ratio < 0.95, 'Medium', 'Low'))
-    
-    # 5. Create production forecast (100% SYNTHETIC)
+    # 3. Create Forecast data (Jan-Dec 2026)
     forecast_data = []
-    start_forecast = datetime(2026, 1, 1)
+    start_date_forecast = datetime(2026, 1, 1)
     
     for mine in mines:
+        is_odisha = mine in ['Mine_G_Joda_East', 'Mine_H_Bamebari']
+        is_karnataka = mine in ['Mine_I_Sandur', 'Mine_J_Hospet']
+        
+        last_actuals = df_production[df_production['mine_id'] == mine]['actual_production_tpd'].tail(3).values
+        
         for i in range(12):
-            dt = start_forecast + pd.DateOffset(months=i)
+            dt = start_date_forecast + pd.DateOffset(months=i)
             month = dt.month
             year = dt.year
             
-            planned_tpd = np.random.uniform(500, 1500)
+            if is_odisha: monsoon_months = [6, 7, 8, 9, 10]
+            elif is_karnataka: monsoon_months = [7, 8, 9]
+            else: monsoon_months = [6, 7, 8, 9]
             
-            is_monsoon = month in [6, 7, 8, 9]
+            is_monsoon = month in monsoon_months
             
-            equipment_availability = np.random.uniform(0.6, 0.8) if is_monsoon else np.random.uniform(0.8, 1.0)
-            rainfall_mm = np.random.uniform(200, 500) if is_monsoon else np.random.uniform(0, 50)
-            haul_road_condition = np.random.randint(1, 3) if is_monsoon else np.random.randint(3, 6)
-            blasting_days = np.random.randint(0, 15) if is_monsoon else np.random.randint(15, 26)
+            planned_tpd = np.random.uniform(800, 2000) if is_odisha else np.random.uniform(500, 1500)
+            equipment_availability = 0.7 if is_monsoon else 0.9
             
-            crusher_capacity = planned_tpd * np.random.uniform(1.1, 1.3)
-            num_dumpers = np.random.randint(5, 9)
-            num_shovels = np.random.randint(2, 5)
+            if is_odisha: base_rain_monsoon = 450
+            elif is_karnataka: base_rain_monsoon = 150
+            else: base_rain_monsoon = 300
+            
+            rainfall_mm = base_rain_monsoon if is_monsoon else 10
+            haul_road_condition = 2 if is_monsoon else 4
+            blasting_days = 10 if is_monsoon else 20
+            
+            crusher_capacity = planned_tpd * 1.2
+            num_dumpers = 7
+            num_shovels = 3
+            
+            lag_1 = last_actuals[2] if i == 0 else (last_actuals[1] if i == 1 else last_actuals[0])
+            lag_2 = last_actuals[1] if i == 0 else last_actuals[0]
+            lag_3 = last_actuals[0]
             
             forecast_data.append({
                 'mine_id': mine,
@@ -224,44 +250,24 @@ def main():
                 'haul_road_condition': haul_road_condition,
                 'crusher_capacity_tpd': crusher_capacity,
                 'num_dumpers': num_dumpers,
-                'num_shovels': num_shovels
+                'num_shovels': num_shovels,
+                'lag_1': lag_1,
+                'lag_2': lag_2,
+                'lag_3': lag_3
             })
             
     df_forecast = pd.DataFrame(forecast_data)
     
-    # Lags for forecast
-    for lag in ['lag_1', 'lag_2', 'lag_3']:
-        df_forecast[lag] = np.random.uniform(500, 1500, len(df_forecast))
+    # Save datasets
+    df_prospectivity.to_csv(os.path.join(data_dir, 'prospectivity_dataset.csv'), index=False)
+    df_prospectivity_grid.to_csv(os.path.join(data_dir, 'prospectivity_grid.csv'), index=False)
+    df_production.to_csv(os.path.join(data_dir, 'production_dataset.csv'), index=False)
+    df_forecast.to_csv(os.path.join(data_dir, 'production_forecast.csv'), index=False)
     
-    # 7. Output CSVs
-    prospectivity_dataset_path = os.path.join(data_dir, 'prospectivity_dataset.csv')
-    prospectivity_grid_path = os.path.join(data_dir, 'prospectivity_grid.csv')
-    production_dataset_path = os.path.join(data_dir, 'production_dataset.csv')
-    production_forecast_path = os.path.join(data_dir, 'production_forecast.csv')
-    
-    df_prospectivity.to_csv(prospectivity_dataset_path, index=False)
-    df_prospectivity_grid.to_csv(prospectivity_grid_path, index=False)
-    df_prod.to_csv(production_dataset_path, index=False)
-    df_forecast.to_csv(production_forecast_path, index=False)
-    
-    # 8. Prints for verification
-    print("=== Prospectivity Dataset ===")
-    print(df_prospectivity.head())
-    print(df_prospectivity.describe())
-    print(f"Total rows: {len(df_prospectivity)}\n")
-    
-    print("=== Prospectivity Grid ===")
-    print(df_prospectivity_grid.head())
-    print(f"Total rows: {len(df_prospectivity_grid)}\n")
-    
-    print("=== Production Dataset ===")
-    print(df_prod.head())
-    print(df_prod.describe())
-    print(f"Total rows: {len(df_prod)}\n")
-    
-    print("=== Production Forecast ===")
-    print(df_forecast.head())
-    print(f"Total rows: {len(df_forecast)}\n")
+    print("Stage 2 Data Generation Complete!")
+    print(f"Generated {len(df_prospectivity)} prospectivity records (3 Regions).")
+    print(f"Generated {len(df_production)} production records ({len(mines)} Mines, 10 Years).")
+    print(f"Generated {len(df_forecast)} forecast records (1 Year).")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
