@@ -160,7 +160,12 @@ with col_map:
         fig.add_trace(go.Scattermap(
             lat=top_drill['latitude'], lon=top_drill['longitude'],
             mode='markers',
-            marker=dict(size=12, color='yellow', opacity=0.9),
+            marker=dict(
+                size=14, 
+                color='#FF00FF',  # Neon Purple/Magenta
+                opacity=1.0,
+                line=dict(width=2, color='white')  # White border to pop
+            ),
             name='🎯 Drill Priority',
             hovertemplate='Prob: %{customdata:.3f}<extra>Drill Target</extra>',
             customdata=top_drill['mn_probability'],
