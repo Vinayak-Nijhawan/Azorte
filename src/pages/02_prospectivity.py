@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 import joblib
 import os
 import numpy as np
+from dotenv import load_dotenv
+load_dotenv()
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
@@ -54,14 +56,18 @@ with col_ctrl:
     show_mines = st.toggle("⛏️ Known Mines", value=True)
     show_drill = st.toggle("🎯 Drill Zones", value=False)
 
-    map_style = st.radio("Map Type", ["Satellite", "Terrain", "Roadmap"], index=0, horizontal=True)
+    map_style = st.radio("Map Type", ["Dark", "Satellite", "Terrain", "Street Map"], index=0, horizontal=True)
 
-    if map_style == "Satellite":
+    mapbox_token = os.environ.get("MAPBOX_TOKEN", "")
+
+    if map_style == "Dark":
         plotly_style = "carto-darkmatter"
+    elif map_style == "Satellite":
+        plotly_style = "satellite-streets"
     elif map_style == "Terrain":
-        plotly_style = "carto-positron"
+        plotly_style = "outdoors"
     else:
-        plotly_style = "open-street-map"
+        plotly_style = "streets"
 
     overlay_radius = st.slider("Spread", 8, 40, 18)
     overlay_opacity = st.slider("Opacity", 0.1, 1.0, 0.6, 0.1)
@@ -161,7 +167,7 @@ with col_map:
         ))
 
     fig.update_layout(
-        map=dict(style=plotly_style, center=map_center, zoom=10),
+        map=dict(style=plotly_style, center=map_center, zoom=10, accesstoken=mapbox_token),
         height=600,
         margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01,
