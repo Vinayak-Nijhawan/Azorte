@@ -39,27 +39,22 @@ if df.empty:
 col_map, col_ctrl = st.columns([3, 1], gap="large")
 
 with col_ctrl:
-    st.markdown("### Region")
-    region = st.selectbox("Jump to", ["Central India (Nagpur)", "Eastern India (Odisha)", "Southern India (Karnataka)"], label_visibility="collapsed")
+    region = st.selectbox("🌍 Region", ["Central India (Nagpur)", "Eastern India (Odisha)", "Southern India (Karnataka)"])
     if "Central" in region:
-        map_center = dict(lat=21.25, lon=79.25)
+        map_center = dict(lat=21.45, lon=79.65)
     elif "Eastern" in region:
         map_center = dict(lat=22.05, lon=85.25)
     else:
         map_center = dict(lat=15.15, lon=76.55)
 
-    st.markdown("### Layer Control")
-    show_heatmap = st.checkbox("🔥 Prospectivity Heatmap", value=True)
-    show_ndvi = st.checkbox("🌿 NDVI Vegetation", value=False)
-    show_iron = st.checkbox("🟠 Ferrous Iron Index", value=False)
-    show_mines = st.checkbox("⛏️ Known Mines", value=True)
-    show_drill = st.checkbox("🎯 Drilling Priority Zones", value=False)
+    st.markdown("**Layers**")
+    show_heatmap = st.toggle("🔥 Prospectivity", value=True)
+    show_ndvi = st.toggle("🌿 NDVI Vegetation", value=False)
+    show_iron = st.toggle("🟠 Iron Index", value=False)
+    show_mines = st.toggle("⛏️ Known Mines", value=True)
+    show_drill = st.toggle("🎯 Drill Zones", value=False)
 
-    st.markdown("---")
-    st.markdown("### Map Style")
-    map_style = st.radio("Select", [
-        "🌑 Dark", "⬜ Light", "🗺️ Street"
-    ], index=0, label_visibility="collapsed")
+    map_style = st.radio("Theme", ["🌑 Dark", "⬜ Light", "🗺️ Street"], index=0, horizontal=True, label_visibility="collapsed")
 
     if "Dark" in map_style:
         plotly_style = "carto-darkmatter"
@@ -68,22 +63,8 @@ with col_ctrl:
     else:
         plotly_style = "open-street-map"
 
-    st.markdown("---")
-    st.markdown("### Heatmap Settings")
     overlay_radius = st.slider("Spread", 8, 40, 18)
     overlay_opacity = st.slider("Opacity", 0.1, 1.0, 0.6, 0.1)
-
-    st.markdown("---")
-    st.markdown("### Legend")
-    st.markdown("""
-    <div style="display:flex; align-items:center; gap:8px;">
-        <div style="background:linear-gradient(to right, blue, cyan, lime, yellow, red); 
-                    height:14px; width:120px; border-radius:3px;"></div>
-    </div>
-    <div style="display:flex; justify-content:space-between; width:120px; font-size:12px;">
-        <span>Low</span><span>Med</span><span>High</span>
-    </div>
-    """, unsafe_allow_html=True)
 
 with col_map:
     fig = go.Figure()
