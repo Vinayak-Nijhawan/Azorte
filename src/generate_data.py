@@ -149,9 +149,8 @@ def main():
             road_factor = 0.6 + 0.1 * haul_road_condition  # range: 0.7 to 1.1
             
             # 5. Fleet size: more dumpers/shovels = more throughput (diminishing returns)
-            #    Baseline: 6 dumpers, 3 shovels
-            dumper_factor = min(1.2, 0.5 + 0.1 * num_dumpers)  # 5dum=1.0, 8dum=1.2 (capped)
-            shovel_factor = min(1.15, 0.55 + 0.2 * num_shovels)  # 2shov=0.95, 4shov=1.15
+            dumper_factor = min(1.35, 0.4 + 0.1 * num_dumpers)   # 2=0.6, 5=0.9, 8=1.2, 10=1.35
+            shovel_factor = min(1.25, 0.5 + 0.15 * num_shovels)  # 1=0.65, 2=0.80, 3=0.95, 4=1.10, 5=1.25
             
             # Combine all factors with small random noise
             noise = np.random.normal(0, 0.03)

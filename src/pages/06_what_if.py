@@ -56,8 +56,8 @@ def calculate_production(planned_tpd, rainfall_mm, equipment_pct, blasting_days,
     road_factor = 0.6 + 0.1 * road_cond
     
     # 5. Fleet size
-    dumper_factor = min(1.2, 0.5 + 0.1 * num_dumpers)
-    shovel_factor = min(1.15, 0.55 + 0.2 * num_shovels)
+    dumper_factor = min(1.35, 0.4 + 0.1 * num_dumpers)
+    shovel_factor = min(1.25, 0.5 + 0.15 * num_shovels)
     
     # Combined
     total_factor = equip_factor * rain_factor * blast_factor * road_factor * dumper_factor * shovel_factor
