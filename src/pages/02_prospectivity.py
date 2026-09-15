@@ -133,22 +133,22 @@ with col_map:
             name='Iron Oxide', showlegend=True,
         ))
 
-    # ---- LAYER 4: Known Mines (All 3 Regions) ----
+    # ---- LAYER 4: Known Mines (Real MOIL Locations) ----
     if show_mines:
-        # Coordinates placed at actual high-probability grid points
+        # Real coordinates from forestsclearance.nic.in, ResearchGate, Mapcarta
         mines_data = [
-            (21.3946, 79.3910, "Dongri Buzurg", "Central"),
-            (21.4750, 79.0560, "Chikla Mine", "Central"),
-            (21.2832, 79.1673, "Munsar Mine", "Central"),
-            (21.3706, 79.0505, "Balaghat Mine", "Central"),
-            (21.2360, 79.2303, "Kandri Mine", "Central"),
-            (21.1925, 79.2408, "Gumgaon Mine", "Central"),
-            # Odisha
-            (22.1831, 85.4045, "Joda East Mine", "Odisha"),
-            (22.1433, 85.0975, "Bamebari Mine", "Odisha"),
-            # Karnataka
-            (14.9658, 76.4748, "Sandur Mine", "Karnataka"),
-            (15.0960, 76.6533, "Hospet Mine", "Karnataka"),
+            (21.550, 79.717, "Dongri Buzurg", "Central"),
+            (21.517, 79.750, "Chikla Mine", "Central"),
+            (21.389, 79.287, "Munsar Mine", "Central"),
+            (21.850, 80.228, "Balaghat Mine", "Central"),
+            (21.400, 79.267, "Kandri Mine", "Central"),
+            (21.400, 78.983, "Gumgaon Mine", "Central"),
+            # Odisha (Joda-Barbil belt)
+            (22.010, 85.437, "Joda East Mine", "Odisha"),
+            (22.100, 85.250, "Bamebari Mine", "Odisha"),
+            # Karnataka (Sandur schist belt)
+            (15.083, 76.550, "Sandur Mine", "Karnataka"),
+            (15.250, 76.350, "Hospet Mine", "Karnataka"),
         ]
         
         m_lats = [m[0] for m in mines_data]
@@ -195,7 +195,7 @@ st.subheader("Target Statistics")
 
 # Add region column to df for filtering
 def get_region(lat, lon):
-    if lat >= 21.0 and lat <= 22.0 and lon >= 78.5 and lon <= 80.0:
+    if lat >= 21.0 and lat <= 22.0 and lon >= 78.5 and lon <= 80.5:
         return "Central India"
     elif lat >= 21.5 and lon >= 84.5:
         return "Odisha"

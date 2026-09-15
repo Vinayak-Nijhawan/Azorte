@@ -21,32 +21,33 @@ def main():
     os.makedirs(data_dir, exist_ok=True)
     
     # 1. GENERATE SPECTRAL DATA ACROSS 3 REGIONS
-    # Region 1: Central (Nagpur/Balaghat)
-    lat_cen = np.random.uniform(21.0, 21.5, 1000)
-    lon_cen = np.random.uniform(79.0, 79.5, 1000)
+    # Region 1: Central India (Nagpur-Bhandara-Balaghat) — expanded to cover all MOIL mines
+    lat_cen = np.random.uniform(21.0, 22.0, 1500)
+    lon_cen = np.random.uniform(78.8, 80.5, 1500)
     
-    # Region 2: Eastern (Keonjhar, Odisha)
-    lat_east = np.random.uniform(21.8, 22.3, 1000)
-    lon_east = np.random.uniform(85.0, 85.5, 1000)
+    # Region 2: Eastern (Joda-Barbil, Odisha)
+    lat_east = np.random.uniform(21.8, 22.3, 750)
+    lon_east = np.random.uniform(85.0, 85.7, 750)
     
-    # Region 3: Southern (Bellary, Karnataka)
-    lat_south = np.random.uniform(14.9, 15.4, 1000)
-    lon_south = np.random.uniform(76.3, 76.8, 1000)
+    # Region 3: Southern (Sandur-Bellary, Karnataka)
+    lat_south = np.random.uniform(14.8, 15.4, 750)
+    lon_south = np.random.uniform(76.2, 76.8, 750)
     
     lats = np.concatenate([lat_cen, lat_east, lat_south])
     lons = np.concatenate([lon_cen, lon_east, lon_south])
     
+    n_total = len(lats)
     df_spectral = pd.DataFrame({
         'latitude': lats,
         'longitude': lons,
-        'ndvi': np.random.uniform(0, 1, 3000),
-        'iron_oxide_index': np.random.uniform(0, 1, 3000),
-        'clay_index': np.random.uniform(0, 1, 3000),
-        'B02': np.random.uniform(0, 1, 3000),
-        'B04': np.random.uniform(0, 1, 3000),
-        'B08': np.random.uniform(0, 1, 3000),
-        'B11': np.random.uniform(0, 1, 3000),
-        'B12': np.random.uniform(0, 1, 3000),
+        'ndvi': np.random.uniform(0, 1, n_total),
+        'iron_oxide_index': np.random.uniform(0, 1, n_total),
+        'clay_index': np.random.uniform(0, 1, n_total),
+        'B02': np.random.uniform(0, 1, n_total),
+        'B04': np.random.uniform(0, 1, n_total),
+        'B08': np.random.uniform(0, 1, n_total),
+        'B11': np.random.uniform(0, 1, n_total),
+        'B12': np.random.uniform(0, 1, n_total),
     })
     
     n_samples = len(df_spectral)
