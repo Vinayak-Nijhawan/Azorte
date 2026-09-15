@@ -54,11 +54,11 @@ with col_ctrl:
     show_mines = st.toggle("⛏️ Known Mines", value=True)
     show_drill = st.toggle("🎯 Drill Zones", value=False)
 
-    map_style = st.radio("Theme", ["🌑 Dark", "⬜ Light", "🗺️ Street"], index=0, horizontal=True, label_visibility="collapsed")
+    map_style = st.radio("Map Type", ["Satellite", "Terrain", "Roadmap"], index=0, horizontal=True)
 
-    if "Dark" in map_style:
+    if map_style == "Satellite":
         plotly_style = "carto-darkmatter"
-    elif "Light" in map_style:
+    elif map_style == "Terrain":
         plotly_style = "carto-positron"
     else:
         plotly_style = "open-street-map"
