@@ -93,6 +93,31 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+/* Safely increase all readable text elements by 3px on this specific dashboard */
+.stMarkdown p, .stMarkdown li {
+    font-size: calc(1.15rem + 3px) !important;
+}
+[data-testid="stMetricValue"] > div {
+    font-size: calc(2.5rem + 3px) !important;
+}
+[data-testid="stMetricLabel"] > div > div > p, [data-testid="stMetricDelta"] > div {
+    font-size: calc(1.1rem + 3px) !important;
+}
+h2, .stMarkdown h2 {
+    font-size: calc(2.2rem + 3px) !important;
+}
+h3, .stMarkdown h3 {
+    font-size: calc(1.8rem + 3px) !important;
+}
+/* Specifically target widget labels without breaking the widget internals */
+[data-testid="stWidgetLabel"] p, label p {
+    font-size: calc(1rem + 3px) !important;
+}
+</style>
+""", unsafe_allow_html=True)
 st.markdown("Predictions powered by our **trained GradientBoosting model** (R² = 0.977, trained on 720 data points) — verified to respond accurately to all parameters.")
 
 # ================= SIDEBAR =================
@@ -204,7 +229,7 @@ with g1:
                          {'range': [60,80], 'color': 'rgba(230,126,34,0.12)'},
                          {'range': [80,115], 'color': 'rgba(46,204,113,0.12)'}]}
     ))
-    fig_g.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=10))
+    fig_g.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=10), font=dict(size=15))
     st.plotly_chart(fig_g, use_container_width=True)
 
 with g2:
@@ -218,7 +243,7 @@ with g2:
                          {'range': [20,40], 'color': 'rgba(230,126,34,0.12)'},
                          {'range': [40,100], 'color': 'rgba(231,76,60,0.12)'}]}
     ))
-    fig_r.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=10))
+    fig_r.update_layout(height=250, margin=dict(l=20, r=20, t=50, b=10), font=dict(size=15))
     st.plotly_chart(fig_r, use_container_width=True)
 
 # ================= FACTOR BREAKDOWN =================
@@ -237,7 +262,9 @@ fig_factors = go.Figure(go.Bar(
 ))
 fig_factors.add_vline(x=100, line_color="rgba(255,255,255,0.3)", line_dash="dash")
 fig_factors.update_layout(height=300, xaxis_title="Factor Efficiency (%)", xaxis=dict(range=[0, 130]),
-                          margin=dict(l=10, r=60, t=10, b=40))
+                          margin=dict(l=10, r=60, t=10, b=40), font=dict(size=18))
+fig_factors.update_yaxes(tickfont_size=18)
+fig_factors.update_xaxes(tickfont_size=18, title_font_size=18)
 st.plotly_chart(fig_factors, use_container_width=True)
 
 st.markdown("""
@@ -285,7 +312,7 @@ fig_wf = go.Figure(go.Waterfall(
     increasing={"marker": {"color": "#2ecc71"}},
     totals={"marker": {"color": "#3498db"}}
 ))
-fig_wf.update_layout(height=420, yaxis_title="Production (TPD)", showlegend=False)
+fig_wf.update_layout(height=420, yaxis_title="Production (TPD)", showlegend=False, font=dict(size=15))
 st.plotly_chart(fig_wf, use_container_width=True)
 
 # Biggest loss
@@ -337,7 +364,9 @@ for _, r in sens_df.iterrows():
                               text=f"±{r['Swing']:.0f} TPD", textposition='outside',
                               base=r['Worst'], showlegend=False))
 fig_sens.update_layout(height=280, xaxis_title="Production Range (TPD)", 
-                        margin=dict(l=10, r=80, t=10, b=40))
+                        margin=dict(l=10, r=80, t=10, b=40), font=dict(size=18))
+fig_sens.update_yaxes(tickfont_size=18)
+fig_sens.update_xaxes(tickfont_size=18, title_font_size=18)
 st.plotly_chart(fig_sens, use_container_width=True)
 
 most_sensitive = sens_df.iloc[-1]['Factor']

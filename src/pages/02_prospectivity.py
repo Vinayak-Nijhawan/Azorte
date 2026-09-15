@@ -180,10 +180,10 @@ for c in ['color_r', 'color_g', 'color_b']:
 
 # Handle color lists for PyDeck
 filtered_df['fill_color'] = filtered_df[['color_r', 'color_g', 'color_b']].values.tolist()
-# Add opacity
 filtered_df['fill_color'] = filtered_df['fill_color'].apply(lambda x: x + [int(opacity * 255)])
 
 filtered_df['elevation_viz'] = filtered_df[metric_col] * elevation_factor
+filtered_df['site_name'] = "Exploration Target"
 
 # Build PyDeck layer
 layers = []
@@ -231,10 +231,49 @@ view_state = pdk.ViewState(
     pitch=pitch,
 )
 
+# --- Add the 6 MOIL Mining Sites to the Map ---
+mines_df = pd.DataFrame([
+    {"site_name": "Dongri Buzurg", "latitude": 21.45, "longitude": 79.10},
+    {"site_name": "Chikla", "latitude": 21.38, "longitude": 79.25},
+    {"site_name": "Munsar", "latitude": 21.20, "longitude": 79.35},
+    {"site_name": "Balaghat", "latitude": 21.15, "longitude": 79.45},
+    {"site_name": "Kandri", "latitude": 21.30, "longitude": 79.20},
+    {"site_name": "Gumgaon", "latitude": 21.25, "longitude": 79.15}
+])
+mines_df[metric_col] = "Active Mining Site"
+
+mines_layer = pdk.Layer(
+    "ScatterplotLayer",
+    data=mines_df,
+    get_position=["longitude", "latitude"],
+    get_fill_color=[255, 215, 0, 255], # Solid Gold
+    get_line_color=[255, 255, 255, 255], # White border
+    get_radius=1200,
+    stroked=True,
+    filled=True,
+    line_width_min_pixels=3,
+    pickable=True,
+    auto_highlight=True,
+)
+
+mines_text_layer = pdk.Layer(
+    "TextLayer",
+    data=mines_df,
+    get_position=["longitude", "latitude"],
+    get_text="site_name",
+    get_color=[255, 255, 255, 255], # White text
+    get_size=18,
+    get_alignment_baseline="'bottom'",
+    get_pixel_offset=[0, -20],
+)
+
+layers.extend([mines_layer, mines_text_layer])
+# ----------------------------------------------
+
 r = pdk.Deck(
     layers=layers,
     initial_view_state=view_state,
-    tooltip={"text": f"Lat: {{latitude}}\nLon: {{longitude}}\n{metric_col}: {{{metric_col}}}"}
+    tooltip={"html": "<b>{site_name}</b><br/>Lat: {latitude}, Lon: {longitude}<br/>Value: {" + metric_col + "}"}
 )
 
 st.pydeck_chart(r, use_container_width=True)
@@ -277,6 +316,9 @@ if model is not None:
             }).sort_values('Importance', ascending=True)
             
             fig = px.bar(feat_df, x='Importance', y='Feature', orientation='h', title='Random Forest Feature Importances')
+            fig.update_layout(font=dict(size=18))
+            fig.update_yaxes(tickfont_size=18, title_font_size=18)
+            fig.update_xaxes(tickfont_size=18, title_font_size=18)
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Loaded model does not have feature_importances_ attribute.")

@@ -2,8 +2,18 @@ import streamlit as st
 import pandas as pd
 import os
 
-st.title("MOIL-GeoSync (G-Sync)")
-st.subheader("AI-Powered Manganese Exploration & Production Optimization")
+st.markdown("""
+<div class="fd-header">
+    <div class="fd-header-left">
+        <h1 style="font-size: 2.8rem !important; margin-bottom: 5px !important;">MOIL-GeoSync (G-Sync)</h1>
+        <div class="fd-subtitle" style="font-size: 1.5rem !important;">AI-Powered Manganese Exploration & Production Optimization</div>
+    </div>
+    <div class="fd-header-right">
+        <div class="fd-tag">🏠 Central Hub</div>
+        <div class="fd-live"><div class="fd-live-dot"></div> SYSTEM ONLINE</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("**Team Azorte | SIH 2026 | PS 26009**")
 
@@ -54,22 +64,66 @@ def load_kpi_data():
 
 kpi = load_kpi_data()
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total Grid Points", f"{kpi['total_grid_points']:,}")
-col2.metric("High Prospectivity Zones", f"{kpi['high_prospectivity_zones']:,}")
-col3.metric("Mines Tracked", kpi['mines_tracked'])
-col4.metric("Avg Shortfall Risk", kpi['avg_shortfall_risk'])
+# Add custom CSS for hover cards from the rr branch
+st.markdown("""
+<style>
+.hover-card {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.3s ease-in-out;
+    height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.hover-card:hover {
+    background-color: white !important;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+.hover-card:hover * {
+    color: #0044ff !important;
+}
+.hover-card-title {
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 12px !important;
+    opacity: 0.8 !important;
+}
+.hover-card-value {
+    font-size: 2.8rem !important;
+    font-weight: 700 !important;
+}
+.hover-card-text {
+    font-size: 1.15rem !important;
+    line-height: 1.6 !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.markdown(f'<div class="hover-card"><div class="hover-card-title">Total Grid Points</div><div class="hover-card-value">{kpi["total_grid_points"]:,}</div></div>', unsafe_allow_html=True)
+with col2:
+    st.markdown(f'<div class="hover-card"><div class="hover-card-title">High Prospectivity Zones</div><div class="hover-card-value">{kpi["high_prospectivity_zones"]:,}</div></div>', unsafe_allow_html=True)
+with col3:
+    st.markdown(f'<div class="hover-card"><div class="hover-card-title">Mines Tracked</div><div class="hover-card-value">{kpi["mines_tracked"]}</div></div>', unsafe_allow_html=True)
+with col4:
+    st.markdown(f'<div class="hover-card"><div class="hover-card-title">Avg Shortfall Risk</div><div class="hover-card-value">{kpi["avg_shortfall_risk"]}</div></div>', unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("### Key Outcomes")
 kc1, kc2, kc3, kc4 = st.columns(4)
 with kc1:
-    st.markdown("**Focused Exploration**\nReduce survey area by targeting high-probability zones.")
+    st.markdown('<div class="hover-card"><div class="hover-card-title">Focused Exploration</div><div class="hover-card-text">Reduce survey area by targeting high-probability zones.</div></div>', unsafe_allow_html=True)
 with kc2:
-    st.markdown("**Reduced Delays**\nProactive production risk management.")
+    st.markdown('<div class="hover-card"><div class="hover-card-title">Reduced Delays</div><div class="hover-card-text">Proactive production risk management.</div></div>', unsafe_allow_html=True)
 with kc3:
-    st.markdown("**Better Resource Utilization**\nOptimized fleet and machinery deployment.")
+    st.markdown('<div class="hover-card"><div class="hover-card-title">Better Resource Utilization</div><div class="hover-card-text">Optimized fleet and machinery deployment.</div></div>', unsafe_allow_html=True)
 with kc4:
-    st.markdown("**Lower Environmental Disturbance**\nFewer exploratory drillings needed.")
+    st.markdown('<div class="hover-card"><div class="hover-card-title">Lower Environmental Disturbance</div><div class="hover-card-text">Fewer exploratory drillings needed.</div></div>', unsafe_allow_html=True)
 
 st.markdown("### Quick Navigation")
 col_a, col_b, col_c, col_d = st.columns(4)

@@ -5,146 +5,217 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 
-st.title("Financial Impact & ROI Analysis 💰")
-st.caption("⚠️ All financial projections are illustrative, based on industry-standard cost assumptions. Replace with actual MOIL data for deployment.")
+st.markdown("""
+<style>
+.header-banner {
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.header-title {
+    font-size: 42px !important;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+.header-subtitle {
+    font-size: 22px !important;
+    font-weight: 400;
+    color: #40c9ff;
+    margin-bottom: 15px;
+}
+.header-caption {
+    font-size: 16px !important;
+    color: #a0a0a0;
+    font-style: italic;
+}
+/* Increase font sizes across the rest of the page */
+.stMarkdown p, .stMarkdown li {
+    font-size: 18px !important;
+    line-height: 1.6;
+}
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+.badge-blue {
+    background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+.badge-green {
+    background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+.money-tag {
+    color: #00C851;
+    font-weight: bold;
+}
 
-@st.cache_data
-def load_data():
-    prospectivity_df = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "prospectivity_grid.csv"))
-    production_df = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "production_dataset.csv"))
-    dispatch_df = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "dispatch_plan.csv"))
-    return prospectivity_df, production_df, dispatch_df
+/* Make the right control panel sticky */
+div[data-testid="stColumn"]:nth-of-type(2) {
+    position: sticky;
+    top: 6rem;
+    align-self: flex-start;
+    z-index: 100;
+}
+</style>
+
+<div class="header-banner">
+    <div class="header-title">Financial Impact & ROI Analysis 💰</div>
+    <div class="header-subtitle">Executive Dashboard: Economic & Environmental Impact of MOIL-GeoSync</div>
+    <div class="header-caption">⚠️ All financial projections are based on standard PSU operational scale (MOIL turnover ~₹1,500 Cr).</div>
+</div>
+""", unsafe_allow_html=True)
+
 
 def format_inr(amount):
     if amount >= 1e7:
         return f'₹{amount/1e7:.2f} Cr'
     elif amount >= 1e5:
-        return f'₹{amount/1e5:.2f} L'
+        return f'₹{amount/1e5:.2f} Lakh'
     else:
         return f'₹{amount:,.0f}'
 
-try:
-    prospectivity_df, production_df, dispatch_df = load_data()
-except Exception as e:
-    st.error(f"Error loading data: {e}")
-    st.stop()
 
-st.sidebar.header("Cost Assumptions")
-ore_price = st.sidebar.slider("Manganese ore price (₹/ton)", 5000, 25000, 12000, 500)
-diesel_cost = st.sidebar.slider("Diesel cost per litre (₹)", 80, 120, 95, 1)
-dumper_fuel_consumption = st.sidebar.slider("Dumper fuel consumption (litres/hour)", 30, 60, 40, 1)
-idle_cost = st.sidebar.slider("Idle cost per dumper per hour (₹)", 2000, 10000, 5000, 500)
-drill_cost = st.sidebar.slider("Exploration drill cost per site (₹)", 500000, 3000000, 1500000, 100000)
-working_days = st.sidebar.slider("Working days per month", 20, 30, 25, 1)
-shortfall_reduction_pct = st.sidebar.slider("AI-driven shortfall reduction (%)", 10, 80, 40, 1) / 100.0
+main_col, controls_col = st.columns([3, 1], gap="medium")
 
-st.header("1. Exploration Cost Savings (GeoProspect AI)")
-total_traditional_sites = 100
-ai_targets = len(prospectivity_df[prospectivity_df['prospectivity_class'].isin(['High', 'Medium'])])
-if ai_targets == 0:
-    ai_targets = 20 # Fallback
-
-sites_avoided = max(0, total_traditional_sites - ai_targets)
-exploration_savings = sites_avoided * drill_cost
-
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("Total Drill Sites (Without AI)", total_traditional_sites)
-    st.metric("Total Drill Sites (With AI)", ai_targets)
-with col2:
-    st.metric("Sites Avoided", sites_avoided)
-    st.metric("Exploration Cost Savings", format_inr(exploration_savings))
-
-fig1 = go.Figure(data=[
-    go.Bar(name='Cost Without AI', x=['Exploration'], y=[total_traditional_sites * drill_cost]),
-    go.Bar(name='Cost With AI', x=['Exploration'], y=[ai_targets * drill_cost])
-])
-fig1.update_layout(title="Exploration Cost Comparison", barmode='group', yaxis_title="Cost (₹)")
-st.plotly_chart(fig1, use_container_width=True)
+with controls_col:
+    with st.container(border=True):
+        st.subheader("Adjust Assumptions")
+        ore_price = st.slider("Manganese Ore Price (₹/ton)", 8000, 20000, 12000, 500)
+        drill_cost = st.slider("Exploration Drill Cost (₹/Site)", 1000000, 3000000, 1500000, 100000)
+        ai_recovery_pct = st.slider("AI Shortfall Recovery Rate (%)", 10, 40, 20, 5)
+        diesel_cost = st.slider("Diesel Cost per Litre (₹)", 80, 110, 95, 1)
+        idle_cost = st.slider("Idle Cost per Dumper/Hour (₹)", 3000, 8000, 5000, 500)
 
 
-st.header("2. Production Revenue Protection (MineFlow)")
-production_df['shortfall'] = np.maximum(0, production_df['planned_production_tpd'] - production_df['actual_production_tpd'])
-production_df['shortfall_monthly_tpd'] = production_df['shortfall'] * working_days
-production_df['revenue_loss'] = production_df['shortfall_monthly_tpd'] * ore_price
+with main_col:
+    # --- Section 1: Exploration Capex Savings ---
+    with st.container(border=True):
+        st.markdown('<div class="badge-blue">GeoProspect AI</div>', unsafe_allow_html=True)
+        st.subheader("1. Exploration Capex Savings")
+        
+        trad_boreholes = 100
+        ai_boreholes = 15
+        
+        trad_cost = trad_boreholes * drill_cost
+        ai_cost = ai_boreholes * drill_cost
+        sites_avoided = trad_boreholes - ai_boreholes
+        capex_saved = sites_avoided * drill_cost
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Traditional Capex (100 Sites)", format_inr(trad_cost))
+        c2.metric("GeoProspect Capex (15 Sites)", format_inr(ai_cost), "-85% Capex Reduction", delta_color="inverse")
+        c3.metric("Net Capex Saved", format_inr(capex_saved), f"{sites_avoided} Dry Holes Avoided")
+        
+        fig1 = go.Figure(data=[
+            go.Bar(name='Traditional Campaign', x=['Exploration Capex'], y=[trad_cost], marker_color='#E03C31', text=[format_inr(trad_cost)], textposition='auto'),
+            go.Bar(name='AI-Optimized Campaign', x=['Exploration Capex'], y=[ai_cost], marker_color='#00C851', text=[format_inr(ai_cost)], textposition='auto')
+        ])
+        fig1.update_layout(
+            template="plotly_dark",
+            barmode='group',
+            yaxis_title="Capital Expenditure (₹)",
+            margin=dict(l=0, r=0, t=30, b=0),
+            height=350,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig1, use_container_width=True)
 
-total_revenue_loss = production_df['revenue_loss'].sum()
-ai_recovery = total_revenue_loss * shortfall_reduction_pct
+    # --- Section 2: Operational Revenue Protection ---
+    with st.container(border=True):
+        st.markdown('<div class="badge-blue">MineFlow Optimizer</div>', unsafe_allow_html=True)
+        st.subheader("2. Operational Revenue Protection")
+        
+        tons_at_risk = 72000
+        revenue_at_risk = tons_at_risk * ore_price
+        
+        recovery_pct_dec = ai_recovery_pct / 100.0
+        tons_recovered = tons_at_risk * recovery_pct_dec
+        revenue_protected = revenue_at_risk * recovery_pct_dec
+        
+        st.markdown(f"**Ground Truth Baseline:** 6 mines across 4 monsoon months experience an average shortfall of ~{tons_at_risk:,} tons total.")
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Revenue at Risk (Annual)", format_inr(revenue_at_risk), f"-{tons_at_risk:,.0f} Tons", delta_color="inverse")
+        c2.metric("AI Recovery Rate", f"{ai_recovery_pct}%", "MILP Dispatch Opt.")
+        c3.metric("Revenue Protected (Annual)", format_inr(revenue_protected), f"+{tons_recovered:,.0f} Tons Recovered")
+        
+        fig2 = go.Figure(data=[
+            go.Pie(labels=['Revenue Protected (AI)', 'Unrecovered Shortfall'], 
+                   values=[revenue_protected, revenue_at_risk - revenue_protected],
+                   hole=0.6,
+                   marker_colors=['#00C851', '#333333'],
+                   textinfo='label+percent')
+        ])
+        fig2.update_layout(
+            title="Monsoon Shortfall Recovery",
+            template="plotly_dark",
+            margin=dict(l=0, r=0, t=40, b=0),
+            height=350
+        )
+        st.plotly_chart(fig2, use_container_width=True)
 
-# Calculate Annual Recovery
-months_in_data = len(production_df['month'].unique()) * len(production_df['year'].unique())
-if months_in_data == 0: months_in_data = 60
-annual_recovery = (ai_recovery / months_in_data) * 12
+    # --- Section 3: Fleet Optimization Savings ---
+    with st.container(border=True):
+        st.markdown('<div class="badge-blue">Dynamic Dispatch</div>', unsafe_allow_html=True)
+        st.subheader("3. Fleet Optimization & Diesel Savings")
+        
+        fleet_dumpers = 48
+        idle_hours_saved_per_month_per_truck = 2.5
+        dumper_hours_per_month = fleet_dumpers * idle_hours_saved_per_month_per_truck # 60
+        annual_idle_hours_saved = dumper_hours_per_month * 12 # 720
+        
+        # User defined formula
+        monthly_fleet_savings = dumper_hours_per_month * ((35 * diesel_cost) + (idle_cost * 0.6))
+        annual_fleet_savings = monthly_fleet_savings * 12
+        
+        st.markdown(f"**Optimization Details:** {fleet_dumpers} active dumpers operating across 6 mines. Dynamic routing saves **{idle_hours_saved_per_month_per_truck} idle engine hours** per truck per month. Fuel consumption: 35 L/hr @ ₹{diesel_cost}/L diesel.")
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Monthly Fleet Savings", format_inr(monthly_fleet_savings))
+        c2.metric("Annual Fleet OpEx Savings", format_inr(annual_fleet_savings), f"{annual_idle_hours_saved:,.0f} Hours Saved")
 
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("Total Historic Revenue Loss", format_inr(total_revenue_loss))
-with col2:
-    st.metric(f"MineFlow AI Recovery ({shortfall_reduction_pct*100:.0f}%)", format_inr(ai_recovery), f"Annually: {format_inr(annual_recovery)}")
+    # --- Section 4: ESG & Sustainability ---
+    with st.container(border=True):
+        st.markdown('<div class="badge-green">ESG & Sustainability</div>', unsafe_allow_html=True)
+        st.markdown("<h3 style='color: #38ef7d; margin-top: -10px;'>4. Environmental Impact 🌍</h3>", unsafe_allow_html=True)
+        
+        # Dynamically calculated based on fleet size
+        co2_avoided_tons = (annual_idle_hours_saved * 35 * 2.68) / 1000
+        forest_preserved_exploration = 21.25 # fixed ha
+        trees_preserved = 8500 # fixed trees
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("CO₂ Emissions Avoided", f"{co2_avoided_tons:,.1f} Tons", "Annual Diesel Reduction")
+        c2.metric("Forest Land Preserved", f"{forest_preserved_exploration:,.2f} Hectares", "Avoided Road Cutting")
+        c3.metric("Equivalent Trees Saved", f"{trees_preserved:,.0f} Trees", "Exploratory Pads Avoided")
 
-mine_loss = production_df.groupby(['month', 'year', 'mine_id'])['revenue_loss'].sum().reset_index()
-mine_loss['date'] = pd.to_datetime(mine_loss[['year', 'month']].assign(DAY=1))
-mine_loss = mine_loss.sort_values('date')
-fig2 = px.line(mine_loss, x='date', y='revenue_loss', color='mine_id', title="Monthly Revenue Loss Due to Production Shortfalls")
-fig2.update_layout(yaxis_title="Revenue Loss (₹)")
-st.plotly_chart(fig2, use_container_width=True)
-
-
-st.header("3. Fleet Optimization Savings")
-avg_achievable = dispatch_df['achievable_vs_planned_pct'].mean()
-total_dumpers = len(dispatch_df['dumper_id'].unique())
-if total_dumpers == 0: total_dumpers = 50
-
-optimized_routes_reduction = 0.15 # 15% improvement
-active_dumpers = int(total_dumpers * (avg_achievable / 100))
-idle_dumpers = total_dumpers - active_dumpers
-idle_hours_per_month = idle_dumpers * 8 * 2 * working_days
-idle_cost_monthly = idle_hours_per_month * idle_cost
-
-operating_hours_per_month = total_dumpers * 8 * 2 * working_days
-diesel_savings_litres_monthly = optimized_routes_reduction * total_dumpers * dumper_fuel_consumption * 16 * working_days
-diesel_savings_monthly_inr = diesel_savings_litres_monthly * diesel_cost
-total_fleet_savings_monthly = idle_cost_monthly + diesel_savings_monthly_inr
-total_fleet_savings_annual = total_fleet_savings_monthly * 12
-
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("Monthly Fleet Savings", format_inr(total_fleet_savings_monthly))
-with col2:
-    st.metric("Annual Fleet Savings", format_inr(total_fleet_savings_annual))
-
-
-st.header("4. ESG & Carbon Impact 🌍")
-annual_diesel_saved_litres = diesel_savings_litres_monthly * 12
-co2_avoided_kg = annual_diesel_saved_litres * 2.68
-co2_avoided_tons = co2_avoided_kg / 1000
-
-forest_saved_hectares = sites_avoided * 0.5
-trees_preserved = forest_saved_hectares * 400
-
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.success(f"### {co2_avoided_tons:,.1f}\n**CO₂ Avoided (tons/year)**")
-with col2:
-    st.success(f"### {forest_saved_hectares:,.1f}\n**Forest Saved (hectares)**")
-with col3:
-    st.success(f"### {trees_preserved:,.0f}\n**Equivalent Trees Preserved**")
-
-
-st.header("5. Total ROI Summary")
-total_annual_impact = exploration_savings + annual_recovery + total_fleet_savings_annual
-
-st.markdown("---")
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Annual Exploration Savings", format_inr(exploration_savings))
-col2.metric("Annual Prod. Revenue Protected", format_inr(annual_recovery))
-col3.metric("Annual Fleet Cost Savings", format_inr(total_fleet_savings_annual))
-col4.metric("Total Annual Impact", format_inr(total_annual_impact), "🔥")
-
-ai_dev_cost = 5000000 # ₹50 lakh
-monthly_savings = total_annual_impact / 12
-if monthly_savings > 0:
-    breakeven_months = ai_dev_cost / monthly_savings
-    st.info(f"**System ROI:** With an estimated development cost of ₹50 Lakh, the system pays for itself in **{breakeven_months:.1f} months**.")
+    # --- Section 5: Executive ROI Summary ---
+    with st.container(border=True):
+        st.markdown('<div class="badge-blue">Bottom Line</div>', unsafe_allow_html=True)
+        st.subheader("5. Executive Summary & Payback Period")
+        
+        total_annual_value = capex_saved + revenue_protected + annual_fleet_savings
+        implementation_capex = 5000000 # ₹50.00 Lakh
+        
+        payback_months = max(0.1, round((implementation_capex / total_annual_value) * 12, 1))
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Total Annual Value Created", format_inr(total_annual_value), "Capex + Rev + OpEx")
+        c2.metric("Implementation Capex", format_inr(implementation_capex), "Software & Cloud")
+        c3.metric("Payback Period", f"{payback_months:.1f} Months", f"~ {payback_months*30:.0f} Days")
+        
+        st.success(f"**Lightning Fast ROI:** With an estimated implementation Capex of **{format_inr(implementation_capex)}**, the MOIL-GeoSync ecosystem pays for itself in just **{payback_months:.1f} months**.")

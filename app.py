@@ -19,21 +19,9 @@ st.set_page_config(
 # Global font size increase — aggressive override
 st.markdown("""
 <style>
-    /* Nuclear option: force ALL text bigger */
-    * {
-        font-size: inherit;
-    }
+    /* Targeted font size bumps (avoiding wildcards that break Streamlit UI components like sliders) */
     
-    /* Root size bump */
-    :root {
-        font-size: 20px !important;
-    }
-    
-    html, body, div, span, p, li, td, th, label, input, select, textarea,
-    section, header, footer, main, aside, nav, article {
-        font-size: 20px !important;
-        line-height: 1.6 !important;
-    }
+    /* Removed aggressive global font-size overrides that break complex widgets */
     
     /* Headings - big and bold */
     h1 { font-size: 2.8rem !important; }
@@ -42,7 +30,7 @@ st.markdown("""
     h4 { font-size: 1.5rem !important; }
     
     /* Paragraphs and list items */
-    p, li, span {
+    .stMarkdown p, .stMarkdown li {
         font-size: 1.15rem !important;
         line-height: 1.7 !important;
     }
@@ -72,8 +60,8 @@ st.markdown("""
     }
     
     /* Data tables */
-    table, table td, table th {
-        font-size: 1rem !important;
+    [data-testid="stDataFrame"], table, table td, table th {
+        font-size: 20px !important;
     }
     
     /* Alert / info / warning / error boxes */
