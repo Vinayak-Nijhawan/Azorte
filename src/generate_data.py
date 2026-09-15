@@ -100,9 +100,10 @@ def main():
     df_prospectivity_grid = df_prospectivity.drop(columns=['mn_occurrence'])
     
     # 3. Generate production dataset (100% SYNTHETIC)
-    mines = ['Mine_A_Dongri_Buzurg', 'Mine_B_Chikla', 'Mine_C_Munsar']
-    start_date = datetime(2021, 1, 1)
-    months = 60 # Jan 2021 - Dec 2025
+    mines = ['Mine_A_Dongri_Buzurg', 'Mine_B_Chikla', 'Mine_C_Munsar',
+             'Mine_D_Balaghat', 'Mine_E_Kandri', 'Mine_F_Gumgaon']
+    start_date = datetime(2016, 1, 1)
+    months = 120 # Jan 2016 - Dec 2025 (10 years)
     
     prod_data = []
     
