@@ -100,7 +100,7 @@ if prompt := st.chat_input("Ask a question about the G-Sync system..."):
             
         try:
             response = client.chat.completions.create(
-                model="llama3-70b-8192",
+                model="llama-3.1-70b-versatile",
                 messages=api_messages,
                 temperature=0.3,
                 max_tokens=500
