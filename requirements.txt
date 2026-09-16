@@ -8,3 +8,5 @@ pydeck
 ortools
 shap
 matplotlib
+python-dotenv
+groq

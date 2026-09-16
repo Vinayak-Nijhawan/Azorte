@@ -60,11 +60,10 @@ with col_ctrl:
     else:
         map_center = dict(lat=15.15, lon=76.55)
 
-    st.markdown("**Layers**")
+    st.write("### Layers")
     show_heatmap = st.toggle("🔥 Prospectivity", value=True)
-    show_ndvi = st.toggle("🌿 NDVI Vegetation", value=False)
     show_iron = st.toggle("🟠 Iron Index", value=False)
-    show_mines = st.toggle("⛏️ Known Mines", value=True)
+    show_mines = st.toggle("⛏️ Known Mines", value=False)
     show_drill = st.toggle("🎯 Drill Zones", value=False)
 
     map_style = st.radio("Map Type", ["Dark", "Satellite", "Terrain", "Street Map"], index=0, horizontal=True)
@@ -86,6 +85,9 @@ with col_ctrl:
 with col_map:
     fig = go.Figure()
 
+    # Force Plotly to render the Map canvas even if all toggles are turned off
+    fig.add_trace(go.Scattermap(lat=[None], lon=[None], showlegend=False, hoverinfo='none'))
+
     # ---- LAYER 1: Prospectivity Heatmap ----
     if show_heatmap and 'mn_probability' in df.columns:
         # Only plot medium-to-high probability points
@@ -104,18 +106,6 @@ with col_map:
             hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{z:.3f}<extra></extra>',
         ))
 
-    # ---- LAYER 2: NDVI Vegetation ----
-    if show_ndvi and 'ndvi' in df.columns:
-        veg = df[df['ndvi'] > 0.3]
-        fig.add_trace(go.Densitymap(
-            lat=veg['latitude'], lon=veg['longitude'],
-            z=veg['ndvi'],
-            radius=overlay_radius, opacity=overlay_opacity * 0.6,
-            colorscale=[[0,'rgba(0,200,200,0.2)'],[0.5,'rgba(0,255,180,0.6)'],[1.0,'rgba(180,255,0,0.9)']],
-            colorbar=dict(title=dict(text="NDVI"), x=1.08, len=0.3, y=0.3, thickness=10),
-            name='NDVI', showlegend=True,
-            hovertemplate='NDVI: %{z:.3f}<extra></extra>',
-        ))
 
     # ---- LAYER 3: Iron Oxide ----
     if show_iron and 'iron_oxide_index' in df.columns:
