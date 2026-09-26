@@ -23,7 +23,7 @@ prospectivity_dataset_path = os.path.join(DATA_DIR, 'prospectivity_dataset.csv')
 prospectivity_grid_path = os.path.join(DATA_DIR, 'prospectivity_grid.csv')
 
 print(f"Loading data from {prospectivity_dataset_path}...")
-df = pd.read_csv(prospectivity_dataset_path)
+df = pd.read_csv(prospectivity_dataset_path, comment='#')
 
 # Print initial verification
 print("Dataset Head:")
@@ -37,7 +37,7 @@ df['rock_type_encoded'] = le.fit_transform(df['rock_type'])
 features = ['iron_oxide_index', 'clay_index', 'ndvi', 'rock_type_encoded', 
             'fault_distance_km', 'shear_zone_proximity_km', 'elevation_m', 
             'slope_deg', 'rainfall_mm', 'soil_moisture']
-target = 'mn_occurrence'
+target = 'known_occurrence'
 
 # Spatial Block Cross-Validation
 # Block IDs based on 0.1 degree lat/lon quantization
