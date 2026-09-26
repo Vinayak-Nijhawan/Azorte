@@ -48,16 +48,16 @@ weather = pd.read_csv(os.path.join(NEW_DATA, 'weather_real.csv'), comment='#')
 
 # Map mines to regions
 mine_region_map = {
-    'Mine_A_Dongri_Buzurg': 'Central_India',
-    'Mine_B_Chikla': 'Central_India', 
-    'Mine_C_Munsar': 'Central_India',
-    'Mine_D_Balaghat': 'Central_India',
-    'Mine_E_Kandri': 'Central_India',
-    'Mine_F_Gumgaon': 'Central_India',
-    'Mine_G_Joda_East': 'Odisha',
-    'Mine_H_Bamebari': 'Odisha',
-    'Mine_I_Sandur': 'Karnataka',
-    'Mine_J_Hospet': 'Karnataka',
+    'Mine_A_Dongri_Buzurg': 'Maharashtra',
+    'Mine_B_Chikla': 'Maharashtra', 
+    'Mine_C_Munsar': 'Maharashtra',
+    'Mine_D_Balaghat': 'Madhya_Pradesh',
+    'Mine_E_Kandri': 'Maharashtra',
+    'Mine_F_Gumgaon': 'Maharashtra',
+    'Mine_G_Beldongri': 'Maharashtra',
+    'Mine_H_Ukwa': 'Madhya_Pradesh',
+    'Mine_I_Tirodi': 'Madhya_Pradesh',
+    'Mine_J_Sitapatore': 'Madhya_Pradesh',
 }
 weather['region'] = weather['mine_id'].map(mine_region_map)
 
@@ -109,11 +109,18 @@ print(f"  Top 3 rock types: {df['rock_type'].value_counts().head(3).index.tolist
 
 # Calculate distances to known mines to generate the synthetic target
 KNOWN_MINES = [
-    (21.550, 79.717, 'Dongri_Buzurg', 'Central_India'), (21.517, 79.750, 'Chikla', 'Central_India'),
-    (21.389, 79.287, 'Munsar', 'Central_India'), (21.850, 80.228, 'Balaghat', 'Central_India'),
-    (21.400, 79.267, 'Kandri', 'Central_India'), (21.400, 78.983, 'Gumgaon', 'Central_India'),
-    (22.010, 85.437, 'Joda_East', 'Odisha'), (22.100, 85.250, 'Bamebari', 'Odisha'),
-    (15.083, 76.550, 'Sandur', 'Karnataka'), (15.250, 76.350, 'Hospet', 'Karnataka'),
+    # Maharashtra (Nagpur & Bhandara)
+    (21.550, 79.717, 'Dongri_Buzurg', 'Maharashtra'),
+    (21.517, 79.750, 'Chikla', 'Maharashtra'),
+    (21.389, 79.287, 'Munsar', 'Maharashtra'),
+    (21.400, 79.267, 'Kandri', 'Maharashtra'),
+    (21.400, 78.983, 'Gumgaon', 'Maharashtra'),
+    (21.345, 79.305, 'Beldongri', 'Maharashtra'),
+    # Madhya Pradesh (Balaghat)
+    (21.850, 80.228, 'Balaghat', 'Madhya_Pradesh'),
+    (21.967, 80.467, 'Ukwa', 'Madhya_Pradesh'),
+    (21.683, 79.717, 'Tirodi', 'Madhya_Pradesh'),
+    (21.717, 79.800, 'Sitapatore', 'Madhya_Pradesh'),
 ]
 mine_coords = np.array([(m[0], m[1]) for m in KNOWN_MINES])
 mine_tree = cKDTree(mine_coords)

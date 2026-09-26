@@ -53,8 +53,8 @@ CONFIG = {
     # Crusher capacity (PROJECT-DEFINED ASSUMPTION)
     "crusher_capacity_tpd_by_mine_size": {
         "large": 1200,   # Dongri Buzurg, Balaghat
-        "medium": 800,   # Chikla, Munsar, Joda East
-        "small": 500,    # Others
+        "medium": 800,   # Chikla, Munsar, Ukwa, Tirodi
+        "small": 500,    # Kandri, Gumgaon, Beldongri, Sitapatore
     },
     
     # Fleet size (PROJECT-DEFINED ASSUMPTION)
@@ -71,20 +71,23 @@ CONFIG = {
     "train_end_year": 2022,
     "val_end_year": 2023,
     # Test: 2024-2025
+    "test_start_year": 2024,
 }
 
 # Mine size classification (based on real avg_daily_tpd from data)
 MINE_SIZES = {
+    # Maharashtra (Nagpur & Bhandara)
     "Mine_A_Dongri_Buzurg": "large",
     "Mine_B_Chikla": "medium",
     "Mine_C_Munsar": "medium",
-    "Mine_D_Balaghat": "large",
     "Mine_E_Kandri": "small",
     "Mine_F_Gumgaon": "small",
-    "Mine_G_Joda_East": "medium",
-    "Mine_H_Bamebari": "small",
-    "Mine_I_Sandur": "small",
-    "Mine_J_Hospet": "small",
+    "Mine_G_Beldongri": "small",
+    # Madhya Pradesh (Balaghat)
+    "Mine_D_Balaghat": "large",
+    "Mine_H_Ukwa": "medium",
+    "Mine_I_Tirodi": "medium",
+    "Mine_J_Sitapatore": "small",
 }
 
 # ==============================================================================

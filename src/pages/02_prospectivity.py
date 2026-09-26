@@ -52,13 +52,16 @@ if df.empty:
 col_map, col_ctrl = st.columns([3, 1], gap="large")
 
 with col_ctrl:
-    region = st.selectbox("🌍 Region", ["Central India (Nagpur)", "Eastern India (Odisha)", "Southern India (Karnataka)"])
-    if "Central" in region:
-        map_center = dict(lat=21.45, lon=79.65)
-    elif "Eastern" in region:
-        map_center = dict(lat=22.05, lon=85.25)
+    region = st.selectbox("🌍 Region", ["All Central India", "Maharashtra (Nagpur-Bhandara)", "Madhya Pradesh (Balaghat)"])
+    if "All" in region:
+        map_center = dict(lat=21.65, lon=79.80)
+        map_zoom = 8.5
+    elif "Maharashtra" in region:
+        map_center = dict(lat=21.45, lon=79.40)
+        map_zoom = 9.8
     else:
-        map_center = dict(lat=15.15, lon=76.55)
+        map_center = dict(lat=21.85, lon=80.15)
+        map_zoom = 9.8
 
     st.write("### Layers")
     show_heatmap = st.toggle("🔥 Prospectivity", value=True)
@@ -79,7 +82,8 @@ with col_ctrl:
     else:
         plotly_style = "streets"
 
-    overlay_opacity = st.slider("Opacity", 0.1, 1.0, 0.7, 0.1)
+    overlay_radius = st.slider("Spread", 8, 40, 18)
+    overlay_opacity = st.slider("Opacity", 0.1, 1.0, 0.6, 0.1)
 
 with col_map:
     fig = go.Figure()
@@ -87,43 +91,20 @@ with col_map:
     # Force Plotly to render the Map canvas even if all toggles are turned off
     fig.add_trace(go.Scattermap(lat=[None], lon=[None], showlegend=False, hoverinfo='none'))
 
-    # ---- LAYER 1: Prospectivity (Sharp Scatter Points) ----
+    # ---- LAYER 1: Prospectivity Heatmap ----
     if show_heatmap and 'mn_probability' in df.columns:
-        # Filter out very low probability points for cleaner viz
-        viz_df = df[df['mn_probability'] > 0.15].copy()
+        hotspots = df[df['mn_probability'] > 0.35].copy()
         
-        # Color mapping: Low=blue, Medium=yellow, High=red
-        def prob_to_color(p):
-            if p >= 0.8:
-                return 'rgba(220,30,30,0.85)'    # Red - HIGH
-            elif p >= 0.6:
-                return 'rgba(255,140,0,0.75)'     # Orange
-            elif p >= 0.4:
-                return 'rgba(255,220,50,0.65)'     # Yellow - MEDIUM
-            elif p >= 0.25:
-                return 'rgba(50,200,100,0.50)'     # Green
-            else:
-                return 'rgba(30,100,220,0.35)'     # Blue - LOW
-        
-        viz_df['color'] = viz_df['mn_probability'].apply(prob_to_color)
-        viz_df['size'] = np.clip(viz_df['mn_probability'] * 12, 3, 14)
-        
-        # Sort so high-probability dots render on top
-        viz_df = viz_df.sort_values('mn_probability', ascending=True)
-        
-        fig.add_trace(go.Scattermap(
-            lat=viz_df['latitude'], lon=viz_df['longitude'],
-            mode='markers',
-            marker=dict(
-                size=viz_df['size'],
-                color=viz_df['mn_probability'],
-                colorscale=[[0,'#1a5fb4'],[0.3,'#26a269'],[0.5,'#f5c211'],[0.7,'#ff7800'],[1.0,'#e01b24']],
-                cmin=0.15, cmax=1.0,
-                opacity=overlay_opacity,
-                colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
-            ),
+        fig.add_trace(go.Densitymap(
+            lat=hotspots['latitude'], lon=hotspots['longitude'],
+            z=hotspots['mn_probability'],
+            radius=overlay_radius,
+            opacity=overlay_opacity,
+            colorscale=[[0,'blue'],[0.2,'cyan'],[0.4,'lime'],[0.6,'yellow'],[0.8,'orange'],[1.0,'red']],
+            zmin=0.3, zmax=1.0,
+            colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
             name='Prospectivity', showlegend=True,
-            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{marker.color:.3f}<extra></extra>',
+            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{z:.3f}<extra></extra>',
         ))
 
 
@@ -132,42 +113,38 @@ with col_map:
         fe = df.copy()
         fe['fe_norm'] = (fe['iron_oxide_index'] - fe['iron_oxide_index'].min()) / (fe['iron_oxide_index'].max() - fe['iron_oxide_index'].min() + 1e-10)
         fe_high = fe[fe['fe_norm'] > 0.3]
-        fig.add_trace(go.Scattermap(
+        fig.add_trace(go.Densitymap(
             lat=fe_high['latitude'], lon=fe_high['longitude'],
-            mode='markers',
-            marker=dict(
-                size=np.clip(fe_high['fe_norm'] * 10, 3, 10),
-                color=fe_high['fe_norm'],
-                colorscale=[[0,'rgba(255,200,100,0.4)'],[0.5,'rgba(255,140,0,0.7)'],[1.0,'rgba(180,0,0,0.9)']],
-                opacity=overlay_opacity * 0.7,
-                colorbar=dict(title=dict(text="Fe Index"), x=1.08, len=0.3, y=0.7, thickness=10),
-            ),
+            z=fe_high['fe_norm'],
+            radius=overlay_radius, opacity=overlay_opacity * 0.6,
+            colorscale=[[0,'rgba(255,255,200,0.2)'],[0.5,'rgba(255,140,0,0.6)'],[1.0,'rgba(180,0,0,0.9)']],
+            colorbar=dict(title=dict(text="Fe Index"), x=1.08, len=0.3, y=0.7, thickness=10),
             name='Iron Oxide', showlegend=True,
         ))
 
     # ---- LAYER 4: Known Mines (Real MOIL Locations) ----
     if show_mines:
-        # Real coordinates from forestsclearance.nic.in, ResearchGate, Mapcarta
+        # Real coordinates of MOIL's 10 operational mines in Maharashtra and Madhya Pradesh
         mines_data = [
-            (21.550, 79.717, "Dongri Buzurg", "Central"),
-            (21.517, 79.750, "Chikla Mine", "Central"),
-            (21.389, 79.287, "Munsar Mine", "Central"),
-            (21.850, 80.228, "Balaghat Mine", "Central"),
-            (21.400, 79.267, "Kandri Mine", "Central"),
-            (21.400, 78.983, "Gumgaon Mine", "Central"),
-            # Odisha (Joda-Barbil belt)
-            (22.010, 85.437, "Joda East Mine", "Odisha"),
-            (22.100, 85.250, "Bamebari Mine", "Odisha"),
-            # Karnataka (Sandur schist belt)
-            (15.083, 76.550, "Sandur Mine", "Karnataka"),
-            (15.250, 76.350, "Hospet Mine", "Karnataka"),
+            # Maharashtra (Nagpur & Bhandara Districts)
+            (21.550, 79.717, "Dongri Buzurg Mine", "Maharashtra"),
+            (21.517, 79.750, "Chikla Mine", "Maharashtra"),
+            (21.389, 79.287, "Munsar Mine", "Maharashtra"),
+            (21.400, 79.267, "Kandri Mine", "Maharashtra"),
+            (21.400, 78.983, "Gumgaon Mine", "Maharashtra"),
+            (21.345, 79.305, "Beldongri Mine", "Maharashtra"),
+            # Madhya Pradesh (Balaghat District)
+            (21.850, 80.228, "Balaghat Mine (Bharweli)", "Madhya Pradesh"),
+            (21.967, 80.467, "Ukwa Mine", "Madhya Pradesh"),
+            (21.683, 79.717, "Tirodi Mine", "Madhya Pradesh"),
+            (21.717, 79.800, "Sitapatore Mine", "Madhya Pradesh"),
         ]
         
         m_lats = [m[0] for m in mines_data]
         m_lons = [m[1] for m in mines_data]
         m_names = [m[2] for m in mines_data]
         m_regions = [m[3] for m in mines_data]
-        m_colors = ['red' if r == 'Central' else 'cyan' if r == 'Odisha' else 'lime' for r in m_regions]
+        m_colors = ['#FF6B2B' if r == 'Maharashtra' else '#00D2FF' for r in m_regions]
         
         fig.add_trace(go.Scattermap(
             lat=m_lats, lon=m_lons,
@@ -175,8 +152,9 @@ with col_map:
             marker=dict(size=14, color=m_colors),
             text=m_names, textposition='top center',
             textfont=dict(size=11, color='white'),
-            name='⛏️ Known Mines',
-            hovertemplate='%{text}<br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>',
+            name='⛏️ Known MOIL Mines',
+            hovertemplate='%{text}<br>State: %{customdata}<br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>',
+            customdata=m_regions,
         ))
 
     # ---- LAYER 5: Drilling Priority Zones ----
@@ -196,7 +174,7 @@ with col_map:
         ))
 
     fig.update_layout(
-        map=dict(style=plotly_style, center=map_center, zoom=10),
+        map=dict(style=plotly_style, center=map_center, zoom=map_zoom),
         height=600,
         margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01,
@@ -209,15 +187,12 @@ with col_map:
 st.markdown("---")
 st.subheader("Target Statistics")
 
-# Add region column to df for filtering
+# Add region column to df for filtering (Maharashtra vs Madhya Pradesh)
 def get_region(lat, lon):
-    if lat >= 21.0 and lat <= 22.0 and lon >= 78.5 and lon <= 80.5:
-        return "Central India"
-    elif lat >= 21.5 and lon >= 84.5:
-        return "Odisha"
-    elif lat < 16.0:
-        return "Karnataka"
-    return "Other"
+    if (lat >= 21.63) or (lon >= 79.75 and lat >= 21.58):
+        return "Madhya Pradesh"
+    else:
+        return "Maharashtra"
 
 if 'mn_probability' in df.columns:
     df['region'] = [get_region(lat, lon) for lat, lon in zip(df['latitude'], df['longitude'])]
@@ -229,9 +204,9 @@ if 'mn_probability' in df.columns:
     c3.metric("🟢 Low Priority", f"{int((df['mn_probability'] <= 0.4).sum())} targets")
     
     # Region-wise breakdown
-    st.markdown("**Region-wise High Priority Targets:**")
-    rc1, rc2, rc3 = st.columns(3)
-    for col, reg, emoji in [(rc1, "Central India", "🟥"), (rc2, "Odisha", "🟦"), (rc3, "Karnataka", "🟩")]:
+    st.markdown("**State-wise High Priority Targets:**")
+    rc1, rc2 = st.columns(2)
+    for col, reg, emoji in [(rc1, "Maharashtra", "🟧"), (rc2, "Madhya Pradesh", "🟦")]:
         reg_df = df[df['region'] == reg]
         high_count = int((reg_df['mn_probability'] > 0.8).sum()) if len(reg_df) > 0 else 0
         col.metric(f"{emoji} {reg}", f"{high_count} targets")

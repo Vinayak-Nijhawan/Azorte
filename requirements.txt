@@ -1,5 +1,5 @@
 streamlit>=1.36
-pandas
+pandas>=2.2.0,<3.0.0
 numpy
 scikit-learn
 joblib

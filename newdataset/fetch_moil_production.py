@@ -38,18 +38,18 @@ MOIL_ANNUAL_PRODUCTION = {
 }
 
 # Mine-wise share of total production (approximate from MOIL reports)
-# MOIL operates ~10 mines, these are approximate shares
+# MOIL operates ~10 mines across Maharashtra and Madhya Pradesh
 MINE_SHARES = {
-    'Mine_A_Dongri_Buzurg': 0.18,  # Largest underground mine
-    'Mine_B_Chikla':        0.12,
-    'Mine_C_Munsar':        0.08,
-    'Mine_D_Balaghat':      0.15,  # Largest opencast mine
-    'Mine_E_Kandri':        0.10,
-    'Mine_F_Gumgaon':       0.07,
-    'Mine_G_Joda_East':     0.10,  # Odisha operations
-    'Mine_H_Bamebari':      0.06,
-    'Mine_I_Sandur':        0.09,  # Karnataka operations
-    'Mine_J_Hospet':        0.05,
+    'Mine_A_Dongri_Buzurg': 0.18,  # Largest underground mine (MH)
+    'Mine_B_Chikla':        0.12,  # (MH)
+    'Mine_C_Munsar':        0.08,  # (MH)
+    'Mine_D_Balaghat':      0.22,  # Flagship deepest mine in Asia (MP)
+    'Mine_E_Kandri':        0.10,  # (MH)
+    'Mine_F_Gumgaon':       0.07,  # (MH)
+    'Mine_G_Beldongri':     0.05,  # (MH)
+    'Mine_H_Ukwa':          0.08,  # (MP)
+    'Mine_I_Tirodi':        0.06,  # (MP)
+    'Mine_J_Sitapatore':    0.04,  # (MP)
 }
 
 # Ore grades by mine (approximate from MOIL technical reports)
@@ -60,11 +60,12 @@ MINE_GRADES = {
     'Mine_D_Balaghat':      {'high_grade_pct': 45, 'medium_grade_pct': 30, 'low_grade_pct': 25},
     'Mine_E_Kandri':        {'high_grade_pct': 38, 'medium_grade_pct': 32, 'low_grade_pct': 30},
     'Mine_F_Gumgaon':       {'high_grade_pct': 25, 'medium_grade_pct': 40, 'low_grade_pct': 35},
-    'Mine_G_Joda_East':     {'high_grade_pct': 42, 'medium_grade_pct': 33, 'low_grade_pct': 25},
-    'Mine_H_Bamebari':      {'high_grade_pct': 28, 'medium_grade_pct': 37, 'low_grade_pct': 35},
-    'Mine_I_Sandur':        {'high_grade_pct': 36, 'medium_grade_pct': 34, 'low_grade_pct': 30},
-    'Mine_J_Hospet':        {'high_grade_pct': 30, 'medium_grade_pct': 35, 'low_grade_pct': 35},
+    'Mine_G_Beldongri':     {'high_grade_pct': 32, 'medium_grade_pct': 38, 'low_grade_pct': 30},
+    'Mine_H_Ukwa':          {'high_grade_pct': 42, 'medium_grade_pct': 33, 'low_grade_pct': 25},
+    'Mine_I_Tirodi':        {'high_grade_pct': 36, 'medium_grade_pct': 34, 'low_grade_pct': 30},
+    'Mine_J_Sitapatore':    {'high_grade_pct': 30, 'medium_grade_pct': 35, 'low_grade_pct': 35},
 }
+
 
 
 def main():
@@ -82,6 +83,22 @@ def main():
 
         for mine_id, share in MINE_SHARES.items():
             mine_production_tonnes = total_tonnes * share
+            
+            # OVERRIDE: Real data for Ukwa Mine from Environmental Clearance Pre-feasibility Report PDF
+            if mine_id == 'Mine_H_Ukwa':
+                if year == 2020:
+                    mine_production_tonnes = 22000
+                elif year == 2021:
+                    mine_production_tonnes = 45000
+                elif year == 2022:
+                    mine_production_tonnes = 75000
+                elif year == 2023:
+                    mine_production_tonnes = 100000
+                elif year == 2024:
+                    mine_production_tonnes = 110000
+                elif year == 2025:
+                    mine_production_tonnes = 120000
+
             # Convert annual to daily (assume ~300 working days)
             daily_tpd = mine_production_tonnes / 300
 

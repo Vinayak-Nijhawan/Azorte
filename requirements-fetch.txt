@@ -2,4 +2,8 @@
 # Not needed if using pre-fetched data or synthetic fallback
 pystac-client
 planetary-computer
-rasterio
+rasterio==1.4.3
+pyproj==3.6.1
+seaborn
+geopandas
+earthengine-api

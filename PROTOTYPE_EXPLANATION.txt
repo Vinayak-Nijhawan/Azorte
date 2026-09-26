@@ -14,27 +14,27 @@ GeoSync solves this by using AI to predict WHERE to mine (Exploration) and HOW t
 --------------------------
 
 A. GeoProspect AI (The Map Dashboard)
-What it does: It uses a Machine Learning model (Random Forest) to predict the exact probability of finding Manganese across India. 
+What it does: It uses a Machine Learning model (Random Forest) to predict the exact probability of finding Manganese across MOIL's operational regions. 
 Latest Updates: 
-- We expanded the AI to cover 3 major regions: Central India (Nagpur belt), Eastern India (Odisha), and Southern India (Karnataka).
-- The map shows 10 real-world mining sites.
+- We focused the AI strictly on MOIL's two primary operational belts: Central India - Maharashtra (Nagpur-Bhandara belt) and Madhya Pradesh (Balaghat-Bharweli belt).
+- The map shows 10 real-world MOIL mining sites with exact GPS coordinates.
 - It displays heatmaps for Prospectivity (chances of finding ore), NDVI (Vegetation cover), and Iron Oxide.
 How to pitch it: "Instead of digging blindly, our AI analyzes geological data, satellite imagery, and soil moisture to pinpoint the exact coordinates where MOIL should drill next."
 
 *** HOW TO DEMO THE MAP TO JUDGES (Step-by-Step) ***
-Step 1: Start with the "Central India" region selected. Point out the glowing Red/Orange "Prospectivity" heatmap. Tell the judges: "The AI has highlighted these exact hotspots as having an 80%+ probability of containing Manganese."
-Step 2: Toggle ON the "Known Mines" layer. The map will overlay colored dots. Say: "As you can see, our AI's predictions perfectly align with MOIL's existing active mines (like Dongri Buzurg), proving the model's accuracy."
-Step 3: Change the Region dropdown to "Odisha" or "Karnataka" to show the pan-India scalability. "The model doesn't just work in Nagpur; it instantly adapts to different geological zones across the country."
+Step 1: Start with "All Central India" selected. Point out the glowing Red/Orange "Prospectivity" heatmap across the Sausar belt. Tell the judges: "The AI has highlighted these exact hotspots as having an 80%+ probability of containing Manganese."
+Step 2: Toggle ON the "Known Mines" layer. The map will overlay colored dots (Orange for Maharashtra, Cyan for Madhya Pradesh). Say: "As you can see, our AI's predictions perfectly align with MOIL's existing active mines (like Dongri Buzurg, Balaghat, and Ukwa), proving the model's accuracy."
+Step 3: Change the Region dropdown to "Maharashtra (Nagpur-Bhandara)" or "Madhya Pradesh (Balaghat)" to zoom into state-level operations. "The model seamlessly navigates between MOIL's Maharashtra and Madhya Pradesh sectors."
 Step 4: Scroll down to the "Top 10 Drill Targets" table. "Finally, the AI outputs a ranked list of precise GPS coordinates for the exploration team to investigate tomorrow morning."
 
 B. Production Forecast
 What it does: Predicts if a mine will actually hit its planned production target in the upcoming months.
-How it works: A Gradient Boosting AI model looks at 10 years of historical data across our 10 mines. It factors in Rainfall, Equipment Availability, Blasting Days, and Haul Road Conditions.
+How it works: A Gradient Boosting AI model looks at 10 years of historical data across MOIL's 10 mines. It factors in Rainfall, Equipment Availability, Blasting Days, and Haul Road Conditions.
 How to pitch it: "If the monsoon season is approaching, our AI predicts the exact drop in production (TPD - Tons Per Day). If a mine is predicted to fall short, the system flags it as 'High Risk' months in advance so management can prepare."
 
 *** HOW TO DEMO PRODUCTION FORECAST TO JUDGES (Step-by-Step) ***
 Step 1: Point to the main line chart and say, "The blue line is MOIL's optimistic target, but the red line is what our AI predicts will ACTUALLY happen based on historical data."
-Step 2: Change the Mine in the sidebar to a different location (e.g., 'Mine_G_Joda_East' in Odisha). Show how the AI dynamically predicts a massive drop during the monsoon months (July-Sept) due to heavy rainfall specific to that region.
+Step 2: Change the Mine in the sidebar to a different location (e.g., 'Mine_D_Balaghat' in Madhya Pradesh or 'Mine_A_Dongri_Buzurg' in Maharashtra). Show how the AI dynamically predicts the impact during the monsoon months (July-Sept) due to heavy rainfall specific to that region.
 Step 3: Point out the 'High Risk' alert boxes and explain: "Instead of being surprised by a sudden 30% drop in August, management now knows exactly which months will fail to hit targets, allowing them to proactively rent more equipment."
 Step 4: Show the Feature Importance chart at the bottom. "The AI isn't a black box. It clearly shows the judges that 'equipment availability' and 'rainfall' are mathematically the biggest factors driving these shortfalls."
 

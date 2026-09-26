@@ -1,4 +1,4 @@
-﻿"""
+"""
 MOIL-GeoSync â€” Real Weather Data via Open-Meteo API
 =====================================================
 Pulls REAL historical weather data (rainfall, temperature) for 10 mine locations.
@@ -20,16 +20,18 @@ OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'weather_real.csv')
 
 # Real mine coordinates (approximate)
 MINES = {
-    'Mine_A_Dongri_Buzurg': {'lat': 21.65, 'lon': 80.20, 'region': 'Central_India'},
-    'Mine_B_Chikla':        {'lat': 21.52, 'lon': 79.70, 'region': 'Central_India'},
-    'Mine_C_Munsar':        {'lat': 21.35, 'lon': 79.55, 'region': 'Central_India'},
-    'Mine_D_Balaghat':      {'lat': 21.81, 'lon': 80.19, 'region': 'Central_India'},
-    'Mine_E_Kandri':        {'lat': 21.10, 'lon': 79.15, 'region': 'Central_India'},
-    'Mine_F_Gumgaon':       {'lat': 21.12, 'lon': 79.10, 'region': 'Central_India'},
-    'Mine_G_Joda_East':     {'lat': 22.15, 'lon': 85.42, 'region': 'Odisha'},
-    'Mine_H_Bamebari':      {'lat': 22.05, 'lon': 85.38, 'region': 'Odisha'},
-    'Mine_I_Sandur':        {'lat': 15.10, 'lon': 76.55, 'region': 'Karnataka'},
-    'Mine_J_Hospet':        {'lat': 15.27, 'lon': 76.39, 'region': 'Karnataka'},
+    # Maharashtra (Nagpur & Bhandara Districts)
+    'Mine_A_Dongri_Buzurg': {'lat': 21.55, 'lon': 79.72, 'region': 'Maharashtra'},
+    'Mine_B_Chikla':        {'lat': 21.52, 'lon': 79.75, 'region': 'Maharashtra'},
+    'Mine_C_Munsar':        {'lat': 21.39, 'lon': 79.29, 'region': 'Maharashtra'},
+    'Mine_E_Kandri':        {'lat': 21.40, 'lon': 79.27, 'region': 'Maharashtra'},
+    'Mine_F_Gumgaon':       {'lat': 21.40, 'lon': 78.98, 'region': 'Maharashtra'},
+    'Mine_G_Beldongri':     {'lat': 21.35, 'lon': 79.31, 'region': 'Maharashtra'},
+    # Madhya Pradesh (Balaghat District)
+    'Mine_D_Balaghat':      {'lat': 21.85, 'lon': 80.23, 'region': 'Madhya_Pradesh'},
+    'Mine_H_Ukwa':          {'lat': 21.97, 'lon': 80.47, 'region': 'Madhya_Pradesh'},
+    'Mine_I_Tirodi':        {'lat': 21.68, 'lon': 79.72, 'region': 'Madhya_Pradesh'},
+    'Mine_J_Sitapatore':    {'lat': 21.72, 'lon': 79.80, 'region': 'Madhya_Pradesh'},
 }
 
 # Open-Meteo Historical Weather API (FREE, no key needed)
