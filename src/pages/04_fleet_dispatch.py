@@ -1,5 +1,13 @@
 import os
 import streamlit as st
+
+import sys
+import os
+# Add the project root to sys.path so we can import utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css, inject_kpi_animations, inject_volcano_animations
+load_css()
+
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -121,11 +129,21 @@ st.markdown("""
         font-weight: 600 !important;
         margin-bottom: 6px !important;
     }
-    .kpi-value {
+    .kpi-value, .geo-kpi-value {
         font-size: 1.7rem !important;
         font-weight: 700 !important;
         color: #f1f5f9 !important;
         line-height: 1.1 !important;
+    }
+    /* Volcano bar chart animation */
+    @keyframes volcanoErupt {
+        0% { transform: scaleY(0); opacity: 0; }
+        70% { transform: scaleY(1.05); }
+        100% { transform: scaleY(1); opacity: 1; }
+    }
+    [data-testid="stPlotlyChart"] svg .bars path {
+        transform-origin: bottom !important;
+        animation: volcanoErupt 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
     }
     .kpi-unit {
         font-size: 0.75rem !important;
@@ -359,16 +377,16 @@ avg_base_cap = df_filtered['dumper_capacity_tph'].mean() if 'dumper_capacity_tph
 efficiency_pct = (avg_dumper_cap / avg_base_cap * 100) if avg_base_cap > 0 else 100
 
 # Equipment availability from forecast
-equip_avail = forecast_filtered['equipment_availability_pct'].mean() * 100 if (
-    not forecast_filtered.empty and 'equipment_availability_pct' in forecast_filtered.columns
+equip_avail = forecast_filtered['equipment_availability_pct__DERIVED'].mean() * 100 if (
+    not forecast_filtered.empty and 'equipment_availability_pct__DERIVED' in forecast_filtered.columns
 ) else 0
 
 # Rainfall and road condition
-rainfall = forecast_filtered['rainfall_mm'].mean() if (
-    not forecast_filtered.empty and 'rainfall_mm' in forecast_filtered.columns
+rainfall = forecast_filtered['rainfall_mm__REAL'].mean() if (
+    not forecast_filtered.empty and 'rainfall_mm__REAL' in forecast_filtered.columns
 ) else 0
-road_cond = forecast_filtered['haul_road_condition'].mean() if (
-    not forecast_filtered.empty and 'haul_road_condition' in forecast_filtered.columns
+road_cond = forecast_filtered['haul_road_condition__DERIVED'].mean() if (
+    not forecast_filtered.empty and 'haul_road_condition__DERIVED' in forecast_filtered.columns
 ) else 5
 
 # Shortfall risk
@@ -438,37 +456,37 @@ st.markdown(f"""
 <div class="kpi-grid">
     <div class="kpi-card">
         <div class="kpi-label">Production</div>
-        <div class="kpi-value">{achievable_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
+        <div class="kpi-value geo-kpi-value">{achievable_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
         <div class="kpi-delta {delta_class}">{delta_icon} {abs(delta_tpd):,.0f} TPD vs plan</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Planned Production</div>
-        <div class="kpi-value">{planned_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
+        <div class="kpi-value geo-kpi-value">{planned_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
         <div class="kpi-delta neutral">Target for period</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Achievement</div>
-        <div class="kpi-value">{achievement_pct:.1f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-value geo-kpi-value">{achievement_pct:.1f}<span class="kpi-unit">%</span></div>
         <div class="kpi-delta {achieve_class}">{'On track' if achievement_pct >= 100 else ('Near target' if achievement_pct >= 90 else 'Below target')}</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Active Dumpers</div>
-        <div class="kpi-value">{avail_dumpers}<span class="kpi-unit">/ {total_fleet}</span></div>
+        <div class="kpi-value geo-kpi-value">{avail_dumpers}<span class="kpi-unit">/ {total_fleet}</span></div>
         <div class="kpi-delta {'neutral' if maint_count == 0 else 'warning'}">{maint_count} in maintenance</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Active Shovels</div>
-        <div class="kpi-value">{num_shovels}</div>
+        <div class="kpi-value geo-kpi-value">{num_shovels}</div>
         <div class="kpi-delta neutral">Assigned this period</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Fleet Efficiency</div>
-        <div class="kpi-value">{efficiency_pct:.1f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-value geo-kpi-value">{efficiency_pct:.1f}<span class="kpi-unit">%</span></div>
         <div class="kpi-delta {'positive' if efficiency_pct > 90 else 'warning'}">Eff. vs base capacity</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Equip Availability</div>
-        <div class="kpi-value">{equip_avail:.0f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-value geo-kpi-value">{equip_avail:.0f}<span class="kpi-unit">%</span></div>
         <div class="kpi-delta {'positive' if equip_avail > 85 else 'warning'}">{'Healthy' if equip_avail > 85 else 'Below target'}</div>
     </div>
     <div class="kpi-card">
@@ -818,19 +836,19 @@ if not forecast.empty and 'mine_id' in forecast.columns:
         mine_forecast['period'] = mine_forecast['month'].map(month_names) + " " + mine_forecast['year'].astype(str)
 
         fig_trend = go.Figure()
-        if 'planned_production_tpd' in mine_forecast.columns:
+        if 'planned_production_tpd__DERIVED' in mine_forecast.columns:
             fig_trend.add_trace(go.Scatter(
                 x=mine_forecast['period'],
-                y=mine_forecast['planned_production_tpd'],
+                y=mine_forecast['planned_production_tpd__DERIVED'],
                 name='Planned',
                 line=dict(color='#475569', width=2, dash='dash'),
                 mode='lines+markers',
                 marker=dict(size=6),
             ))
-        if 'predicted_production_tpd' in mine_forecast.columns:
+        if 'predicted_production_tpd__DERIVED' in mine_forecast.columns:
             fig_trend.add_trace(go.Scatter(
                 x=mine_forecast['period'],
-                y=mine_forecast['predicted_production_tpd'],
+                y=mine_forecast['predicted_production_tpd__DERIVED'],
                 name='Predicted',
                 line=dict(color='#6366f1', width=2),
                 mode='lines+markers',
@@ -864,7 +882,7 @@ if rainfall > 0 or road_cond < 5:
         st.markdown(f"""
 <div class="kpi-card">
 <div class="kpi-label">Rainfall</div>
-<div class="kpi-value">{rainfall:.0f}<span class="kpi-unit">mm</span></div>
+<div class="kpi-value geo-kpi-value">{rainfall:.0f}<span class="kpi-unit">mm</span></div>
 <div class="kpi-delta {rain_class}">{'Heavy — production impact' if rainfall > 100 else 'Normal'}</div>
 </div>""", unsafe_allow_html=True)
     with ec2:
@@ -872,7 +890,7 @@ if rainfall > 0 or road_cond < 5:
         st.markdown(f"""
 <div class="kpi-card">
 <div class="kpi-label">Haul Road Condition</div>
-<div class="kpi-value">{road_cond:.1f}<span class="kpi-unit">/ 5</span></div>
+<div class="kpi-value geo-kpi-value">{road_cond:.1f}<span class="kpi-unit">/ 5</span></div>
 <div class="kpi-delta {road_class}">{'Poor — speed penalty' if road_cond < 3 else 'Acceptable'}</div>
 </div>""", unsafe_allow_html=True)
     with ec3:
@@ -880,6 +898,11 @@ if rainfall > 0 or road_cond < 5:
         st.markdown(f"""
 <div class="kpi-card">
 <div class="kpi-label">Combined Penalty</div>
-<div class="kpi-value">{penalty:.1f}<span class="kpi-unit">%</span></div>
+<div class="kpi-value geo-kpi-value">{penalty:.1f}<span class="kpi-unit">%</span></div>
 <div class="kpi-delta {'warning' if penalty > 10 else 'neutral'}">Weather + road impact</div>
 </div>""", unsafe_allow_html=True)
+
+
+# --- Animations ---
+inject_kpi_animations()
+inject_volcano_animations()
