@@ -196,8 +196,8 @@ def process_query(prompt):
     # 5. Compare/Best/Worst
     elif any(k in query for k in ['compare', 'best', 'worst', 'rank']):
         if df_prod is not None:
-            summary = df_prod.groupby('mine_id')['actual_production_tpd__DERIVED'].mean().reset_index()
-            summary = summary.sort_values(by='actual_production_tpd__DERIVED', ascending=False)
+            summary = df_prod.groupby('mine_id')['derived_actual_production_tpd__DERIVED'].mean().reset_index()
+            summary = summary.sort_values(by='derived_actual_production_tpd__DERIVED', ascending=False)
             best_mine = summary.iloc[0]['mine_id']
             worst_mine = summary.iloc[-1]['mine_id']
             return f"Comparing production across mines: **{best_mine}** has the highest average production, while **{worst_mine}** has the lowest.", summary
@@ -216,7 +216,7 @@ def process_query(prompt):
             mine_filter = next((m for m in ['Mine_A', 'Mine_B', 'Mine_C'] if m.lower() in query), None)
             df_show = df_prod[df_prod['mine_id'] == mine_filter] if mine_filter else df_prod
             heavy_rain = df_show[df_show['rainfall_mm__REAL'] > df_show['rainfall_mm__REAL'].mean()]
-            return f"Weather impact analysis{' for ' + mine_filter if mine_filter else ''}: Heavy rainfall months show notable dips in equipment availability and production.", heavy_rain[['mine_id', 'month', 'rainfall_mm__REAL', 'actual_production_tpd__DERIVED']]
+            return f"Weather impact analysis{' for ' + mine_filter if mine_filter else ''}: Heavy rainfall months show notable dips in equipment availability and production.", heavy_rain[['mine_id', 'month', 'rainfall_mm__REAL', 'derived_actual_production_tpd__DERIVED']]
         return "Weather data unavailable.", None
 
     # 8. Help

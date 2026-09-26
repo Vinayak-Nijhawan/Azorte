@@ -261,7 +261,7 @@ with tab2:
     st.header("Production Model — Gradient Boosting Regressor")
 
     X_prod = prod_df[PROD_FEATURES]
-    y_prod = prod_df['actual_production_tpd__DERIVED']
+    y_prod = prod_df['derived_actual_production_tpd__DERIVED']
     X_tr, X_te, y_tr, y_te = train_test_split(X_prod, y_prod, test_size=0.3, random_state=42)
     y_te_pred = prod_model.predict(X_te)
 

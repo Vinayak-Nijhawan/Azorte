@@ -110,7 +110,7 @@ st.markdown("""
 .geo-kpi-card { background: rgba(17,24,39,0.7); backdrop-filter: blur(12px); border: 1px solid rgba(30,41,59,0.8); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transition: all 0.2s ease; min-width: 0; }
 .geo-kpi-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-2px); }
 .geo-kpi-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.geo-kpi-title { color: #94A3B8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.geo-kpi-title { color: #94A3B8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2; }
 .geo-kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
 .geo-icon-blue   { background: rgba(59,130,246,0.1); color: #3B82F6; }
 .geo-icon-green  { background: rgba(16,185,129,0.1); color: #10B981; }
@@ -169,8 +169,7 @@ div[data-testid="stColumn"]:nth-of-type(2) {
 
 st.markdown("Predictions powered by our **trained GradientBoosting model** (R² = 0.977, trained on 720 data points) — verified to respond accurately to all parameters.")
 
-# Increased the right sidebar ratio significantly from [2.2, 1] to [1.8, 1] to fix cut-off preset buttons
-main_col, control_dock = st.columns([1.8, 1])
+main_col, control_dock = st.columns([3.0, 1])
 
 with control_dock:
     with st.container(border=True):
@@ -508,7 +507,7 @@ with main_col:
             mine_hist = mine_hist.sort_values('date')
         
             fig_hist = go.Figure()
-            fig_hist.add_trace(go.Scatter(x=mine_hist['date'], y=mine_hist['actual_production_tpd__DERIVED'],
+            fig_hist.add_trace(go.Scatter(x=mine_hist['date'], y=mine_hist['derived_actual_production_tpd__DERIVED'],
                                           name='Historical Actual', line=dict(color='#3498db', width=2)))
             fig_hist.add_trace(go.Scatter(x=mine_hist['date'], y=mine_hist['planned_production_tpd__DERIVED'],
                                           name='Historical Planned', line=dict(color='gray', dash='dash')))

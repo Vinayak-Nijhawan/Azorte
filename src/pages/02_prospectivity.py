@@ -243,13 +243,13 @@ def get_region(lat, lon):
 if 'mn_probability' in df.columns:
     df['region'] = [get_region(lat, lon) for lat, lon in zip(df['latitude'], df['longitude'])]
 
-    high_count   = int((df['mn_probability'] > 0.8).sum())
-    medium_count = int(((df['mn_probability'] > 0.4) & (df['mn_probability'] <= 0.8)).sum())
-    low_count    = int((df['mn_probability'] <= 0.4).sum())
+    high_count   = int((df['mn_probability'] > 0.45).sum())
+    medium_count = int(((df['mn_probability'] > 0.3) & (df['mn_probability'] <= 0.45)).sum())
+    low_count    = int((df['mn_probability'] <= 0.3).sum())
 
-    ci_high  = int((df[df['region'] == 'Central India']['mn_probability'] > 0.8).sum()) if len(df[df['region'] == 'Central India']) > 0 else 0
-    od_high  = int((df[df['region'] == 'Odisha']['mn_probability'] > 0.8).sum())        if len(df[df['region'] == 'Odisha']) > 0       else 0
-    kar_high = int((df[df['region'] == 'Karnataka']['mn_probability'] > 0.8).sum())     if len(df[df['region'] == 'Karnataka']) > 0    else 0
+    ci_high  = int((df[df['region'] == 'Central India']['mn_probability'] > 0.45).sum()) if len(df[df['region'] == 'Central India']) > 0 else 0
+    od_high  = int((df[df['region'] == 'Odisha']['mn_probability'] > 0.45).sum())        if len(df[df['region'] == 'Odisha']) > 0       else 0
+    kar_high = int((df[df['region'] == 'Karnataka']['mn_probability'] > 0.45).sum())     if len(df[df['region'] == 'Karnataka']) > 0    else 0
 
     st.markdown(f"""
 <style>
@@ -317,7 +317,7 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{high_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-red">Mn Prob &gt; 0.8</span>
+            <span class="geo-trend-red">Mn Prob &gt; 0.45</span>
             <span class="geo-kpi-subtext">drill candidates</span>
         </div>
     </div>
@@ -328,7 +328,7 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{medium_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-amber">Mn Prob 0.4–0.8</span>
+            <span class="geo-trend-amber">Mn Prob 0.3–0.45</span>
             <span class="geo-kpi-subtext">further study</span>
         </div>
     </div>
@@ -339,7 +339,7 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{low_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-green">Mn Prob ≤ 0.4</span>
+            <span class="geo-trend-green">Mn Prob ≤ 0.3</span>
             <span class="geo-kpi-subtext">low probability</span>
         </div>
     </div>

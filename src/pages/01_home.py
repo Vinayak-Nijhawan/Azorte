@@ -334,14 +334,14 @@ def load_kpi_data():
             df_prosp = pd.read_csv(prospectivity_path)
             kpi_data['total_grid_points'] = len(df_prosp)
             if 'mn_probability' in df_prosp.columns:
-                kpi_data['high_prospectivity_zones'] = len(df_prosp[df_prosp['mn_probability'] > 0.8])
+                kpi_data['high_prospectivity_zones'] = len(df_prosp[df_prosp['mn_probability'] > 0.45])
     except Exception as e:
         pass
 
-    prod_path = os.path.join(DATA_DIR, 'production_dataset.csv')
+    prod_path = os.path.join(DATA_DIR, 'production_dataset_real.csv')
     try:
         if os.path.exists(prod_path):
-            df_prod = pd.read_csv(prod_path)
+            df_prod = pd.read_csv(prod_path, comment='#')
             if 'mine_id' in df_prod.columns:
                 kpi_data['mines_tracked'] = df_prod['mine_id'].nunique()
             if 'shortfall_risk' in df_prod.columns:

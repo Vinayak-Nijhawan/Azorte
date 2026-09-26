@@ -82,7 +82,7 @@ if not df_forecast.empty:
 
 # ================= KPI METRICS =================
 avg_planned = mine_data['planned_production_tpd__DERIVED'].mean()
-avg_actual = mine_data['actual_production_tpd__DERIVED'].mean()
+avg_actual = mine_data['derived_actual_production_tpd__DERIVED'].mean()
 efficiency = (avg_actual / avg_planned * 100) if avg_planned > 0 else 0
 high_risk_months = (mine_data['shortfall_risk'] == 'High').sum()
 
@@ -125,7 +125,7 @@ fig.add_trace(go.Scatter(
 
 # Historical: Actual (solid blue)
 fig.add_trace(go.Scatter(
-    x=mine_data['date'], y=mine_data['actual_production_tpd__DERIVED'],
+    x=mine_data['date'], y=mine_data['derived_actual_production_tpd__DERIVED'],
     name='Actual', line=dict(color='#2ecc71', width=2.5),
     fill='tonexty', fillcolor='rgba(46,204,113,0.1)',
     hovertemplate='%{x|%b %Y}<br>Actual: %{y:.0f} TPD<extra></extra>'
@@ -155,8 +155,8 @@ st.plotly_chart(fig, use_container_width=True)
 # ================= MONTHLY COMPARISON BAR CHART =================
 st.subheader("Actual vs Planned — Monthly Breakdown")
 
-bar_df = mine_data[['date', 'planned_production_tpd__DERIVED', 'actual_production_tpd__DERIVED']].copy()
-bar_df['shortfall'] = bar_df['planned_production_tpd__DERIVED'] - bar_df['actual_production_tpd__DERIVED']
+bar_df = mine_data[['date', 'planned_production_tpd__DERIVED', 'derived_actual_production_tpd__DERIVED']].copy()
+bar_df['shortfall'] = bar_df['planned_production_tpd__DERIVED'] - bar_df['derived_actual_production_tpd__DERIVED']
 bar_df['month_label'] = bar_df['date'].dt.strftime('%b %Y')
 
 fig_bar = go.Figure()
@@ -165,7 +165,7 @@ fig_bar.add_trace(go.Bar(
     name='Planned', marker_color='rgba(52,152,219,0.6)',
 ))
 fig_bar.add_trace(go.Bar(
-    x=bar_df['date'], y=bar_df['actual_production_tpd__DERIVED'],
+    x=bar_df['date'], y=bar_df['derived_actual_production_tpd__DERIVED'],
     name='Actual', marker_color='rgba(46,204,113,0.8)',
 ))
 fig_bar.update_layout(
@@ -181,7 +181,7 @@ st.subheader("Risk Indicators (Latest Month)")
 latest = mine_data.iloc[-1]
 risk = str(latest.get('shortfall_risk', 'N/A'))
 planned = latest.get('planned_production_tpd__DERIVED', 0)
-actual = latest.get('actual_production_tpd__DERIVED', 0)
+actual = latest.get('derived_actual_production_tpd__DERIVED', 0)
 shortfall = max(0, planned - actual) if pd.notnull(planned) and pd.notnull(actual) else 0
 eff = (actual / planned * 100) if planned > 0 else 0
 
@@ -234,7 +234,7 @@ with col_rain:
 # ================= SHORTFALL SUMMARY TABLE =================
 st.subheader("Shortfall Summary (Last 12 Months)")
 
-table_df = mine_data.tail(12)[['date', 'planned_production_tpd__DERIVED', 'actual_production_tpd__DERIVED', 
+table_df = mine_data.tail(12)[['date', 'planned_production_tpd__DERIVED', 'derived_actual_production_tpd__DERIVED', 
                                  'equipment_availability_pct__DERIVED', 'rainfall_mm__REAL', 'shortfall_risk']].copy()
 table_df['date'] = table_df['date'].dt.strftime('%b %Y')
 table_df.columns = ['Month', 'Planned (TPD)', 'Actual (TPD)', 'Equip Avail (%)', 'Rainfall (mm)', 'Risk']
