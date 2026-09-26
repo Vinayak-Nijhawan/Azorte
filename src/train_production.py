@@ -271,10 +271,14 @@ def main():
                 rainy_d = scenario_weather["rainy_days"]
                 
                 if scenario_name == "normal_weather":
-                    if month in [6, 7, 8, 9]:
-                        rain = 350
-                        rainy_d = 20
-                        temp = 32
+                    if month == 6:
+                        rain, rainy_d, temp = 180, 12, 34
+                    elif month == 7:
+                        rain, rainy_d, temp = 480, 22, 30
+                    elif month == 8:
+                        rain, rainy_d, temp = 380, 18, 30
+                    elif month == 9:
+                        rain, rainy_d, temp = 220, 14, 32
                     elif month in [3, 4, 5]:
                         temp = 42
                         rain = 20
