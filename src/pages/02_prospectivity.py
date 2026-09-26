@@ -79,8 +79,7 @@ with col_ctrl:
     else:
         plotly_style = "streets"
 
-    overlay_radius = st.slider("Spread", 8, 40, 18)
-    overlay_opacity = st.slider("Opacity", 0.1, 1.0, 0.6, 0.1)
+    overlay_opacity = st.slider("Opacity", 0.1, 1.0, 0.7, 0.1)
 
 with col_map:
     fig = go.Figure()
@@ -88,22 +87,43 @@ with col_map:
     # Force Plotly to render the Map canvas even if all toggles are turned off
     fig.add_trace(go.Scattermap(lat=[None], lon=[None], showlegend=False, hoverinfo='none'))
 
-    # ---- LAYER 1: Prospectivity Heatmap ----
+    # ---- LAYER 1: Prospectivity (Sharp Scatter Points) ----
     if show_heatmap and 'mn_probability' in df.columns:
-        # Only plot medium-to-high probability points
-        # This removes the uniform blue grid background and shows actual hotspots
-        hotspots = df[df['mn_probability'] > 0.35].copy()
+        # Filter out very low probability points for cleaner viz
+        viz_df = df[df['mn_probability'] > 0.15].copy()
         
-        fig.add_trace(go.Densitymap(
-            lat=hotspots['latitude'], lon=hotspots['longitude'],
-            z=hotspots['mn_probability'],
-            radius=overlay_radius,
-            opacity=overlay_opacity,
-            colorscale=[[0,'blue'],[0.2,'cyan'],[0.4,'lime'],[0.6,'yellow'],[0.8,'orange'],[1.0,'red']],
-            zmin=0.3, zmax=1.0,
-            colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
+        # Color mapping: Low=blue, Medium=yellow, High=red
+        def prob_to_color(p):
+            if p >= 0.8:
+                return 'rgba(220,30,30,0.85)'    # Red - HIGH
+            elif p >= 0.6:
+                return 'rgba(255,140,0,0.75)'     # Orange
+            elif p >= 0.4:
+                return 'rgba(255,220,50,0.65)'     # Yellow - MEDIUM
+            elif p >= 0.25:
+                return 'rgba(50,200,100,0.50)'     # Green
+            else:
+                return 'rgba(30,100,220,0.35)'     # Blue - LOW
+        
+        viz_df['color'] = viz_df['mn_probability'].apply(prob_to_color)
+        viz_df['size'] = np.clip(viz_df['mn_probability'] * 12, 3, 14)
+        
+        # Sort so high-probability dots render on top
+        viz_df = viz_df.sort_values('mn_probability', ascending=True)
+        
+        fig.add_trace(go.Scattermap(
+            lat=viz_df['latitude'], lon=viz_df['longitude'],
+            mode='markers',
+            marker=dict(
+                size=viz_df['size'],
+                color=viz_df['mn_probability'],
+                colorscale=[[0,'#1a5fb4'],[0.3,'#26a269'],[0.5,'#f5c211'],[0.7,'#ff7800'],[1.0,'#e01b24']],
+                cmin=0.15, cmax=1.0,
+                opacity=overlay_opacity,
+                colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
+            ),
             name='Prospectivity', showlegend=True,
-            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{z:.3f}<extra></extra>',
+            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{marker.color:.3f}<extra></extra>',
         ))
 
 
@@ -112,12 +132,16 @@ with col_map:
         fe = df.copy()
         fe['fe_norm'] = (fe['iron_oxide_index'] - fe['iron_oxide_index'].min()) / (fe['iron_oxide_index'].max() - fe['iron_oxide_index'].min() + 1e-10)
         fe_high = fe[fe['fe_norm'] > 0.3]
-        fig.add_trace(go.Densitymap(
+        fig.add_trace(go.Scattermap(
             lat=fe_high['latitude'], lon=fe_high['longitude'],
-            z=fe_high['fe_norm'],
-            radius=overlay_radius, opacity=overlay_opacity * 0.6,
-            colorscale=[[0,'rgba(255,255,200,0.2)'],[0.5,'rgba(255,140,0,0.6)'],[1.0,'rgba(180,0,0,0.9)']],
-            colorbar=dict(title=dict(text="Fe Index"), x=1.08, len=0.3, y=0.7, thickness=10),
+            mode='markers',
+            marker=dict(
+                size=np.clip(fe_high['fe_norm'] * 10, 3, 10),
+                color=fe_high['fe_norm'],
+                colorscale=[[0,'rgba(255,200,100,0.4)'],[0.5,'rgba(255,140,0,0.7)'],[1.0,'rgba(180,0,0,0.9)']],
+                opacity=overlay_opacity * 0.7,
+                colorbar=dict(title=dict(text="Fe Index"), x=1.08, len=0.3, y=0.7, thickness=10),
+            ),
             name='Iron Oxide', showlegend=True,
         ))
 
@@ -228,7 +252,14 @@ if 'mn_probability' in df.columns:
 st.subheader("🔬 Feature Importance")
 if model is not None:
     try:
-        base = model[0] if isinstance(model, list) else model
+        # Handle different model types (list of RFs, single RF, or PUBaggingEnsemble)
+        if isinstance(model, list):
+            base = model[0]
+        elif hasattr(model, 'models') and isinstance(model.models, list):
+            base = model.models[0]  # Get first RF from PUBaggingEnsemble
+        else:
+            base = model
+            
         if hasattr(base, 'feature_importances_'):
             imp = base.feature_importances_
             names = ['iron_oxide_index','clay_index','ndvi','rock_type','fault_distance_km',
@@ -236,7 +267,9 @@ if model is not None:
             feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
             fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h',
                            color='Importance', color_continuous_scale='RdYlGn_r')
-            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances")
+            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances (Real Data Model)")
             st.plotly_chart(fig_imp, use_container_width=True)
+        else:
+            st.info("Feature importance not available for this model type.")
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error loading feature importance: {e}")

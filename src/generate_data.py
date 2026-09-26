@@ -58,13 +58,13 @@ def main():
         if lat < 16.0: return 'Dharwar_Schist' # Karnataka
         if lon > 84.0: return 'Iron_Ore_Group' # Odisha
         
-        # Central India
+        # Central India - Mapped to Sausar Group Stratigraphy (from G4 Report)
         val = lat * 1.5 + lon
-        if val > 111.5: return 'Mn_bearing_schist'
-        elif val > 111.0: return 'Laterite'
-        elif val > 110.5: return 'Gondwana_sediment'
-        elif val > 110.0: return 'Deccan_basalt'
-        else: return 'Granite_gneiss'
+        if val > 111.5: return 'Mansar_Quartz_Mica_Schist' # Main host rock
+        elif val > 111.0: return 'Gondite_Horizon'         # Mn bearing
+        elif val > 110.5: return 'Chorbahuli_Formation'
+        elif val > 110.0: return 'Bichhua_Calc_Silicate'
+        else: return 'Tirodi_Biotite_Gneiss'               # Basement
     
     df_prospectivity['rock_type'] = [assign_rock_type(lat, lon) for lat, lon in zip(df_prospectivity['latitude'], df_prospectivity['longitude'])]
     
@@ -85,7 +85,7 @@ def main():
     df_prospectivity['soil_moisture'] = np.clip(df_prospectivity['soil_moisture'], 0.05, 0.6)
     
     prob = np.zeros(n_samples)
-    is_favorable_rock = df_prospectivity['rock_type'].isin(['Mn_bearing_schist', 'Laterite', 'Dharwar_Schist', 'Iron_Ore_Group'])
+    is_favorable_rock = df_prospectivity['rock_type'].isin(['Mansar_Quartz_Mica_Schist', 'Gondite_Horizon', 'Dharwar_Schist', 'Iron_Ore_Group'])
     prob += is_favorable_rock * 0.4
     prob += (df_prospectivity['iron_oxide_index'] > df_prospectivity['iron_oxide_index'].median()) * 0.2
     prob += (df_prospectivity['clay_index'] > df_prospectivity['clay_index'].median()) * 0.2

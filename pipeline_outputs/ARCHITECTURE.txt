@@ -1,0 +1,19 @@
+
+    Data Sources (Spectral, Topo, GSI-Simulated, Weather)
+        |
+    10 Feature Dataset
+        |
+    Spatial Blocking (~0.1 deg)
+        |
+    PU-Bagging Random Forest (P vs U sampling)
+        |
+    Raw Prospectivity Score
+        |
+    NDVI Domain Adjustment (Penalty if > 0.70)
+        |
+    Uncertainty Estimation (Ensemble Std Dev)
+        |
+    High / Medium / Low Classes
+        |
+    Prospectivity Map + Dashboard
+    

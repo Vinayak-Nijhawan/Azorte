@@ -1,0 +1,61 @@
+
+==================================================
+MOIL-GEOSYNC FINAL PIPELINE REPORT
+==================================================
+Date generated: 2026-09-26 13:35:35
+
+1. DATASET SUMMARY
+-------------------
+Total samples: 23957
+Known positives (Label=1): 2233
+Unlabeled samples (Label=0): 21724
+Spatial blocks created: 270
+
+2. FEATURE SUMMARY
+-------------------
+Spectral (Sentinel-2): iron_oxide_index, clay_index, ndvi
+Topography (SRTM DEM): elevation_m, slope_deg
+Geology (GSI-Simulated): rock_type_encoded, fault_distance_km, shear_zone_proximity_km
+Environment (APIs): rainfall_mm, soil_moisture
+
+3. METHODOLOGY
+-------------------
+Algorithm: Positive-Unlabeled (PU) Bagging Random Forest
+Number of PU Bags: 50
+Unlabeled Sampling Ratio: 1.0:1
+Spatial CV: GroupKFold (5 Folds) block size 0.1 deg
+
+4. EVALUATION (Spatial CV)
+-------------------
+Mean Recall on Known Positives: 0.819 +/- 0.034
+Mean PR-AUC (Relative to U): 0.523 +/- 0.023
+
+* Note: Ordinary binary accuracy and ROC-AUC are excluded as U samples are not confirmed negatives.
+
+5. FEATURE IMPORTANCE (Top 5)
+-------------------
+                Feature  Importance
+      rock_type_encoded    0.325662
+      fault_distance_km    0.194318
+shear_zone_proximity_km    0.122872
+            elevation_m    0.104657
+            rainfall_mm    0.055866
+* Note: Feature importance indicates model reliance, NOT geological causation.
+
+6. DOMAIN ADJUSTMENT (NDVI)
+-------------------
+Points penalized due to dense vegetation (NDVI > 0.7): 292
+Penalty factor: 0.7
+
+7. PROSPECTIVITY DISTRIBUTION
+-------------------
+HIGH (>= 0.8): 2403 points
+MEDIUM (0.4 - 0.8): 4040 points
+LOW (< 0.4): 17514 points
+
+8. REPRODUCIBILITY
+-------------------
+Random Seed: 42
+Outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+==================================================
+    
