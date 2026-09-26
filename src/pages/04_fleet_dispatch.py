@@ -1,10 +1,13 @@
 import os
+import time
+import random
+import hashlib
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ─── Paths ───
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -281,9 +284,107 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# ─── Real-Time Simulation Engine ───
+def _get_rt_seed():
+    """Generate a seed that changes every 30 seconds for stable perturbations within a refresh cycle."""
+    epoch_30s = int(time.time()) // 30
+    return epoch_30s
+
+def simulate_realtime(dispatch_plan, fleet_alerts, forecast):
+    """Apply realistic random perturbations to simulate live sensor/IoT data."""
+    seed = _get_rt_seed()
+    rng = np.random.RandomState(seed)
+
+    df = dispatch_plan.copy()
+    alerts = fleet_alerts.copy()
+    fc = forecast.copy()
+
+    # 1. Perturb effective_capacity_tph by ±5-15%
+    if 'effective_capacity_tph' in df.columns:
+        noise = rng.uniform(0.85, 1.15, size=len(df))
+        df['effective_capacity_tph'] = df['effective_capacity_tph'] * noise
+
+    # 2. Perturb shovel_throughput_tpd by ±3-8%
+    if 'shovel_throughput_tpd' in df.columns:
+        noise = rng.uniform(0.92, 1.08, size=len(df))
+        df['shovel_throughput_tpd'] = df['shovel_throughput_tpd'] * noise
+
+    # 3. Recalculate total_mine_tpd based on perturbed capacities
+    if 'effective_capacity_tph' in df.columns and 'total_mine_tpd' in df.columns:
+        for mine_id in df['mine_id'].unique():
+            mask = df['mine_id'] == mine_id
+            total = df.loc[mask, 'effective_capacity_tph'].sum() * 16  # 16 operating hours
+            df.loc[mask, 'total_mine_tpd'] = total
+
+    # 4. Recalculate achievable_vs_planned_pct
+    if 'total_mine_tpd' in df.columns and 'planned_tpd' in df.columns:
+        df['achievable_vs_planned_pct'] = np.where(
+            df['planned_tpd'] > 0,
+            df['total_mine_tpd'] / df['planned_tpd'] * 100,
+            100
+        )
+
+    # 5. Randomly toggle 1-2 dumpers to idle status (lower their effective capacity)
+    if 'effective_capacity_tph' in df.columns and len(df) > 3:
+        n_idle = rng.randint(0, min(3, len(df) // 4))
+        idle_indices = rng.choice(df.index, size=n_idle, replace=False)
+        df.loc[idle_indices, 'effective_capacity_tph'] *= rng.uniform(0.3, 0.6, size=n_idle)
+
+    # 6. Small chance of shovel reassignment (swap 2 dumpers)
+    if 'assigned_shovel' in df.columns and len(df) > 4:
+        if rng.random() < 0.3:  # 30% chance per refresh
+            swap_idx = rng.choice(df.index, size=2, replace=False)
+            df.loc[swap_idx[0], 'assigned_shovel'], df.loc[swap_idx[1], 'assigned_shovel'] = \
+                df.loc[swap_idx[1], 'assigned_shovel'], df.loc[swap_idx[0], 'assigned_shovel']
+
+    # 7. Generate dynamic alerts
+    dynamic_alert_pool = [
+        ("WARNING", "Dumper {d} speed reduced — wet haul road detected"),
+        ("INFO", "Dumper {d} completed loading cycle — returning to queue"),
+        ("WARNING", "Shovel {s} bucket fill factor below 85% — material hardness spike"),
+        ("INFO", "Fuel level low on Dumper {d} — refueling scheduled"),
+        ("CRITICAL", "Dumper {d} tire pressure warning — inspection required"),
+        ("INFO", "GPS signal restored for Dumper {d}"),
+        ("WARNING", "Queue time exceeding 8 min at Shovel {s}"),
+    ]
+    py_rng = random.Random(seed)
+    n_dynamic = py_rng.randint(1, 3)
+    dynamic_rows = []
+    available_dumpers = df['dumper_id'].unique().tolist() if 'dumper_id' in df.columns else ['D0']
+    available_shovels = df['assigned_shovel'].unique().tolist() if 'assigned_shovel' in df.columns else ['S0']
+    for _ in range(n_dynamic):
+        atype, msg_template = py_rng.choice(dynamic_alert_pool)
+        d = py_rng.choice(available_dumpers)
+        s = py_rng.choice(available_shovels)
+        msg = msg_template.format(d=d, s=s)
+        # Use first mine_id from df for context
+        mine = df['mine_id'].iloc[0] if 'mine_id' in df.columns else 'Mine_A'
+        month_val = df['month'].iloc[0] if 'month' in df.columns else 1
+        year_val = df['year'].iloc[0] if 'year' in df.columns else 2026
+        dynamic_rows.append({
+            'mine_id': mine, 'month': month_val, 'year': year_val,
+            'alert_type': atype, 'alert_message': msg
+        })
+    if dynamic_rows:
+        dynamic_df = pd.DataFrame(dynamic_rows)
+        alerts = pd.concat([alerts, dynamic_df], ignore_index=True)
+
+    # 8. Perturb forecast values slightly
+    if not fc.empty:
+        if 'equipment_availability_pct' in fc.columns:
+            fc['equipment_availability_pct'] *= rng.uniform(0.97, 1.02, size=len(fc))
+            fc['equipment_availability_pct'] = fc['equipment_availability_pct'].clip(0, 1)
+        if 'rainfall_mm' in fc.columns:
+            fc['rainfall_mm'] *= rng.uniform(0.8, 1.3, size=len(fc))
+            fc['rainfall_mm'] = fc['rainfall_mm'].clip(0)
+
+    return df, alerts, fc
+
+
 # ─── Data Loaders ───
-@st.cache_data
-def load_data():
+@st.cache_data(ttl=30)
+def load_base_data():
+    """Load base CSV data with 30-second TTL cache."""
     dispatch_plan = pd.DataFrame()
     fleet_alerts = pd.DataFrame()
     forecast = pd.DataFrame()
@@ -298,11 +399,39 @@ def load_data():
     return dispatch_plan, fleet_alerts, forecast
 
 
-dispatch_plan, fleet_alerts, forecast = load_data()
+base_dispatch, base_alerts, base_forecast = load_base_data()
 
-if dispatch_plan.empty:
+if base_dispatch.empty:
     st.info("No dispatch plan found. Run `python src/optimize_fleet.py` first.")
     st.stop()
+
+# ─── SIDEBAR: Real-Time Controls ───
+st.sidebar.markdown("---")
+st.sidebar.subheader("⚡ Real-Time Controls")
+auto_refresh_enabled = st.sidebar.toggle("Auto-Refresh", value=True, help="Enable automatic data refresh")
+refresh_interval = st.sidebar.select_slider(
+    "Refresh Interval",
+    options=[15, 30, 45, 60],
+    value=30,
+    format_func=lambda x: f"{x}s",
+    help="Seconds between automatic refreshes",
+    disabled=not auto_refresh_enabled,
+)
+
+# Inject auto-refresh meta tag
+if auto_refresh_enabled:
+    st.markdown(
+        f'<meta http-equiv="refresh" content="{refresh_interval}">',
+        unsafe_allow_html=True,
+    )
+
+# Apply real-time simulation
+dispatch_plan, fleet_alerts, forecast = simulate_realtime(base_dispatch, base_alerts, base_forecast)
+
+# Track refresh timestamp
+current_time = datetime.now()
+refresh_ts = current_time.strftime("%H:%M:%S")
+refresh_date = current_time.strftime("%d %b %Y")
 
 # ─── SIDEBAR FILTERS (preserved) ───
 st.sidebar.header("Filter Options")
@@ -397,12 +526,29 @@ mine_display = selected_mine.replace('_', ' ').replace('Mine ', '') if isinstanc
 month_names = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'}
 month_display = month_names.get(selected_month, str(selected_month))
 
+# ─── KPI Delta Tracking (session state) ───
+if 'prev_kpis' not in st.session_state:
+    st.session_state.prev_kpis = {}
+
+prev = st.session_state.prev_kpis
+delta_production = achievable_tpd - prev.get('achievable_tpd', achievable_tpd)
+delta_achievement = achievement_pct - prev.get('achievement_pct', achievement_pct)
+delta_efficiency = efficiency_pct - prev.get('efficiency_pct', efficiency_pct)
+
+# Store current values for next refresh
+st.session_state.prev_kpis = {
+    'achievable_tpd': achievable_tpd,
+    'achievement_pct': achievement_pct,
+    'efficiency_pct': efficiency_pct,
+}
+
 # ─────────────────────────────────────────
 # HEADER
 # ─────────────────────────────────────────
 status_class = "fd-live" if achievement_pct >= 90 else "fd-tag"
 status_text = "OPERATIONAL" if achievement_pct >= 90 else "AT RISK"
 status_dot = '<div class="fd-live-dot"></div>' if achievement_pct >= 90 else '⚠️'
+live_indicator = '<div class="fd-live"><div class="fd-live-dot"></div> LIVE</div>' if auto_refresh_enabled else ""
 
 st.markdown(f"""
 <div class="fd-header">
@@ -413,6 +559,8 @@ st.markdown(f"""
     <div class="fd-header-right">
         <div class="fd-tag">⛏️ {mine_display}</div>
         <div class="fd-tag">📅 {month_display} {selected_year}</div>
+        <div class="fd-tag">🕐 {refresh_ts}</div>
+        {live_indicator}
         <div class="{status_class}">{status_dot} {status_text}</div>
     </div>
 </div>
@@ -434,12 +582,18 @@ if not alerts_filtered.empty:
 avail_dumpers = num_dumpers
 total_fleet = num_dumpers + maint_count
 
+# Format delta indicators for KPI cards
+prod_delta_str = f"{'▲' if delta_production >= 0 else '▼'} {abs(delta_production):,.0f} TPD since last refresh" if delta_production != 0 else f"{'▲' if delta_tpd >= 0 else '▼'} {abs(delta_tpd):,.0f} TPD vs plan"
+prod_delta_class = 'positive' if delta_production >= 0 else 'negative' if delta_production != 0 else delta_class
+achieve_delta_str = f"{'▲' if delta_achievement >= 0 else '▼'} {abs(delta_achievement):.1f}% since last" if delta_achievement != 0 else ('On track' if achievement_pct >= 100 else ('Near target' if achievement_pct >= 90 else 'Below target'))
+eff_delta_str = f"{'▲' if delta_efficiency >= 0 else '▼'} {abs(delta_efficiency):.1f}% since last" if delta_efficiency != 0 else 'Eff. vs base capacity'
+
 st.markdown(f"""
 <div class="kpi-grid">
     <div class="kpi-card">
         <div class="kpi-label">Production</div>
         <div class="kpi-value">{achievable_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
-        <div class="kpi-delta {delta_class}">{delta_icon} {abs(delta_tpd):,.0f} TPD vs plan</div>
+        <div class="kpi-delta {prod_delta_class}">{prod_delta_str}</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Planned Production</div>
@@ -449,7 +603,7 @@ st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-label">Achievement</div>
         <div class="kpi-value">{achievement_pct:.1f}<span class="kpi-unit">%</span></div>
-        <div class="kpi-delta {achieve_class}">{'On track' if achievement_pct >= 100 else ('Near target' if achievement_pct >= 90 else 'Below target')}</div>
+        <div class="kpi-delta {achieve_class}">{achieve_delta_str}</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Active Dumpers</div>
@@ -464,7 +618,7 @@ st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-label">Fleet Efficiency</div>
         <div class="kpi-value">{efficiency_pct:.1f}<span class="kpi-unit">%</span></div>
-        <div class="kpi-delta {'positive' if efficiency_pct > 90 else 'warning'}">Eff. vs base capacity</div>
+        <div class="kpi-delta {'positive' if efficiency_pct > 90 else 'warning'}">{eff_delta_str}</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Equip Availability</div>

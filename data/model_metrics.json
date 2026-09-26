@@ -1,7 +1,8 @@
 {
   "model": "GradientBoostingRegressor",
   "target": "derived_actual_production_tpd__DERIVED",
-  "target_note": "DERIVED proxy target. NOT observed MOIL monthly production.",
+  "target_note": "DERIVED proxy target from real MOIL annual totals + weather penalty.",
+  "dataset_note": "CORRECTED: 10 real MOIL mines, verified production totals.",
   "splitting": "Chronological (Train<=2022, Val=2023, Test=2024+)",
   "n_estimators": 200,
   "features": [
@@ -18,51 +19,63 @@
     "lag_1__DERIVED",
     "lag_2__DERIVED",
     "lag_3__DERIVED",
-    "crusher_capacity_tpd__ASSUMED",
-    "num_dumpers__ASSUMED",
-    "num_shovels__ASSUMED",
+    "mine_share_pct__DERIVED",
     "month",
-    "mine_encoded"
+    "mine_encoded",
+    "state_encoded",
+    "mine_type_encoded"
   ],
   "feature_importance": {
-    "planned_production_tpd__DERIVED": 0.7519,
-    "lag_1__DERIVED": 0.199,
-    "weather_penalty_factor__DERIVED": 0.0202,
-    "rainfall_mm__REAL": 0.0103,
-    "haul_road_condition__DERIVED": 0.0049,
-    "equipment_availability_pct__DERIVED": 0.004,
-    "lag_3__DERIVED": 0.0021,
-    "rainy_days__REAL": 0.0017,
-    "lag_2__DERIVED": 0.0017,
-    "temp_max__REAL": 0.0013,
-    "blasting_days__DERIVED": 0.0009,
-    "temp_mean__REAL": 0.0008,
-    "month": 0.0007,
-    "high_rainfall_flag__DERIVED": 0.0002,
-    "mine_encoded": 0.0002,
-    "num_dumpers__ASSUMED": 0.0001,
-    "crusher_capacity_tpd__ASSUMED": 0.0,
-    "num_shovels__ASSUMED": 0.0
+    "lag_1__DERIVED": 0.5965,
+    "planned_production_tpd__DERIVED": 0.2224,
+    "mine_share_pct__DERIVED": 0.1146,
+    "mine_encoded": 0.0274,
+    "rainfall_mm__REAL": 0.0107,
+    "weather_penalty_factor__DERIVED": 0.0084,
+    "lag_3__DERIVED": 0.0049,
+    "lag_2__DERIVED": 0.0044,
+    "haul_road_condition__DERIVED": 0.0034,
+    "equipment_availability_pct__DERIVED": 0.0032,
+    "blasting_days__DERIVED": 0.0024,
+    "rainy_days__REAL": 0.0009,
+    "temp_mean__REAL": 0.0003,
+    "state_encoded": 0.0002,
+    "temp_max__REAL": 0.0002,
+    "month": 0.0002,
+    "mine_type_encoded": 0.0,
+    "high_rainfall_flag__DERIVED": 0.0
   },
   "metrics": {
     "validation": {
-      "ml_mae": 18.48,
-      "ml_rmse": 28.55,
-      "ml_r2": 0.9765,
-      "baseline_mae": 28.2,
-      "baseline_rmse": 52.33,
-      "baseline_r2": 0.9211,
-      "improvement_mae_pct": 34.5
+      "ml_mae": 39.4,
+      "ml_rmse": 55.22,
+      "ml_r2": 0.9448,
+      "baseline_mae": 35.93,
+      "baseline_rmse": 65.31,
+      "baseline_r2": 0.9228,
+      "improvement_mae_pct": -9.7
     },
     "test": {
-      "ml_mae": 18.13,
-      "ml_rmse": 27.49,
-      "ml_r2": 0.9788,
-      "baseline_mae": 31.6,
-      "baseline_rmse": 55.04,
-      "baseline_r2": 0.9151,
-      "improvement_mae_pct": 42.6
+      "ml_mae": 43.9,
+      "ml_rmse": 66.4,
+      "ml_r2": 0.9277,
+      "baseline_mae": 39.31,
+      "baseline_rmse": 70.79,
+      "baseline_r2": 0.9179,
+      "improvement_mae_pct": -11.7
     }
   },
-  "baseline_model": "Naive: always predict baseline_tpd (annual avg, no weather)"
+  "baseline_model": "Naive: always predict baseline_tpd (annual avg, no weather)",
+  "mines": [
+    "Balaghat",
+    "Beldongri",
+    "Chikla",
+    "Dongri_Buzurg",
+    "Gumgaon",
+    "Kandri",
+    "Munsar",
+    "Sitapatore",
+    "Tirodi",
+    "Ukwa"
+  ]
 }

@@ -1,0 +1,34 @@
+Fiscal_Year,Quarter,Calendar_Months,Production_Lakh_MT,Production_Tonnes,Source,Source_URL
+FY2018-19,Q1,Apr-Jun,3.30,330000,MOIL Annual Report / Ministry of Steel (Seasonality Est. from 13.01 Lakh MT FY19 Total),https://steel.gov.in
+FY2018-19,Q2,Jul-Sep,2.65,265000,MOIL Annual Report / Ministry of Steel (Monsoon Seasonality Est. from 13.01 Lakh MT Total),https://steel.gov.in
+FY2018-19,Q3,Oct-Dec,3.40,340000,MOIL Annual Report / Ministry of Steel (Seasonality Est. from 13.01 Lakh MT FY19 Total),https://steel.gov.in
+FY2018-19,Q4,Jan-Mar,3.66,366000,MOIL Annual Report / Ministry of Steel (Seasonality Est. from 13.01 Lakh MT FY19 Total),https://steel.gov.in
+FY2019-20,Q1,Apr-Jun,3.25,325000,MOIL Annual Report / BSE Filings (Seasonality Est. from 12.77 Lakh MT FY20 Total),https://www.bseindia.com
+FY2019-20,Q2,Jul-Sep,2.60,260000,MOIL Annual Report / BSE Filings (Monsoon Seasonality Est. from 12.77 Lakh MT Total),https://www.bseindia.com
+FY2019-20,Q3,Oct-Dec,3.35,335000,MOIL Annual Report / BSE Filings (Seasonality Est. from 12.77 Lakh MT FY20 Total),https://www.bseindia.com
+FY2019-20,Q4,Jan-Mar,3.57,357000,MOIL Annual Report / BSE Filings (Seasonality Est. - Lockdown onset late March 2020),https://www.bseindia.com
+FY2020-21,Q1,Apr-Jun,1.84,184000,MOIL Operational Review / Annual Report (COVID-19 National Lockdown Disruption),https://pib.gov.in
+FY2020-21,Q2,Jul-Sep,2.37,237000,MOIL Operational Review / Annual Report (Monsoon & Post-Lockdown Ramp-up),https://pib.gov.in
+FY2020-21,Q3,Oct-Dec,3.26,326000,MOIL Operational Review / Annual Report (Post-COVID Industrial Recovery),https://pib.gov.in
+FY2020-21,Q4,Jan-Mar,3.96,396000,MOIL Operational Review / Annual Report (Residual of 11.43 Lakh MT Total),https://pib.gov.in
+FY2021-22,Q1,Apr-Jun,2.76,276000,MOIL BSE Disclosures / Financial Results (COVID Wave-2 Impact),https://www.bseindia.com
+FY2021-22,Q2,Jul-Sep,2.32,232000,MOIL BSE Disclosures / Financial Results (Monsoon Impact),https://www.bseindia.com
+FY2021-22,Q3,Oct-Dec,3.17,317000,MOIL BSE Disclosures / Financial Results,https://www.bseindia.com
+FY2021-22,Q4,Jan-Mar,4.06,406000,MOIL Annual Performance Disclosures (FY22 Total 12.31 Lakh MT less 9M 8.25 Lakh MT),https://economictimes.indiatimes.com
+FY2022-23,Q1,Apr-Jun,3.22,322000,MOIL Operational Disclosures (Derived from 9M 9.00 Lakh MT less Q2 & Q3),https://pib.gov.in
+FY2022-23,Q2,Jul-Sep,2.41,241000,MOIL Corporate Announcement / Press Release (Extended Monsoon Impact),https://www.bseindia.com
+FY2022-23,Q3,Oct-Dec,3.37,337000,MOIL Press Release / Ministry of Steel (40% QoQ Increase over Q2),https://pib.gov.in
+FY2022-23,Q4,Jan-Mar,4.02,402000,MOIL Press Release / PIB (Best Ever Q4 at the time, 7% YoY growth; Full Year 13.02L),https://pib.gov.in
+FY2023-24,Q1,Apr-Jun,4.36,436000,MOIL Press Release / PIB (Best Ever Q1, 35% YoY growth),https://pib.gov.in
+FY2023-24,Q2,Jul-Sep,3.79,379000,MOIL BSE Announcement / Business Standard (H1 FY24 8.15 Lakh MT less Q1 4.36 Lakh MT),https://www.business-standard.com
+FY2023-24,Q3,Oct-Dec,4.58,458000,MOIL Press Release / Business Standard (9M FY24 12.73 Lakh MT less H1 8.15 Lakh MT; ~4.6L reported),https://www.business-standard.com
+FY2023-24,Q4,Jan-Mar,4.83,483000,MOIL Press Release / ICICI Direct / Upstox (Best Ever Q4, 20% YoY growth; Full Year 17.56L),https://www.icicidirect.com
+FY2024-25,Q1,Apr-Jun,4.70,470000,MOIL Press Release / PIB (7.8% YoY growth; Best Ever Q1),https://pib.gov.in
+FY2024-25,Q2,Jul-Sep,4.00,400000,MOIL Corporate Announcement / Ministry of Steel (H1 FY25 8.70 Lakh MT less Q1 4.70 Lakh MT),https://pib.gov.in
+FY2024-25,Q3,Oct-Dec,4.60,460000,MOIL Press Release / PIB (Best Ever Q3 Production; 9M FY25 13.30 Lakh MT),https://pib.gov.in
+FY2024-25,Q4,Jan-Mar,4.72,472000,MOIL Press Release / PSU Watch (FY25 Total 18.02 Lakh MT less 9M 13.30 Lakh MT),https://pib.gov.in
+FY2025-26,Q1,Apr-Jun,5.02,502000,MOIL Press Release / PIB / PSU Watch (Best Ever Q1; 6.8% YoY growth),https://pib.gov.in
+FY2025-26,Q2,Jul-Sep,4.42,442000,MOIL Corporate Announcement / ScanX (10.3% YoY growth),https://scanx.trade
+FY2025-26,Q3,Oct-Dec,4.77,477000,MOIL Press Release / PIB / Business Standard (Best Ever Q3 Production),https://pib.gov.in
+FY2025-26,Q4,Jan-Mar,4.86,486000,MOIL Full Year Financial Release / Free Press Journal (FY26 Total 19.07 Lakh MT less 9M 14.21 Lakh MT),https://www.freepressjournal.in
+FY2026-27,Q1,Apr-Jun,5.08,507605,MOIL Press Release / PIB (All-time Record Q1; 507605 MT),https://pib.gov.in

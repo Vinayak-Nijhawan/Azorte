@@ -10,26 +10,7 @@
   "rain_haul_road_degradation_per_100mm": 0.8,
   "base_blasting_days_per_month": 22,
   "rain_blasting_reduction_per_100mm": 3,
-  "crusher_capacity_tpd_by_mine_size": {
-    "large": 1200,
-    "medium": 800,
-    "small": 500
-  },
-  "fleet_by_mine_size": {
-    "large": {
-      "num_dumpers": 8,
-      "num_shovels": 3
-    },
-    "medium": {
-      "num_dumpers": 6,
-      "num_shovels": 2
-    },
-    "small": {
-      "num_dumpers": 5,
-      "num_shovels": 2
-    }
-  },
-  "production_noise_std_pct": 0.03,
+  "production_noise_std_pct": 0.02,
   "train_end_year": 2022,
   "val_end_year": 2023
 }
