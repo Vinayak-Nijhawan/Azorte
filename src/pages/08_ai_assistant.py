@@ -56,12 +56,12 @@ with st.expander("Example Queries"):
 def load_csv(filename):
     path = os.path.join(DATA_DIR, filename)
     if os.path.exists(path):
-        return pd.read_csv(path)
+        return pd.read_csv(path, comment='#')
     return None
 
-df_prod = load_csv("production_dataset.csv")
+df_prod = load_csv("production_dataset_real.csv")
 df_prospect = load_csv("prospectivity_grid.csv")
-df_forecast = load_csv("production_forecast.csv")
+df_forecast = load_csv("production_forecast_real.csv")
 df_dispatch = load_csv("dispatch_plan.csv")
 df_alerts = load_csv("fleet_alerts.csv")
 

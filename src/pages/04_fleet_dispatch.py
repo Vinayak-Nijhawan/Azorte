@@ -20,7 +20,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 DISPATCH_PLAN_PATH = os.path.join(DATA_DIR, "dispatch_plan.csv")
 FLEET_ALERTS_PATH = os.path.join(DATA_DIR, "fleet_alerts.csv")
-FORECAST_PATH = os.path.join(DATA_DIR, "production_forecast.csv")
+FORECAST_PATH = os.path.join(DATA_DIR, "production_forecast_real.csv")
 
 # ─── Plotly theme helper ───
 def apply_dark_theme(fig, height=400, show_legend=True):
@@ -311,7 +311,7 @@ def load_data():
     if os.path.exists(FLEET_ALERTS_PATH):
         fleet_alerts = pd.read_csv(FLEET_ALERTS_PATH)
     if os.path.exists(FORECAST_PATH):
-        forecast = pd.read_csv(FORECAST_PATH)
+        forecast = pd.read_csv(FORECAST_PATH, comment='#')
 
     return dispatch_plan, fleet_alerts, forecast
 

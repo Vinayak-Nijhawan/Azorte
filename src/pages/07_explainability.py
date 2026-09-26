@@ -62,17 +62,25 @@ st.markdown("""
 st.markdown("Model accuracy proof + SHAP-based AI decision explanations")
 
 PROSPECT_FEATURES = ['iron_oxide_index','clay_index','ndvi','rock_type_encoded','fault_distance_km',
-                     'shear_zone_proximity_km','elevation_m','slope_deg','rainfall_mm__REAL','soil_moisture']
-PROD_FEATURES = ['planned_production_tpd__DERIVED','rainfall_mm__REAL','equipment_availability_pct__DERIVED','blasting_days',
-                 'haul_road_condition__DERIVED','crusher_capacity_tpd','num_dumpers','num_shovels','lag_1','lag_2','lag_3']
+                     'shear_zone_proximity_km','elevation_m','slope_deg','rainfall_mm','soil_moisture']
+PROD_FEATURES = [
+    'rainfall_mm__REAL', 'rainy_days__REAL', 'temp_max__REAL', 'temp_mean__REAL',
+    'planned_production_tpd__DERIVED', 'weather_penalty_factor__DERIVED', 
+    'equipment_availability_pct__DERIVED', 'haul_road_condition__DERIVED', 
+    'blasting_days__DERIVED', 'high_rainfall_flag__DERIVED', 
+    'lag_1__DERIVED', 'lag_2__DERIVED', 'lag_3__DERIVED',
+    'crusher_capacity_tpd__ASSUMED', 'num_dumpers__ASSUMED', 'num_shovels__ASSUMED',
+    'month', 'mine_encoded'
+]
 
 @st.cache_data
 def load_all_data():
-    prospect_df = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_dataset.csv'))
-    prospect_grid = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'))
-    prod_df = pd.read_csv(os.path.join(DATA_DIR, 'production_dataset.csv'))
+    prospect_df = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_dataset.csv'), comment='#')
+    prospect_grid = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'), comment='#')
+    prod_df = pd.read_csv(os.path.join(DATA_DIR, 'production_dataset_real.csv'), comment='#')
     le = LabelEncoder()
     prospect_df['rock_type_encoded'] = le.fit_transform(prospect_df['rock_type'])
+    prod_df['mine_encoded'] = le.fit_transform(prod_df['mine_id'])
     return prospect_df, prospect_grid, prod_df
 
 @st.cache_resource
