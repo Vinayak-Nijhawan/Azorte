@@ -146,8 +146,13 @@ with tab1:
     
     X = prospect_df[available_features]
     
-    # Label column: 'label' for real dataset, 'known_occurrence' for old
-    label_col = 'label' if 'label' in prospect_df.columns else 'known_occurrence'
+    # Label column: different names across dataset versions
+    if 'mn_occurrence' in prospect_df.columns:
+        label_col = 'mn_occurrence'
+    elif 'label' in prospect_df.columns:
+        label_col = 'label'
+    else:
+        label_col = 'known_occurrence'
     y = prospect_df[label_col]
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
