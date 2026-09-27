@@ -47,22 +47,22 @@
   },
   "metrics": {
     "validation": {
-      "ml_mae": 39.4,
-      "ml_rmse": 55.22,
-      "ml_r2": 0.9448,
-      "baseline_mae": 35.93,
-      "baseline_rmse": 65.31,
-      "baseline_r2": 0.9228,
-      "improvement_mae_pct": -9.7
+      "ml_mae": 41.6,
+      "ml_rmse": 58.06,
+      "ml_r2": 0.9393,
+      "baseline_mae": 36.96,
+      "baseline_rmse": 65.63,
+      "baseline_r2": 0.9225,
+      "improvement_mae_pct": -12.6
     },
     "test": {
-      "ml_mae": 43.9,
-      "ml_rmse": 66.4,
-      "ml_r2": 0.9277,
-      "baseline_mae": 39.31,
-      "baseline_rmse": 70.79,
-      "baseline_r2": 0.9179,
-      "improvement_mae_pct": -11.7
+      "ml_mae": 72.14,
+      "ml_rmse": 105.04,
+      "ml_r2": 0.8408,
+      "baseline_mae": 30.96,
+      "baseline_rmse": 44.68,
+      "baseline_r2": 0.9712,
+      "improvement_mae_pct": -133.0
     }
   },
   "baseline_model": "Naive: always predict baseline_tpd (annual avg, no weather)",

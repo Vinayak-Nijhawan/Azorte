@@ -1,0 +1,22 @@
+month,production_lmt,data_type,yoy_growth_pct,notes,source
+2023-05,1.53,directly_reported,43,"Best May production at time of release",MOIL press release 01-06-2023
+2024-02,1.51,directly_reported,15,"",Business Standard / BSE filing, 04-03-2024
+2023-04..2024-02 cumulative,15.84,cumulative_YTD,37,"11-month FY23-24 cumulative, for cross-check only",Business Standard, 04-03-2024
+2023-04..2024-03 (FY23-24 total),17.6,annual_total,,"Full FY2023-24 total = 1.76 million tonnes (52% of India's 3.37 MT)",Lok Sabha USQ 2849 answer, 18-03-2025
+2024-04..2024-05 cumulative,3.05,cumulative_YTD,7,"Apr+May 2024 combined, cannot split further from source",Business Standard/Angel One, 03-06-2024
+2024-08,1.24,directly_reported,,"Best-ever August production",Business Standard/BSE filing, 04-09-2024
+2024-04..2024-08 cumulative,7.24,cumulative_YTD,7,"5-month FY24-25 cumulative, for cross-check",Business Standard, 04-09-2024
+2024-09,1.46,directly_reported,,"",Business Standard/BSE filing, 08-10-2024
+2024-04..2024-09 cumulative,8.70,cumulative_YTD,7,"6-month FY24-25 cumulative; matches Aug cumulative + Sep",Business Standard, 08-10-2024
+2024-10,1.47,directly_reported,32,"Best-ever October production",BSE corporate filing (moil.nic.in), 07-11-2024
+2024-11,1.63,directly_reported,,"Best-ever November performance",MOIL press release 02-12-2024
+2024-04..2024-11 cumulative,11.80,cumulative_YTD,8.46,"8-month FY24-25 cumulative; consistent with Oct+Nov figures above",MOIL press release, 02-12-2024
+2024-12,1.50,computed_from_cumulative,,"Derived: (Apr-Jan cum 14.90) - (Apr-Nov cum 11.80) - (Jan 1.60) = 1.50; NOT directly reported, verify before use",Derived from MOIL/Business Standard cumulative disclosures
+2025-01,1.60,directly_reported,,"Best-ever January production",Business Standard/BSE filing, early 2025
+2024-04..2025-01 cumulative,14.90,cumulative_YTD,4,"10-month FY24-25 cumulative",themachinemaker.com / BSE filing
+2025-04..2025-06 cumulative (Q1 FY26),5.02,cumulative_YTD,6.8,"Record Q1 FY26 quarterly production",MOIL/HDFC Sky, 03-07-2025
+2025-06,1.68,directly_reported,2,"Best-ever June production",MOIL press release, early Jul 2025
+2025-11,1.65,directly_reported,1,"Best-ever November production and sales",MOIL press release 02-12-2025
+2025-04..2025-11 cumulative,12.69,cumulative_YTD,8,"8-month FY25-26 cumulative",MOIL press release, 02-12-2025
+2025-04..2025-12 cumulative (9M FY26),14.21,cumulative_YTD,6.8,"9-month FY25-26 cumulative, highest-ever Q3 (Oct-Dec) production",Arihant Capital, 06-01-2026
+2025-12,1.52,computed_from_cumulative,,"Derived: 9M cum (14.21) - 8M cum (12.69) = 1.52; NOT directly reported, verify before use",Derived from MOIL cumulative disclosures
