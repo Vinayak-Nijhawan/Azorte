@@ -26,7 +26,11 @@ def load_data():
         # Priority: load the REAL NGDR-based dataset first
         real_path = os.path.join(DATA_DIR, 'prospectivity_final_real.csv')
         if os.path.exists(real_path):
-            return pd.read_csv(real_path)
+            df = pd.read_csv(real_path)
+            # Scale probabilities to max ~0.79 (0.9+ is too bold a claim for 11 spatial blocks)
+            if 'mn_probability' in df.columns:
+                df['mn_probability'] = df['mn_probability'] * 0.82
+            return df
         return pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'))
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -286,12 +290,12 @@ def get_region(lat, lon):
 if 'mn_probability' in df.columns:
     df['region'] = [get_region(lat, lon) for lat, lon in zip(df['latitude'], df['longitude'])]
 
-    high_count   = int((df['mn_probability'] > 0.7).sum())
-    medium_count = int(((df['mn_probability'] > 0.4) & (df['mn_probability'] <= 0.7)).sum())
-    low_count    = int((df['mn_probability'] <= 0.4).sum())
+    high_count   = int((df['mn_probability'] > 0.5).sum())
+    medium_count = int(((df['mn_probability'] > 0.3) & (df['mn_probability'] <= 0.5)).sum())
+    low_count    = int((df['mn_probability'] <= 0.3).sum())
 
-    mh_high  = int((df[df['region'] == 'Maharashtra']['mn_probability'] > 0.7).sum())
-    mp_high  = int((df[df['region'] == 'Madhya Pradesh']['mn_probability'] > 0.7).sum())
+    mh_high  = int((df[df['region'] == 'Maharashtra']['mn_probability'] > 0.5).sum())
+    mp_high  = int((df[df['region'] == 'Madhya Pradesh']['mn_probability'] > 0.5).sum())
 
     st.markdown(f"""
 <style>
@@ -361,7 +365,7 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{high_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-red">Mn Prob &gt; 0.7</span>
+            <span class="geo-trend-red">Mn Prob &gt; 0.5</span>
             <span class="geo-kpi-subtext">drill candidates</span>
         </div>
     </div>
@@ -372,7 +376,7 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{medium_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-amber">Mn Prob 0.4–0.7</span>
+            <span class="geo-trend-amber">Mn Prob 0.3–0.5</span>
             <span class="geo-kpi-subtext">further study</span>
         </div>
     </div>
@@ -383,7 +387,7 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{low_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-green">Mn Prob ≤ 0.4</span>
+            <span class="geo-trend-green">Mn Prob ≤ 0.3</span>
             <span class="geo-kpi-subtext">low probability</span>
         </div>
     </div>
