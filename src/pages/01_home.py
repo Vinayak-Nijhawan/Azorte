@@ -386,7 +386,7 @@ summary::-webkit-details-marker {{ display: none; }}
     </div>
     <div class="header-actions">
         <div class="search-bar" style="display: flex; align-items: center; padding: 8px 16px;">
-            <span class="material-symbols-rounded" style="margin-right: 8px; font-size: 1.2rem; color: #64748B;">search</span> 
+            <span class="material-symbols-rounded" style="margin-right: 8px; font-size: 1.2rem; color: white; font-weight: bold;">search</span> 
             <input type="text" list="search-options" class="search-input-mock" placeholder="Search modules or reports..." />
             <datalist id="search-options">
                 <option value="Prospectivity Map"></option>
@@ -401,8 +401,8 @@ summary::-webkit-details-marker {{ display: none; }}
         <details>
             <summary class="profile-action">
                 <div class="profile-avatar">VN</div>
-                <div class="profile-name">Vinayak Nijhawan</div>
-                <span class="material-symbols-rounded" style="color: #64748B; font-size: 1.2rem; margin-left: 4px;">expand_more</span>
+                <div class="profile-name" style="color: white; font-weight: bold;">Vinayak Nijhawan</div>
+                <span class="material-symbols-rounded" style="color: white; font-weight: bold; font-size: 1.2rem; margin-left: 4px;">expand_more</span>
             </summary>
             <div class="profile-dropdown-menu">
                 <div class="dropdown-header">
