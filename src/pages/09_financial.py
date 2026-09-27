@@ -29,31 +29,7 @@ st.markdown("""
     animation: volcanoErupt 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
 }
 
-.header-banner {
-    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-    padding: 30px;
-    border-radius: 15px;
-    margin-bottom: 25px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-    border: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
-}
-.header-title {
-    font-size: 42px !important;
-    font-weight: 800;
-    color: #ffffff;
-    margin-bottom: 10px;
-}
-.header-subtitle {
-    font-size: 22px !important;
-    font-weight: 400;
-    color: #40c9ff;
-    margin-bottom: 15px;
-}
-.header-caption {
-    font-size: 16px !important;
-    color: #a0a0a0;
-    font-style: italic;
-}
+
 /* Increase font sizes across the rest of the page */
 .stMarkdown p, .stMarkdown li {
     font-size: 18px !important;
@@ -104,21 +80,25 @@ div[data-testid="stColumn"]:nth-of-type(2) {
   .geo-trend-neutral { background: rgba(59,130,246,0.15); color: #3B82F6; }
 </style>
 
-<div class="header-banner">
-    <div class="header-title">Financial Impact & ROI Analysis <span class=\"material-symbols-rounded\">attach_money</span></div>
-    <div class="header-subtitle">Executive Dashboard: Economic & Environmental Impact of MOIL-GeoSync</div>
-    <div class="header-caption"><span class=\"material-symbols-rounded\">warning</span> All financial projections are based on standard PSU operational scale (MOIL turnover ~<span class=\"material-symbols-rounded\">currency_rupee</span>1,500 Cr).</div>
+<div class="fd-header">
+    <div class="fd-header-left">
+        <h1><span class="material-symbols-rounded">attach_money</span> Financial Impact & ROI Analysis</h1>
+        <div class="fd-subtitle">Executive Dashboard: Economic & Environmental Impact of MOIL-GeoSync</div>
+    </div>
+    <div class="fd-header-right">
+        <div class="fd-tag"><span class="material-symbols-rounded" style="font-size: 16px; margin-right: 4px; vertical-align: middle;">warning</span> Baseline: MOIL Turnover ~₹1,500 Cr</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
 
 def format_inr(amount):
     if amount >= 1e7:
-        return f'<span class=\"material-symbols-rounded\">currency_rupee</span>{amount/1e7:.2f} Cr'
+        return f'₹{amount/1e7:.2f} Cr'
     elif amount >= 1e5:
-        return f'<span class=\"material-symbols-rounded\">currency_rupee</span>{amount/1e5:.2f} Lakh'
+        return f'₹{amount/1e5:.2f} Lakh'
     else:
-        return f'<span class=\"material-symbols-rounded\">currency_rupee</span>{amount:,.0f}'
+        return f'₹{amount:,.0f}'
 
 def render_animated_kpi_row(kpi_list):
     cards_html = """<div class="geo-kpi-grid">"""
@@ -130,7 +110,7 @@ def render_animated_kpi_row(kpi_list):
         decimals = kpi.get("decimals", 2)
         
         if kpi.get("is_money", False):
-            prefix = "?"
+            prefix = "₹"
             if val >= 1e7:
                 val = val / 1e7
                 suffix = " Cr"
@@ -157,6 +137,7 @@ def render_animated_kpi_row(kpi_list):
         """
         
     cards_html += "</div>"
+    cards_html = '\n'.join([line.strip() for line in cards_html.split('\n')])
     import streamlit as st
     st.markdown(cards_html, unsafe_allow_html=True)
 
@@ -216,7 +197,7 @@ with main_col:
         fig1.update_layout(
             template="plotly_dark",
             barmode='group',
-            yaxis_title="Capital Expenditure (<span class=\"material-symbols-rounded\">currency_rupee</span>)",
+            yaxis_title="Capital Expenditure (?)",
             margin=dict(l=0, r=0, t=30, b=0),
             height=350,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
@@ -291,7 +272,7 @@ with main_col:
         monthly_fleet_savings = dumper_hours_per_month * ((35 * diesel_cost) + (idle_cost * 0.6))
         annual_fleet_savings = monthly_fleet_savings * 12
         
-        st.markdown(f"**Optimization Details:** {fleet_dumpers} active dumpers operating across 6 mines. Dynamic routing saves **{idle_hours_saved_per_month_per_truck} idle engine hours** per truck per month. Fuel consumption: 35 L/hr @ <span class=\"material-symbols-rounded\">currency_rupee</span>{diesel_cost}/L diesel.")
+        st.markdown(f"**Optimization Details:** {fleet_dumpers} active dumpers operating across 6 mines. Dynamic routing saves **{idle_hours_saved_per_month_per_truck} idle engine hours** per truck per month. Fuel consumption: 35 L/hr @ ₹{diesel_cost}/L diesel.")
         
         render_animated_kpi_row([
             {
@@ -349,7 +330,7 @@ with main_col:
         st.subheader("5. Executive Summary & Payback Period")
         
         total_annual_value = capex_saved + revenue_protected + annual_fleet_savings
-        implementation_capex = 5000000 # <span class=\"material-symbols-rounded\">currency_rupee</span>50.00 Lakh
+        implementation_capex = 5000000 # ?50.00 Lakh
         
         payback_months = max(0.1, round((implementation_capex / total_annual_value) * 12, 1))
         
