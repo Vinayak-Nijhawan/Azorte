@@ -417,7 +417,6 @@ summary::-webkit-details-marker {{ display: none; }}
                 <div class="dropdown-item" style="color: #ef4444; border-top: 1px solid rgba(0, 0, 0, 0.05);"><span class="material-symbols-rounded" style="font-size:1.1rem; margin-right:4px;">logout</span> Logout</div>
             </div>
         </details>
-        </details>
     </div>
 </div>
 
