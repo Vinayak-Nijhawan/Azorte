@@ -415,19 +415,17 @@ summary::-webkit-details-marker {{ display: none; }}
                 <div class="dropdown-item" style="color: #ef4444; border-top: 1px solid rgba(0, 0, 0, 0.05);"><span class="material-symbols-rounded" style="font-size:1.1rem; margin-right:4px;">logout</span> Logout</div>
             </div>
         </details>
+        </details>
     </div>
 </div>
-""", unsafe_allow_html=True)
 
-# 2. KPI Section
-st.markdown("""
 <div class="kpi-grid">
     <div class="glass-panel kpi-card">
         <div class="kpi-header">
             <div class="kpi-title">Total Grid Points</div>
             <div class="kpi-icon icon-blue"><span class=\"material-symbols-rounded\">my_location</span></div>
         </div>
-        <div class="kpi-value">{:,}</div>
+        <div class="kpi-value">{kpi["total_grid_points"]:,}</div>
         <div class="kpi-footer">
             <span class="trend-badge trend-up">↑ 12%</span>
             <span class="kpi-subtext">vs last scan</span>
@@ -438,7 +436,7 @@ st.markdown("""
             <div class="kpi-title">High Prospectivity</div>
             <div class="kpi-icon icon-emerald"><span class=\"material-symbols-rounded\">flare</span></div>
         </div>
-        <div class="kpi-value">{}</div>
+        <div class="kpi-value">{kpi["high_prospectivity_zones"]}</div>
         <div class="kpi-footer">
             <span class="trend-badge trend-up">↑ 4 new</span>
             <span class="kpi-subtext">this month</span>
@@ -449,7 +447,7 @@ st.markdown("""
             <div class="kpi-title">Active Mines</div>
             <div class="kpi-icon icon-purple"><span class=\"material-symbols-rounded\">architecture</span></div>
         </div>
-        <div class="kpi-value">{}</div>
+        <div class="kpi-value">{kpi["mines_tracked"]}</div>
         <div class="kpi-footer">
             <span class="trend-badge trend-neutral">→ 0</span>
             <span class="kpi-subtext">no change</span>
@@ -460,19 +458,14 @@ st.markdown("""
             <div class="kpi-title">Avg Shortfall Risk</div>
             <div class="kpi-icon icon-amber"><span class=\"material-symbols-rounded\">warning</span></div>
         </div>
-        <div class="kpi-value">{}%</div>
+        <div class="kpi-value">{kpi["avg_shortfall_risk"]}%</div>
         <div class="kpi-footer">
             <span class="trend-badge trend-down">↓ 2.1%</span>
             <span class="kpi-subtext">improved</span>
         </div>
     </div>
 </div>
-""".format(
-    kpi["total_grid_points"], 
-    kpi["high_prospectivity_zones"], 
-    kpi["mines_tracked"], 
-    kpi["avg_shortfall_risk"]
-), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # 3. Outcomes Section
 st.markdown("""<h3 style="font-size: 1.1rem; color: var(--text-color); margin-bottom: 16px; font-weight: 600;">System Capabilities</h3>""", unsafe_allow_html=True)
