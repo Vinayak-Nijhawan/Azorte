@@ -469,60 +469,50 @@ summary::-webkit-details-marker {{ display: none; }}
 </div>
 """, unsafe_allow_html=True)
 
-# CSS to hide the utility page links we inject into the main body
-st.markdown("""
-<style>
-section.main div[data-testid="stPageLink"] { display: none !important; }
-</style>
-""", unsafe_allow_html=True)
-
-# Hidden native page links for JS to click on
-st.page_link("src/pages/02_prospectivity.py", label="Hidden")
-st.page_link("src/pages/03_production.py", label="Hidden")
-st.page_link("src/pages/04_fleet_dispatch.py", label="Hidden")
-st.page_link("src/pages/06_what_if.py", label="Hidden")
-st.page_link("src/pages/09_financial.py", label="Hidden")
-st.page_link("src/pages/07_explainability.py", label="Hidden")
-
-
 # --- JavaScript Injection for Search Navigation ---
 import streamlit.components.v1 as components
 components.html("""
 <script>
-    // Execute after a short delay to ensure DOM is fully mounted
-    setTimeout(function() {
-        const parentDoc = window.parent.document;
-        const inputElement = parentDoc.querySelector('.search-input-mock');
+const doc = window.parent.document;
+function setupSearch() {
+    const searchInput = doc.querySelector('.search-input-mock');
+    if (searchInput && !searchInput.hasAttribute('data-bound')) {
+        searchInput.setAttribute('data-bound', 'true');
         
-        if (inputElement) {
-            // Prevent multiple listeners if re-run
-            if (inputElement.hasAttribute('data-listener-attached')) return;
-            inputElement.setAttribute('data-listener-attached', 'true');
-            
-            inputElement.addEventListener('change', function(e) {
-                const val = e.target.value;
-                const pageMap = {
-                    'Prospectivity Map': '02_prospectivity',
-                    'Production Forecast': '03_production',
-                    'Fleet Optimization': '04_fleet_dispatch',
-                    'What-If Simulator': '06_what_if',
-                    'Financial ROI': '09_financial',
-                    'Explainability': '07_explainability'
-                };
-                
-                const targetScript = pageMap[val];
-                if (targetScript) {
-                    const link = parentDoc.querySelector(`a[href$="${targetScript}"]`);
-                    if (link) {
-                        link.click();
-                    }
-                }
-            });
+        function handleSearch(val) {
+            if (!val) return;
+            val = val.toLowerCase();
+            let searchStr = val;
+            if (val.includes('prospect')) searchStr = 'prospectivity';
+            if (val.includes('product')) searchStr = 'production';
+            if (val.includes('fleet')) searchStr = 'fleet';
+            if (val.includes('simulator') || val.includes('what')) searchStr = 'what_if';
+            if (val.includes('roi') || val.includes('financ')) searchStr = 'financial';
+            if (val.includes('shap') || val.includes('explain')) searchStr = 'explainability';
+            if (val.includes('ai') || val.includes('assistant')) searchStr = 'ai assistant';
+
+            const links = Array.from(doc.querySelectorAll('[data-testid="stPageLink-NavLink"]'));
+            const targetLink = links.find(a => a.textContent.toLowerCase().includes(searchStr));
+            if (targetLink) {
+                targetLink.click();
+            }
         }
-    }, 500);
+
+        searchInput.addEventListener('change', (e) => handleSearch(e.target.value));
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleSearch(e.target.value);
+        });
+        searchInput.addEventListener('input', (e) => {
+            const options = ["Prospectivity Map", "Production Forecast", "Fleet Optimization", "What-If Simulator", "Financial ROI", "Explainability", "AI Assistant"];
+            if (options.includes(e.target.value)) {
+                handleSearch(e.target.value);
+            }
+        });
+    }
+}
+setInterval(setupSearch, 1000);
 </script>
-""", height=0)
-# ------------------------------------------------
+""", height=0, width=0)
 # ------------------------------------------------
 
 # 3. Outcomes Section
