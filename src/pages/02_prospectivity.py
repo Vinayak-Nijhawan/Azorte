@@ -281,11 +281,10 @@ st.subheader("Target Statistics")
 
 # Add region column to df for filtering
 def get_region(lat, lon):
-    if lat >= 21.0 and lon >= 78.5 and lon <= 80.5:
-        return "Maharashtra"
-    elif lat >= 21.5 and lon >= 80.0:
+    # MP (Balaghat-Chhindwara) is northeast: lon >= 80.0, lat >= 21.5
+    if lat >= 21.5 and lon >= 80.0:
         return "Madhya Pradesh"
-    return "Maharashtra"  # default for MH+MP dataset
+    return "Maharashtra"
 
 if 'mn_probability' in df.columns:
     df['region'] = [get_region(lat, lon) for lat, lon in zip(df['latitude'], df['longitude'])]
