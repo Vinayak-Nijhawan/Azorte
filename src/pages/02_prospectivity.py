@@ -50,14 +50,16 @@ div[data-testid="stMetricLabel"] label p {
     letter-spacing: 0.5px !important;
     opacity: 1.0 !important;
 }
+
+    
 </style>
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1>🎯 GeoProspect AI - Prospectivity Analysis</h1>
+        <h1><span class=\"material-symbols-rounded\">my_location</span> GeoProspect AI - Prospectivity Analysis</h1>
         <div class="fd-subtitle">AI-Powered Mineral Exploration · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">🗺️ Exploration</div>
+        <div class="fd-tag"><span class=\"material-symbols-rounded\">explore</span> Exploration</div>
         <div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>
     </div>
 </div>
@@ -84,10 +86,10 @@ with col_ctrl:
         map_center = dict(lat=15.15, lon=76.55)
 
     st.write("### Layers")
-    show_heatmap = st.toggle("🔥 Prospectivity", value=True)
-    show_iron = st.toggle("🟠 Iron Index", value=False)
-    show_mines = st.toggle("⛏️ Known Mines", value=False)
-    show_drill = st.toggle("🎯 Drill Zones", value=False)
+    show_heatmap = st.toggle(":material/local_fire_department: Prospectivity", value=True)
+    show_iron = st.toggle(":material/circle: Iron Index", value=False)
+    show_mines = st.toggle(":material/architecture: Known Mines", value=False)
+    show_drill = st.toggle(":material/my_location: Drill Zones", value=False)
 
     map_style = st.radio("Map Type", ["Dark", "Satellite", "Terrain", "Street Map"], index=0, horizontal=True)
 
@@ -195,8 +197,8 @@ with col_map:
             mode='markers+text',
             marker=dict(size=14, color=m_colors),
             text=m_names, textposition='top center',
-            textfont=dict(size=11, color='white'),
-            name='⛏️ Known Mines',
+            textfont=dict(size=11),
+            name='<span class=\"material-symbols-rounded\">architecture</span> Known Mines',
             hovertemplate='%{text}<br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>',
         ))
 
@@ -211,7 +213,7 @@ with col_map:
                 color='#FF00FF',  # Neon Purple/Magenta
                 opacity=1.0
             ),
-            name='🎯 Drill Priority',
+            name='<span class=\"material-symbols-rounded\">my_location</span> Drill Priority',
             hovertemplate='Prob: %{customdata:.3f}<extra>Drill Target</extra>',
             customdata=top_drill['mn_probability'],
         ))
@@ -221,7 +223,7 @@ with col_map:
         height=600,
         margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01,
-                    bgcolor="rgba(0,0,0,0.7)", font=dict(color="white", size=11)),
+                    bgcolor="rgba(0,0,0,0.7)", font=dict(size=11)),
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -261,9 +263,9 @@ if 'mn_probability' in df.columns:
     margin-bottom: 24px;
 }}
 .geo-kpi-card {{
-    background: rgba(17, 24, 39, 0.7);
+    background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important;
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(30, 41, 59, 0.8);
+    border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
     border-radius: 16px;
     padding: 22px 24px;
     display: flex;
@@ -278,7 +280,7 @@ if 'mn_probability' in df.columns:
 }}
 .geo-kpi-header {{ display: flex; justify-content: space-between; align-items: center; }}
 .geo-kpi-title {{
-    color: #94A3B8;
+    color: color-mix(in srgb, var(--text-color) 60%, transparent);
     font-size: 0.9rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -299,21 +301,23 @@ if 'mn_probability' in df.columns:
 .geo-kpi-value {{
     font-size: 2.2rem;
     font-weight: 700;
-    color: #F8FAFC;
+    color: var(--text-color);
     line-height: 1.2;
 }}
 .geo-kpi-footer {{ display: flex; align-items: center; gap: 8px; margin-top: 2px; }}
-.geo-kpi-subtext {{ font-size: 0.8rem; color: #64748B; }}
+.geo-kpi-subtext {{ font-size: 0.8rem; color: color-mix(in srgb, var(--text-color) 50%, transparent); }}
 .geo-trend-red    {{ background: rgba(239, 68, 68, 0.15);   color: #F87171; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }}
 .geo-trend-amber  {{ background: rgba(245, 158, 11, 0.15);  color: #FCD34D; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }}
 .geo-trend-green  {{ background: rgba(16, 185, 129, 0.15);  color: #34D399; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }}
+
+    
 </style>
 
 <div class="geo-kpi-grid">
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
             <div class="geo-kpi-title">High Priority</div>
-            <div class="geo-kpi-icon geo-icon-red">🔴</div>
+            <div class="geo-kpi-icon geo-icon-red"><span class=\"material-symbols-rounded\">crisis_alert</span></div>
         </div>
         <div class="geo-kpi-value">{high_count} targets</div>
         <div class="geo-kpi-footer">
@@ -324,7 +328,7 @@ if 'mn_probability' in df.columns:
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
             <div class="geo-kpi-title">Medium Priority</div>
-            <div class="geo-kpi-icon geo-icon-amber">🟡</div>
+            <div class="geo-kpi-icon geo-icon-amber"><span class=\"material-symbols-rounded\">travel_explore</span></div>
         </div>
         <div class="geo-kpi-value">{medium_count} targets</div>
         <div class="geo-kpi-footer">
@@ -335,7 +339,7 @@ if 'mn_probability' in df.columns:
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
             <div class="geo-kpi-title">Low Priority</div>
-            <div class="geo-kpi-icon geo-icon-green">🟢</div>
+            <div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">map</span></div>
         </div>
         <div class="geo-kpi-value">{low_count} targets</div>
         <div class="geo-kpi-footer">
@@ -345,12 +349,12 @@ if 'mn_probability' in df.columns:
     </div>
 </div>
 
-<p style="font-weight:600; color:#E2E8F0; margin:8px 0 12px 0;">Region-wise High Priority Targets:</p>
+<p style="font-weight:600; color:var(--text-color); margin:8px 0 12px 0;">Region-wise High Priority Targets:</p>
 <div class="geo-kpi-grid">
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
             <div class="geo-kpi-title">Central India</div>
-            <div class="geo-kpi-icon geo-icon-pink">🟥</div>
+            <div class="geo-kpi-icon geo-icon-pink"><span class=\"material-symbols-rounded\">landscape</span></div>
         </div>
         <div class="geo-kpi-value">{ci_high} targets</div>
         <div class="geo-kpi-footer">
@@ -360,7 +364,7 @@ if 'mn_probability' in df.columns:
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
             <div class="geo-kpi-title">Odisha</div>
-            <div class="geo-kpi-icon geo-icon-blue">🟦</div>
+            <div class="geo-kpi-icon geo-icon-blue"><span class=\"material-symbols-rounded\">terrain</span></div>
         </div>
         <div class="geo-kpi-value">{od_high} targets</div>
         <div class="geo-kpi-footer">
@@ -370,7 +374,7 @@ if 'mn_probability' in df.columns:
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
             <div class="geo-kpi-title">Karnataka</div>
-            <div class="geo-kpi-icon geo-icon-lime">🟩</div>
+            <div class="geo-kpi-icon geo-icon-lime"><span class=\"material-symbols-rounded\">south</span></div>
         </div>
         <div class="geo-kpi-value">{kar_high} targets</div>
         <div class="geo-kpi-footer">
@@ -381,7 +385,7 @@ if 'mn_probability' in df.columns:
 """, unsafe_allow_html=True)
 
 # ================= TOP DRILL TARGETS =================
-st.subheader("📍 Top 10 Drill Targets")
+st.subheader(":material/location_on: Top 10 Drill Targets")
 if 'mn_probability' in df.columns:
     top_10 = df.nlargest(10, 'mn_probability').copy()
     top_10.insert(0, 'Rank', range(1, len(top_10) + 1))
@@ -393,7 +397,7 @@ if 'mn_probability' in df.columns:
                  use_container_width=True, hide_index=True)
 
 # ================= FEATURE IMPORTANCE =================
-st.subheader("🔬 Feature Importance")
+st.subheader(":material/info: Feature Importance")
 if model is not None:
     try:
         base = model[0] if isinstance(model, list) else model

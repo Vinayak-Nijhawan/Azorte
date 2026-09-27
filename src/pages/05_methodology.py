@@ -20,11 +20,11 @@ REAL_SPECTRAL_PATH = os.path.join(DATA_DIR, "real_spectral.csv")
 st.markdown("""
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1>🔬 Data & Model Provenance</h1>
+        <h1><span class=\"material-symbols-rounded\">info</span> Data & Model Provenance</h1>
         <div class="fd-subtitle">Scientific Foundation & Validation · MOIL-GeoSync</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">📊 Methodology</div>
+        <div class="fd-tag"><span class=\"material-symbols-rounded\">bar_chart</span> Methodology</div>
         <div class="fd-live"><div class="fd-live-dot"></div> VERIFIED</div>
     </div>
 </div>
@@ -63,27 +63,29 @@ st.markdown("""
 st.markdown("""
 <style>
 .geo-kpi-grid { display: grid; gap: 20px; margin-bottom: 24px; }
-.geo-kpi-card { background: rgba(17,24,39,0.7); backdrop-filter: blur(12px); border: 1px solid rgba(30,41,59,0.8); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transition: all 0.2s ease; }
+.geo-kpi-card { background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important; backdrop-filter: blur(12px); border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transition: all 0.2s ease; }
 .geo-kpi-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-2px); }
 .geo-kpi-header { display: flex; justify-content: space-between; align-items: center; }
-.geo-kpi-title { color: #94A3B8; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.geo-kpi-title { color: color-mix(in srgb, var(--text-color) 60%, transparent); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
 .geo-kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
 .geo-icon-blue   { background: rgba(59,130,246,0.1); color: #3B82F6; }
 .geo-icon-green  { background: rgba(16,185,129,0.1); color: #10B981; }
 .geo-icon-purple { background: rgba(139,92,246,0.1); color: #8B5CF6; }
 .geo-icon-amber  { background: rgba(245,158,11,0.1); color: #F59E0B; }
 .geo-icon-red    { background: rgba(239,68,68,0.1);  color: #EF4444; }
-.geo-kpi-value { font-size: 2.2rem; font-weight: 700; color: #F8FAFC; line-height: 1.2; }
+.geo-kpi-value { font-size: 2.2rem; font-weight: 700; color: var(--text-color); line-height: 1.2; }
 .geo-kpi-footer { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
 .geo-trend-up     { background: rgba(16,185,129,0.15); color: #34D399; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-.geo-trend-neutral{ background: rgba(148,163,184,0.15);color: #94A3B8; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+.geo-trend-neutral{ background: rgba(148,163,184,0.15);color: color-mix(in srgb, var(--text-color) 60%, transparent); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+
+    
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="geo-kpi-grid" style="grid-template-columns: repeat(3,1fr);">
     <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">F1 Score</div><div class="geo-kpi-icon geo-icon-green">🎯</div></div>
+        <div class="geo-kpi-header"><div class="geo-kpi-title">F1 Score</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">my_location</span></div></div>
         <div class="geo-kpi-value">0.82</div>
         <div class="geo-kpi-footer"><span class="geo-trend-up">↑ PU-RF Model</span></div>
     </div>
@@ -122,17 +124,17 @@ st.markdown("""
 st.markdown("""
 <div class="geo-kpi-grid" style="grid-template-columns: repeat(3,1fr);">
     <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">MAE</div><div class="geo-kpi-icon geo-icon-amber">📊</div></div>
-        <div class="geo-kpi-value">112.5 <span style="font-size:1.1rem;color:#94A3B8;">TPD</span></div>
+        <div class="geo-kpi-header"><div class="geo-kpi-title">MAE</div><div class="geo-kpi-icon geo-icon-amber"><span class=\"material-symbols-rounded\">bar_chart</span></div></div>
+        <div class="geo-kpi-value">112.5 <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
         <div class="geo-kpi-footer"><span class="geo-trend-up">Mean Abs Error</span></div>
     </div>
     <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">RMSE</div><div class="geo-kpi-icon geo-icon-red">📉</div></div>
-        <div class="geo-kpi-value">145.2 <span style="font-size:1.1rem;color:#94A3B8;">TPD</span></div>
+        <div class="geo-kpi-header"><div class="geo-kpi-title">RMSE</div><div class="geo-kpi-icon geo-icon-red"><span class=\"material-symbols-rounded\">trending_down</span></div></div>
+        <div class="geo-kpi-value">145.2 <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
         <div class="geo-kpi-footer"><span class="geo-trend-neutral">Root Mean Sq Err</span></div>
     </div>
     <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">R² Score</div><div class="geo-kpi-icon geo-icon-green">✨</div></div>
+        <div class="geo-kpi-header"><div class="geo-kpi-title">R² Score</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">flare</span></div></div>
         <div class="geo-kpi-value">0.89</div>
         <div class="geo-kpi-footer"><span class="geo-trend-up">↑ Strong Fit</span></div>
     </div>

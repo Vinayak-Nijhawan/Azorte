@@ -29,7 +29,7 @@ except ImportError:
 st.markdown("""
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1>🤖 G-Sync AI Assistant</h1>
+        <h1><span class=\"material-symbols-rounded\">smart_toy</span> G-Sync AI Assistant</h1>
         <div class="fd-subtitle">Natural Language Analytics · Powered by Groq Llama-3</div>
     </div>
     <div class="fd-header-right">
@@ -96,13 +96,22 @@ st.sidebar.markdown("""
         user-select: none !important;
         -webkit-user-select: none !important;
     }
-</style>
+
+        @media (prefers-color-scheme: light) {
+            .kpi-card { background: #F3F4F6 !important; border-color: #E5E7EB !important; color: #111827 !important; }
+            .kpi-card.highlight { background: linear-gradient(180deg, #F3F4F6 0%, #E5E7EB 100%) !important; }
+            .kpi-title { color: #6B7280 !important; }
+            .kpi-value { color: #111827 !important; }
+            body { color: #111827; }
+        }
+        </style>
+
 """, unsafe_allow_html=True)
 
 if GROQ_AVAILABLE:
     env_key = os.environ.get("GROQ_API_KEY", "")
     if env_key and env_key != "your_api_key_here":
-        st.sidebar.success("✅ Secure API Key loaded from environment.")
+        st.sidebar.success("<span class=\"material-symbols-rounded\">check_circle</span> Secure API Key loaded from environment.")
         api_key = env_key
     else:
         api_key = st.sidebar.text_input("Enter Groq API Key", type="password", help="Enter your Groq key to enable real LLM responses.")
@@ -148,12 +157,12 @@ def process_query(prompt):
     # 1. Risk/Shortfall
     if any(k in query for k in ['risk', 'shortfall', 'danger', 'problem']):
         data_to_use = df_forecast if df_forecast is not None else df_prod
-        if data_to_use is not None and 'shortfall_risk' in data_to_use.columns:
-            high_risk = data_to_use[data_to_use['shortfall_risk'] == 'High']
+        if data_to_use is not None and 'shortfall_risk__DERIVED' in data_to_use.columns:
+            high_risk = data_to_use[data_to_use['shortfall_risk__DERIVED'] == 'High']
             if not high_risk.empty:
                 mines = high_risk['mine_id'].unique()
                 response = f"Based on our MineFlow analysis, the following mines face high shortfall risk: {', '.join(mines)}."
-                return response, high_risk[['mine_id', 'month', 'year', 'shortfall_risk']]
+                return response, high_risk[['mine_id', 'month', 'year', 'shortfall_risk__DERIVED']]
             else:
                 return "Good news! Currently, no mines are flagged with high shortfall risk.", None
         return "I couldn't find risk forecast data.", None

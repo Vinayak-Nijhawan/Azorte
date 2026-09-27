@@ -93,11 +93,11 @@ def calculate_production(planned_tpd, rainfall_mm__REAL, equipment_pct, blasting
 st.markdown("""
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1>🎛️ What-If Scenario Simulator</h1>
+        <h1><span class=\"material-symbols-rounded\">tune</span> What-If Scenario Simulator</h1>
         <div class="fd-subtitle">Interactive Operational Planning · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">⚙️ Simulation</div>
+        <div class="fd-tag">:material/settings: Simulation</div>
         <div class="fd-live"><div class="fd-live-dot"></div> ACTIVE</div>
     </div>
 </div>
@@ -107,26 +107,26 @@ st.markdown("""
 <style>
 /* Glass-panel KPI Cards CSS */
 .geo-kpi-grid { display: grid; gap: 20px; margin-bottom: 24px; }
-.geo-kpi-card { background: rgba(17,24,39,0.7); backdrop-filter: blur(12px); border: 1px solid rgba(30,41,59,0.8); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transition: all 0.2s ease; min-width: 0; }
+.geo-kpi-card { background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important; backdrop-filter: blur(12px); border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transition: all 0.2s ease; min-width: 0; }
 .geo-kpi-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-2px); }
 .geo-kpi-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.geo-kpi-title { color: #94A3B8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2; }
+.geo-kpi-title { color: color-mix(in srgb, var(--text-color) 60%, transparent); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2; }
 .geo-kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
 .geo-icon-blue   { background: rgba(59,130,246,0.1); color: #3B82F6; }
 .geo-icon-green  { background: rgba(16,185,129,0.1); color: #10B981; }
 .geo-icon-purple { background: rgba(139,92,246,0.1); color: #8B5CF6; }
 .geo-icon-amber  { background: rgba(245,158,11,0.1); color: #F59E0B; }
 .geo-icon-red    { background: rgba(239,68,68,0.1);  color: #EF4444; }
-.geo-icon-gray   { background: rgba(148,163,184,0.1);color: #94A3B8; }
-.geo-kpi-value { font-size: 1.8rem; font-weight: 700; color: #F8FAFC; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.geo-icon-gray   { background: rgba(148,163,184,0.1);color: color-mix(in srgb, var(--text-color) 60%, transparent); }
+.geo-kpi-value { font-size: 1.8rem; font-weight: 700; color: var(--text-color); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .geo-kpi-footer { display: flex; align-items: center; gap: 8px; margin-top: 2px; overflow: hidden; }
-.geo-kpi-subtext { font-size: 0.8rem; color: #64748B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.geo-kpi-subtext { font-size: 0.8rem; color: color-mix(in srgb, var(--text-color) 50%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .geo-trend-up, .geo-trend-down, .geo-trend-neutral, .geo-trend-amber {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;
 }
 .geo-trend-up     { background: rgba(16,185,129,0.15); color: #34D399; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
 .geo-trend-down   { background: rgba(244,63,94,0.15);  color: #FB7185; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-.geo-trend-neutral{ background: rgba(148,163,184,0.15);color: #94A3B8; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+.geo-trend-neutral{ background: rgba(148,163,184,0.15);color: color-mix(in srgb, var(--text-color) 60%, transparent); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
 .geo-trend-amber  { background: rgba(245,158,11,0.15); color: #FCD34D; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
 
 /* Safely adjust text elements without causing layout overflow */
@@ -164,6 +164,9 @@ div[data-testid="stColumn"]:nth-of-type(2) {
     align-self: flex-start;
     z-index: 100;
 }
+
+    
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -194,16 +197,16 @@ with control_dock:
         def set_preset(rain, equip, road, dump, shov, blast):
             st.session_state.update({'rain': rain, 'equip': equip, 'road': road, 'dump': dump, 'shov': shov, 'blast': blast})
 
-        st.button("⛈️ Monsoon", on_click=set_preset, args=(350, 0.65, 1, int(row.get('num_dumpers',6)), int(row.get('num_shovels',3)), 5), use_container_width=True)
-        st.button("🔧 Breakdown", on_click=set_preset, args=(30, 0.50, 3, 3, 1, int(row.get('blasting_days',15))), use_container_width=True)
-        st.button("☀️ Best Case", on_click=set_preset, args=(10, 0.98, 5, 8, 4, 23), use_container_width=True)
+        st.button(":material/thunderstorm: Monsoon", on_click=set_preset, args=(350, 0.65, 1, int(row.get('num_dumpers',6)), int(row.get('num_shovels',3)), 5), use_container_width=True)
+        st.button(":material/build: Breakdown", on_click=set_preset, args=(30, 0.50, 3, 3, 1, int(row.get('blasting_days',15))), use_container_width=True)
+        st.button(":material/sunny: Best Case", on_click=set_preset, args=(10, 0.98, 5, 8, 4, 23), use_container_width=True)
 
         if 'rain' not in st.session_state:
             set_preset(int(row.get('rainfall_mm__REAL',100)), round(float(row.get('equipment_availability_pct__DERIVED',0.85)),2),
                        int(row.get('haul_road_condition__DERIVED',3)), int(row.get('num_dumpers',6)),
                        int(row.get('num_shovels',3)), int(row.get('blasting_days',15)))
 
-        st.button("🔄 Reset to Default", on_click=lambda: set_preset(
+        st.button(":material/refresh: Reset to Default", on_click=lambda: set_preset(
             int(row.get('rainfall_mm__REAL',100)), round(float(row.get('equipment_availability_pct__DERIVED',0.85)),2),
             int(row.get('haul_road_condition__DERIVED',3)), int(row.get('num_dumpers',6)),
             int(row.get('num_shovels',3)), int(row.get('blasting_days',15))
@@ -262,23 +265,23 @@ with main_col:
     st.markdown(f"""
     <div class="geo-kpi-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Planned</div><div class="geo-kpi-icon geo-icon-blue">📋</div></div>
-            <div class="geo-kpi-value">{planned_tpd:.0f} <span style="font-size:1.1rem;color:#94A3B8;">TPD</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Planned</div><div class="geo-kpi-icon geo-icon-blue"><span class=\"material-symbols-rounded\">content_paste</span></div></div>
+            <div class="geo-kpi-value">{planned_tpd:.0f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
             <div class="geo-kpi-footer"><span class="geo-trend-neutral">Target</span></div>
         </div>
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Achievable</div><div class="geo-kpi-icon geo-icon-green">⛏️</div></div>
-            <div class="geo-kpi-value">{actual_tpd:.0f} <span style="font-size:1.1rem;color:#94A3B8;">TPD</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Achievable</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">architecture</span></div></div>
+            <div class="geo-kpi-value">{actual_tpd:.0f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
             <div class="geo-kpi-footer"><span class="{'geo-trend-up' if change >= 0 else 'geo-trend-down'}">{change:+.0f} vs forecast</span></div>
         </div>
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Efficiency</div><div class="geo-kpi-icon geo-icon-purple">📊</div></div>
-            <div class="geo-kpi-value">{efficiency:.0f}<span style="font-size:1.5rem;color:#94A3B8;">%</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Efficiency</div><div class="geo-kpi-icon geo-icon-purple"><span class=\"material-symbols-rounded\">bar_chart</span></div></div>
+            <div class="geo-kpi-value">{efficiency:.0f}<span style="font-size:1.5rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">%</span></div>
             <div class="geo-kpi-footer"><span class="{'geo-trend-up' if efficiency >= 90 else 'geo-trend-amber' if efficiency >= 75 else 'geo-trend-down'}">Expected Output</span></div>
         </div>
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Shortfall</div><div class="geo-kpi-icon geo-icon-red">⚠️</div></div>
-            <div class="geo-kpi-value">{shortfall:.0f} <span style="font-size:1.1rem;color:#94A3B8;">TPD</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Shortfall</div><div class="geo-kpi-icon geo-icon-red"><span class=\"material-symbols-rounded\">warning</span></div></div>
+            <div class="geo-kpi-value">{shortfall:.0f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
             <div class="geo-kpi-footer"><span class="{'geo-trend-up' if shortfall == 0 else 'geo-trend-down'}">Predicted Loss</span></div>
         </div>
     </div>
@@ -293,29 +296,29 @@ with main_col:
         st.markdown(f"""
         <div class="geo-kpi-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             <div class="geo-kpi-card">
-                <div class="geo-kpi-header"><div class="geo-kpi-title">Formula Prediction</div><div class="geo-kpi-icon geo-icon-gray">🧮</div></div>
-                <div class="geo-kpi-value">{actual_tpd:.0f} <span style="font-size:1.1rem;color:#94A3B8;">TPD</span></div>
+                <div class="geo-kpi-header"><div class="geo-kpi-title">Formula Prediction</div><div class="geo-kpi-icon geo-icon-gray"><span class=\"material-symbols-rounded\">calculate</span></div></div>
+                <div class="geo-kpi-value">{actual_tpd:.0f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
                 <div class="geo-kpi-footer"><span class="geo-trend-neutral">Deterministic</span></div>
             </div>
             <div class="geo-kpi-card">
-                <div class="geo-kpi-header"><div class="geo-kpi-title">ML Model Prediction</div><div class="geo-kpi-icon geo-icon-blue">🤖</div></div>
-                <div class="geo-kpi-value">{ml_pred:.0f} <span style="font-size:1.1rem;color:#94A3B8;">TPD</span></div>
+                <div class="geo-kpi-header"><div class="geo-kpi-title">ML Model Prediction</div><div class="geo-kpi-icon geo-icon-blue"><span class=\"material-symbols-rounded\">smart_toy</span></div></div>
+                <div class="geo-kpi-value">{ml_pred:.0f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
                 <div class="geo-kpi-footer"><span class="geo-trend-neutral">AI Estimated</span></div>
             </div>
             <div class="geo-kpi-card">
-                <div class="geo-kpi-header"><div class="geo-kpi-title">Agreement</div><div class="geo-kpi-icon geo-icon-green">🤝</div></div>
-                <div class="geo-kpi-value">{agreement:.0f}<span style="font-size:1.5rem;color:#94A3B8;">%</span></div>
+                <div class="geo-kpi-header"><div class="geo-kpi-title">Agreement</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">handshake</span></div></div>
+                <div class="geo-kpi-value">{agreement:.0f}<span style="font-size:1.5rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">%</span></div>
                 <div class="geo-kpi-footer"><span class="{'geo-trend-up' if agreement > 85 else 'geo-trend-amber' if agreement > 70 else 'geo-trend-down'}">Confidence Level</span></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
     
         if agreement > 85:
-            st.success(f"✅ Formula and ML model **agree** (within {diff:.0f} TPD). High confidence in this prediction.")
+            st.success(f":material/check_circle: Formula and ML model **agree** (within {diff:.0f} TPD). High confidence in this prediction.")
         elif agreement > 70:
-            st.warning(f"⚠️ Formula and ML model have moderate divergence ({diff:.0f} TPD). Results are indicative.")
+            st.warning(f":material/warning: Formula and ML model have moderate divergence ({diff:.0f} TPD). Results are indicative.")
         else:
-            st.info(f"ℹ️ Formula and ML model diverge by {diff:.0f} TPD. ML model may not generalize well for extreme scenarios.")
+            st.info(f":material/info: Formula and ML model diverge by {diff:.0f} TPD. ML model may not generalize well for extreme scenarios.")
 
     # ================= GAUGE METERS =================
     g1, g2 = st.columns(2)
@@ -348,7 +351,7 @@ with main_col:
         st.plotly_chart(fig_r, use_container_width=True)
 
     # ================= FACTOR BREAKDOWN =================
-    st.subheader("📊 Factor Breakdown — How Each Parameter Affects Output")
+    st.subheader(":material/bar_chart: Factor Breakdown — How Each Parameter Affects Output")
 
     factor_names = ['⚙️ Equipment', '🌧️ Rainfall', '💥 Blasting', '🛤️ Road', '🚛 Dumpers', '⛏️ Shovels']
     factor_values = [factors['equip']*100, factors['rain']*100, factors['blast']*100, 
@@ -420,10 +423,10 @@ with main_col:
     loss_items = {k: abs(v) for k, v in zip(steps[1:-1], values[1:-1]) if v < -1}
     if loss_items:
         worst = max(loss_items, key=loss_items.get)
-        st.warning(f"⚠️ **Biggest bottleneck: {worst.strip()}** — causing **{loss_items[worst]:.0f} TPD** loss. Fix this first!")
+        st.warning(f":material/warning: **Biggest bottleneck: {worst.strip()}** — causing **{loss_items[worst]:.0f} TPD** loss. Fix this first!")
 
     # ================= SENSITIVITY ANALYSIS =================
-    st.subheader("📈 Sensitivity — What Matters Most?")
+    st.subheader(":material/monitoring: Sensitivity — What Matters Most?")
     st.markdown("Shows how much production changes when **each parameter is at its WORST vs BEST** value.")
 
     sens_data = []
@@ -471,36 +474,36 @@ with main_col:
     st.plotly_chart(fig_sens, use_container_width=True)
 
     most_sensitive = sens_df.iloc[-1]['Factor']
-    st.info(f"💡 **{most_sensitive}** has the biggest impact on production. Prioritize this in operational planning.")
+    st.info(f":material/lightbulb: **{most_sensitive}** has the biggest impact on production. Prioritize this in operational planning.")
 
     # ================= FINANCIAL IMPACT =================
-    st.subheader("💰 Financial Impact")
+    st.subheader(":material/attach_money: Financial Impact")
     mn_price = 12000
     daily_loss_rs = shortfall * mn_price
     st.markdown(f"""
     <div class="geo-kpi-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Daily Loss</div><div class="geo-kpi-icon geo-icon-red">₹</div></div>
-            <div class="geo-kpi-value">₹{daily_loss_rs/100000:.1f} <span style="font-size:1.1rem;color:#94A3B8;">Lakh</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Daily Loss</div><div class="geo-kpi-icon geo-icon-red"><span class=\"material-symbols-rounded\">currency_rupee</span></div></div>
+            <div class="geo-kpi-value"><span class=\"material-symbols-rounded\">currency_rupee</span>{daily_loss_rs/100000:.1f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Lakh</span></div>
             <div class="geo-kpi-footer"><span class="geo-trend-down">Per Day</span></div>
         </div>
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Monthly Loss</div><div class="geo-kpi-icon geo-icon-red">₹</div></div>
-            <div class="geo-kpi-value">₹{daily_loss_rs * 25 / 10000000:.2f} <span style="font-size:1.1rem;color:#94A3B8;">Cr</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Monthly Loss</div><div class="geo-kpi-icon geo-icon-red"><span class=\"material-symbols-rounded\">currency_rupee</span></div></div>
+            <div class="geo-kpi-value"><span class=\"material-symbols-rounded\">currency_rupee</span>{daily_loss_rs * 25 / 10000000:.2f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Cr</span></div>
             <div class="geo-kpi-footer"><span class="geo-trend-down">Per Month (25 days)</span></div>
         </div>
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Annual Loss</div><div class="geo-kpi-icon geo-icon-red">₹</div></div>
-            <div class="geo-kpi-value">₹{daily_loss_rs * 300 / 10000000:.1f} <span style="font-size:1.1rem;color:#94A3B8;">Cr</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Annual Loss</div><div class="geo-kpi-icon geo-icon-red"><span class=\"material-symbols-rounded\">currency_rupee</span></div></div>
+            <div class="geo-kpi-value"><span class=\"material-symbols-rounded\">currency_rupee</span>{daily_loss_rs * 300 / 10000000:.1f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Cr</span></div>
             <div class="geo-kpi-footer"><span class="geo-trend-down">Per Year (300 days)</span></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
-    st.caption("*Estimated at ₹12,000/ton manganese ore.*")
+    st.caption("*Estimated at :material/currency_rupee:12,000/ton manganese ore.*")
 
     # ================= HISTORICAL COMPARISON =================
     if not history_df.empty:
-        st.subheader("📈 Your Scenario vs Historical Data")
+        st.subheader(":material/monitoring: Your Scenario vs Historical Data")
         mine_hist = history_df[history_df['mine_id'] == selected_mine].copy()
         if not mine_hist.empty:
             mine_hist['date'] = pd.to_datetime(mine_hist['year'].astype(str) + '-' + mine_hist['month'].astype(str) + '-01')
@@ -512,7 +515,7 @@ with main_col:
             fig_hist.add_trace(go.Scatter(x=mine_hist['date'], y=mine_hist['planned_production_tpd__DERIVED'],
                                           name='Historical Planned', line=dict(color='gray', dash='dash')))
             fig_hist.add_trace(go.Scatter(x=[pd.Timestamp(f'2026-{selected_month}-01')], y=[actual_tpd],
-                                          name='🎯 Your Scenario', mode='markers',
+                                          name='<span class=\"material-symbols-rounded\">my_location</span> Your Scenario', mode='markers',
                                           marker=dict(size=16, color='#e74c3c', symbol='star')))
             fig_hist.add_hline(y=actual_tpd, line_dash="dot", line_color="#e74c3c", opacity=0.5)
             fig_hist.update_layout(height=350, yaxis_title="Production (TPD)",
@@ -523,3 +526,4 @@ with main_col:
 # --- Animations ---
 inject_kpi_animations()
 inject_volcano_animations()
+

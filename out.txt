@@ -1,0 +1,1 @@
+663:         with st.expander("📄 View Assignment Details"):

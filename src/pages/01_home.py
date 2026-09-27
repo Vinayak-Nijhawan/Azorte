@@ -14,10 +14,10 @@ st.markdown("""
 <style>
 /* Dashboard Specific Global overrides */
 .glass-panel {
-    background: rgba(17, 24, 39, 0.7);
+    background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(30, 41, 59, 0.8);
+    border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
     border-radius: 16px;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
 }
@@ -33,13 +33,13 @@ st.markdown("""
 .header-titles h1 {
     font-size: 2.4rem !important;
     font-weight: 800 !important;
-    color: #F8FAFC !important;
+    color: var(--text-color) !important;
     margin: 0 0 4px 0 !important;
     letter-spacing: -0.02em;
 }
 .header-titles p {
     font-size: 1.05rem !important;
-    color: #94A3B8 !important;
+    color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
     margin: 0 !important;
     font-weight: 400;
 }
@@ -50,13 +50,13 @@ st.markdown("""
 }
 .search-bar {
     background: rgba(15, 23, 42, 0.6);
-    border: 1px solid #334155;
+    border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent);
     border-radius: 9999px;
     padding: 8px 20px;
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #94A3B8;
+    color: color-mix(in srgb, var(--text-color) 60%, transparent);
     font-size: 0.9rem;
     width: 250px;
 }
@@ -70,7 +70,7 @@ st.markdown("""
     background: rgba(30, 41, 59, 0.5);
     padding: 6px 12px 6px 6px;
     border-radius: 9999px;
-    border: 1px solid #334155;
+    border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent);
     cursor: pointer;
 }
 .profile-avatar {
@@ -87,7 +87,7 @@ st.markdown("""
 }
 .profile-name {
     font-size: 0.85rem;
-    color: #E2E8F0;
+    color: var(--text-color);
     font-weight: 600;
 }
 
@@ -117,7 +117,7 @@ st.markdown("""
     align-items: center;
 }
 .kpi-title {
-    color: #94A3B8;
+    color: color-mix(in srgb, var(--text-color) 60%, transparent);
     font-size: 0.9rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -140,7 +140,7 @@ st.markdown("""
 .kpi-value {
     font-size: 2.2rem;
     font-weight: 700;
-    color: #F8FAFC;
+    color: var(--text-color);
     line-height: 1.2;
 }
 .kpi-footer {
@@ -160,10 +160,10 @@ st.markdown("""
 }
 .trend-up { background: rgba(16, 185, 129, 0.15); color: #34D399; }
 .trend-down { background: rgba(244, 63, 94, 0.15); color: #FB7185; }
-.trend-neutral { background: rgba(148, 163, 184, 0.15); color: #94A3B8; }
+.trend-neutral { background: rgba(148, 163, 184, 0.15); color: color-mix(in srgb, var(--text-color) 60%, transparent); }
 .kpi-subtext {
     font-size: 0.8rem;
-    color: #64748B;
+    color: color-mix(in srgb, var(--text-color) 50%, transparent);
 }
 
 /* Outcome Cards */
@@ -182,7 +182,7 @@ st.markdown("""
 .outcome-title {
     font-size: 1.05rem;
     font-weight: 600;
-    color: #E2E8F0;
+    color: var(--text-color);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -193,7 +193,7 @@ st.markdown("""
 }
 .outcome-desc {
     font-size: 0.9rem;
-    color: #94A3B8;
+    color: color-mix(in srgb, var(--text-color) 60%, transparent);
     line-height: 1.5;
 }
 
@@ -220,11 +220,11 @@ st.markdown("""
     align-items: center !important;
     justify-content: flex-start !important;
     gap: 10px !important;
-    background-color: #0F172A !important;
+    background-color: var(--secondary-background-color) !important;
     border: 1px solid rgba(51, 65, 85, 0.5) !important;
     border-radius: 8px !important;
     padding: 12px 16px !important;
-    color: #E2E8F0 !important;
+    color: var(--text-color) !important;
     font-weight: 500 !important;
     font-size: 0.9rem !important;
     text-decoration: none !important;
@@ -247,8 +247,8 @@ st.markdown("""
 
 /* Hover effects for the background grid and lines */
 [data-testid="stPageLink"]:hover a {
-    background-color: #111827 !important;
-    color: #F8FAFC !important;
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
     box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15) !important;
     background-size: 100% var(--line-weight), var(--line-weight) 100%, 100% var(--line-weight), var(--line-weight) 100%, 100% 100% !important;
 }
@@ -295,14 +295,14 @@ st.markdown("""
 }
 .qa-header h3 {
     font-size: 1.15rem;
-    color: #F8FAFC;
+    color: var(--text-color);
     font-weight: 600;
     margin: 0;
     letter-spacing: 0.02em;
 }
 .qa-header p {
     font-size: 0.8rem;
-    color: #94A3B8;
+    color: color-mix(in srgb, var(--text-color) 60%, transparent);
     margin: 4px 0 12px 0;
 }
 .qa-divider {
@@ -344,8 +344,9 @@ def load_kpi_data():
             df_prod = pd.read_csv(prod_path, comment='#')
             if 'mine_id' in df_prod.columns:
                 kpi_data['mines_tracked'] = df_prod['mine_id'].nunique()
-            if 'shortfall_risk' in df_prod.columns:
-                kpi_data['avg_shortfall_risk'] = f"{df_prod['shortfall_risk'].mean():.1f}"
+            if 'shortfall_risk__DERIVED' in df_prod.columns:
+                high_count = (df_prod['shortfall_risk__DERIVED'] == 'High').sum()
+                kpi_data['avg_shortfall_risk'] = f"{high_count} High Risk"
     except Exception as e:
         pass
         
@@ -362,12 +363,12 @@ st.markdown("""
     </div>
     <div class="header-actions">
         <div class="search-bar">
-            <span>🔍</span> Search modules or reports...
+            <span class=\"material-symbols-rounded\" style="vertical-align: middle; font-size: 1.2rem;">search</span> Search modules or reports...
         </div>
         <div class="profile-action">
             <div class="profile-avatar">VN</div>
             <div class="profile-name">Vinayak Nijhawan</div>
-            <span style="color: #64748B; font-size: 0.8rem; margin-left: 4px;">▼</span>
+            <span style="color: color-mix(in srgb, var(--text-color) 50%, transparent); font-size: 0.8rem; margin-left: 4px;">▼</span>
         </div>
     </div>
 </div>
@@ -379,7 +380,7 @@ st.markdown("""
     <div class="glass-panel kpi-card">
         <div class="kpi-header">
             <div class="kpi-title">Total Grid Points</div>
-            <div class="kpi-icon icon-blue">🎯</div>
+            <div class="kpi-icon icon-blue"><span class=\"material-symbols-rounded\">my_location</span></div>
         </div>
         <div class="kpi-value">{:,}</div>
         <div class="kpi-footer">
@@ -390,7 +391,7 @@ st.markdown("""
     <div class="glass-panel kpi-card">
         <div class="kpi-header">
             <div class="kpi-title">High Prospectivity</div>
-            <div class="kpi-icon icon-emerald">✨</div>
+            <div class="kpi-icon icon-emerald"><span class=\"material-symbols-rounded\">flare</span></div>
         </div>
         <div class="kpi-value">{}</div>
         <div class="kpi-footer">
@@ -401,7 +402,7 @@ st.markdown("""
     <div class="glass-panel kpi-card">
         <div class="kpi-header">
             <div class="kpi-title">Active Mines</div>
-            <div class="kpi-icon icon-purple">⛏️</div>
+            <div class="kpi-icon icon-purple"><span class=\"material-symbols-rounded\">architecture</span></div>
         </div>
         <div class="kpi-value">{}</div>
         <div class="kpi-footer">
@@ -412,7 +413,7 @@ st.markdown("""
     <div class="glass-panel kpi-card">
         <div class="kpi-header">
             <div class="kpi-title">Avg Shortfall Risk</div>
-            <div class="kpi-icon icon-amber">⚠️</div>
+            <div class="kpi-icon icon-amber"><span class=\"material-symbols-rounded\">warning</span></div>
         </div>
         <div class="kpi-value">{}%</div>
         <div class="kpi-footer">
@@ -429,23 +430,23 @@ st.markdown("""
 ), unsafe_allow_html=True)
 
 # 3. Outcomes Section
-st.markdown("""<h3 style="font-size: 1.1rem; color: #E2E8F0; margin-bottom: 16px; font-weight: 600;">System Capabilities</h3>""", unsafe_allow_html=True)
+st.markdown("""<h3 style="font-size: 1.1rem; color: var(--text-color); margin-bottom: 16px; font-weight: 600;">System Capabilities</h3>""", unsafe_allow_html=True)
 st.markdown("""
 <div class="outcome-grid">
     <div class="glass-panel outcome-card">
-        <div class="outcome-title"><span>🧭</span> Focused Exploration</div>
+        <div class="outcome-title"><span class=\"material-symbols-rounded\">explore</span> Focused Exploration</div>
         <div class="outcome-desc">Drastically reduce survey area by targeting AI-identified high-probability zones across all belts.</div>
     </div>
     <div class="glass-panel outcome-card">
-        <div class="outcome-title"><span>⏱️</span> Reduced Delays</div>
+        <div class="outcome-title"><span class=\"material-symbols-rounded\">timer</span> Reduced Delays</div>
         <div class="outcome-desc">Proactive production risk management anticipates shortfalls before they occur.</div>
     </div>
     <div class="glass-panel outcome-card">
-        <div class="outcome-title"><span>⚙️</span> Resource Utilization</div>
+        <div class="outcome-title"><span class=\"material-symbols-rounded\">settings</span> Resource Utilization</div>
         <div class="outcome-desc">Optimized fleet and machinery deployment using advanced mathematical solvers.</div>
     </div>
     <div class="glass-panel outcome-card">
-        <div class="outcome-title"><span>🌱</span> Lower Impact</div>
+        <div class="outcome-title"><span class=\"material-symbols-rounded\">eco</span> Lower Impact</div>
         <div class="outcome-desc">Fewer exploratory drillings needed, reducing overall environmental disturbance.</div>
     </div>
 </div>
@@ -456,24 +457,24 @@ st.markdown("""
 <div class="qa-header">
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h3>Quick Actions</h3>
-        <span style="font-size: 0.75rem; color: #94A3B8;">Shortcuts to platform modules</span>
+        <span style="font-size: 0.75rem; color: color-mix(in srgb, var(--text-color) 60%, transparent);">Shortcuts to platform modules</span>
     </div>
     <div class="qa-divider"></div>
 </div>
 """, unsafe_allow_html=True)
 
 col_a, col_b, col_c, col_d = st.columns(4)
-with col_a: st.page_link("src/pages/02_prospectivity.py", label="GeoProspect AI", icon="🗺️")
-with col_b: st.page_link("src/pages/03_production.py", label="Production Forecast", icon="📈")
-with col_c: st.page_link("src/pages/04_fleet_dispatch.py", label="Fleet Dispatch", icon="🚛")
-with col_d: st.page_link("src/pages/06_what_if.py", label="What-If Simulator", icon="🎛️")
+with col_a: st.page_link("src/pages/02_prospectivity.py", label="GeoProspect AI", icon=":material/explore:")
+with col_b: st.page_link("src/pages/03_production.py", label="Production Forecast", icon=":material/monitoring:")
+with col_c: st.page_link("src/pages/04_fleet_dispatch.py", label="Fleet Dispatch", icon=":material/local_shipping:")
+with col_d: st.page_link("src/pages/06_what_if.py", label="What-If Simulator", icon=":material/tune:")
 
 st.write("")
 col_e, col_f, col_g, col_h = st.columns(4)
-with col_e: st.page_link("src/pages/07_explainability.py", label="AI Explainability", icon="🧬")
-with col_f: st.page_link("src/pages/08_ai_assistant.py", label="G-Sync AI", icon="🤖")
-with col_g: st.page_link("src/pages/09_financial.py", label="Financial ROI", icon="💰")
-with col_h: st.page_link("src/pages/05_methodology.py", label="Data & Model Info", icon="🔬")
+with col_e: st.page_link("src/pages/07_explainability.py", label="AI Explainability", icon=":material/science:")
+with col_f: st.page_link("src/pages/08_ai_assistant.py", label="G-Sync AI", icon=":material/smart_toy:")
+with col_g: st.page_link("src/pages/09_financial.py", label="Financial ROI", icon=":material/attach_money:")
+with col_h: st.page_link("src/pages/05_methodology.py", label="Data & Model Info", icon=":material/info:")
 
 
 

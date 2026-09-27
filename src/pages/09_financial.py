@@ -35,7 +35,7 @@ st.markdown("""
     border-radius: 15px;
     margin-bottom: 25px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
 }
 .header-title {
     font-size: 42px !important;
@@ -92,118 +92,74 @@ div[data-testid="stColumn"]:nth-of-type(2) {
     align-self: flex-start;
     z-index: 100;
 }
+
+  .geo-kpi-grid { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+  .geo-kpi-card { background: var(--secondary-background-color) !important; flex: 1; min-width: 200px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; transition: all 0.2s ease; }
+  .geo-kpi-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-2px); }
+  .geo-kpi-title { color: color-mix(in srgb, var(--text-color) 60%, transparent); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2; }
+  .geo-kpi-value { font-size: 1.8rem; font-weight: 700; color: var(--text-color); line-height: 1.2; display: flex; align-items: center; gap: 4px; }
+  .geo-trend-up, .geo-trend-down, .geo-trend-neutral { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-top: 5px; }
+  .geo-trend-up { background: rgba(16,185,129,0.15); color: #10B981; }
+  .geo-trend-down { background: rgba(239,68,68,0.15); color: #EF4444; }
+  .geo-trend-neutral { background: rgba(59,130,246,0.15); color: #3B82F6; }
 </style>
 
 <div class="header-banner">
-    <div class="header-title">Financial Impact & ROI Analysis 💰</div>
+    <div class="header-title">Financial Impact & ROI Analysis <span class=\"material-symbols-rounded\">attach_money</span></div>
     <div class="header-subtitle">Executive Dashboard: Economic & Environmental Impact of MOIL-GeoSync</div>
-    <div class="header-caption">⚠️ All financial projections are based on standard PSU operational scale (MOIL turnover ~₹1,500 Cr).</div>
+    <div class="header-caption"><span class=\"material-symbols-rounded\">warning</span> All financial projections are based on standard PSU operational scale (MOIL turnover ~<span class=\"material-symbols-rounded\">currency_rupee</span>1,500 Cr).</div>
 </div>
 """, unsafe_allow_html=True)
 
 
 def format_inr(amount):
     if amount >= 1e7:
-        return f'₹{amount/1e7:.2f} Cr'
+        return f'<span class=\"material-symbols-rounded\">currency_rupee</span>{amount/1e7:.2f} Cr'
     elif amount >= 1e5:
-        return f'₹{amount/1e5:.2f} Lakh'
+        return f'<span class=\"material-symbols-rounded\">currency_rupee</span>{amount/1e5:.2f} Lakh'
     else:
-        return f'₹{amount:,.0f}'
+        return f'<span class=\"material-symbols-rounded\">currency_rupee</span>{amount:,.0f}'
 
 def render_animated_kpi_row(kpi_list):
-    cards_html = ""
-    for i, kpi in enumerate(kpi_list):
-        highlight_cls = "highlight" if kpi.get("highlight") else ""
-        delay = i * 0.15
-        
+    cards_html = """<div class="geo-kpi-grid">"""
+    
+    for kpi in kpi_list:
         val = kpi["value"]
         prefix = kpi.get("prefix", "")
         suffix = kpi.get("suffix", "")
         decimals = kpi.get("decimals", 2)
         
         if kpi.get("is_money", False):
-            prefix = "₹"
+            prefix = "?"
             if val >= 1e7:
-                target_val = val / 1e7
-                suffix = "Cr"
+                val = val / 1e7
+                suffix = " Cr"
             elif val >= 1e5:
-                target_val = val / 1e5
-                suffix = "Lakh"
+                val = val / 1e5
+                suffix = " Lakh"
             else:
-                target_val = val
                 decimals = 0
-        else:
-            target_val = val
-            
+        
+        formatted_val = f"{val:,.{decimals}f}" if decimals > 0 else f"{val:,.0f}"
+        
         badge_html = ""
         if kpi.get("badge"):
             b_color = kpi.get("badge_color", "badge-green")
-            badge_html = f'<div class="kpi-badge {b_color}">{kpi["badge"]}</div>'
+            trend_class = "geo-trend-up" if "green" in b_color else ("geo-trend-down" if "red" in b_color else "geo-trend-neutral")
+            badge_html = f"""<div class="geo-kpi-footer"><span class="{trend_class}">{kpi['badge']}</span></div>"""
             
         cards_html += f"""
-        <div class="kpi-card {highlight_cls}" style="animation-delay: {delay}s;">
-            <div class="kpi-title">{kpi['title']}</div>
-            <div class="kpi-value">{prefix}<span class="count-up" data-target="{target_val}" data-decimals="{decimals}">0</span> {suffix}</div>
+        <div class="geo-kpi-card">
+            <div class="geo-kpi-title">{kpi['title']}</div>
+            <div class="geo-kpi-value">{prefix}{formatted_val}{suffix}</div>
             {badge_html}
         </div>
         """
         
-    html_code = f"""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        * {{ box-sizing: border-box; }}
-        body {{ margin: 0; font-family: 'Inter', sans-serif; background-color: transparent; overflow: hidden; }}
-        .kpi-container {{ display: flex; gap: 1rem; justify-content: space-between; width: 100%; padding-bottom: 10px; }}
-        .kpi-card {{ 
-            background: #111520; border: 1px solid #1e293b; border-radius: 12px; 
-            padding: 1.2rem; flex: 1; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transform: translateY(20px); opacity: 0; animation: fadeUp 0.6s ease-out forwards;
-            min-width: 0; /* allows flex items to shrink below content size if needed */
-        }}
-        .kpi-card.highlight {{ border-color: #2563eb; background: linear-gradient(180deg, #111520 0%, #0f172a 100%); }}
-        .kpi-title {{ color: #94a3b8; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-        .kpi-value {{ color: #f8fafc; font-size: 1.9rem; font-weight: 700; margin: 0; display: flex; align-items: baseline; gap: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-        .kpi-badge {{ display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-top: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }}
-        .badge-red {{ background: rgba(220, 38, 38, 0.15); color: #ef4444; }}
-        .badge-green {{ background: rgba(22, 163, 74, 0.15); color: #4ade80; }}
-        
-        @keyframes fadeUp {{
-            to {{ transform: translateY(0); opacity: 1; }}
-        }}
-    </style>
+    cards_html += "</div>"
+    import streamlit as st
+    st.markdown(cards_html, unsafe_allow_html=True)
 
-    <div class="kpi-container">
-        {cards_html}
-    </div>
-
-    <script>
-        const counters = document.querySelectorAll('.count-up');
-        const duration = 1500;
-
-        counters.forEach(counter => {{
-            const target = parseFloat(counter.getAttribute('data-target'));
-            const dec = parseInt(counter.getAttribute('data-decimals'));
-            const startTime = performance.now();
-
-            const updateCounter = (currentTime) => {{
-                const elapsedTime = currentTime - startTime;
-                const progress = Math.min(elapsedTime / duration, 1);
-                const easeOut = progress * (2 - progress);
-                const currentVal = target * easeOut;
-                
-                counter.innerText = (currentVal).toLocaleString('en-IN', {{ minimumFractionDigits: dec, maximumFractionDigits: dec }});
-
-                if (progress < 1) {{
-                    requestAnimationFrame(updateCounter);
-                }} else {{
-                    counter.innerText = (target).toLocaleString('en-IN', {{ minimumFractionDigits: dec, maximumFractionDigits: dec }});
-                }}
-            }};
-            requestAnimationFrame(updateCounter);
-        }});
-    </script>
-    """
-    components.html(html_code, height=180)
 
 
 main_col, controls_col = st.columns([3, 1], gap="medium")
@@ -211,11 +167,11 @@ main_col, controls_col = st.columns([3, 1], gap="medium")
 with controls_col:
     with st.container(border=True):
         st.subheader("Adjust Assumptions")
-        ore_price = st.slider("Manganese Ore Price (₹/ton)", 8000, 20000, 12000, 500)
-        drill_cost = st.slider("Exploration Drill Cost (₹/Site)", 1000000, 3000000, 1500000, 100000)
+        ore_price = st.slider("Manganese Ore Price (:material/currency_rupee:/ton)", 8000, 20000, 12000, 500)
+        drill_cost = st.slider("Exploration Drill Cost (:material/currency_rupee:/Site)", 1000000, 3000000, 1500000, 100000)
         ai_recovery_pct = st.slider("AI Shortfall Recovery Rate (%)", 10, 40, 20, 5)
-        diesel_cost = st.slider("Diesel Cost per Litre (₹)", 80, 110, 95, 1)
-        idle_cost = st.slider("Idle Cost per Dumper/Hour (₹)", 3000, 8000, 5000, 500)
+        diesel_cost = st.slider("Diesel Cost per Litre (:material/currency_rupee:)", 80, 110, 95, 1)
+        idle_cost = st.slider("Idle Cost per Dumper/Hour (:material/currency_rupee:)", 3000, 8000, 5000, 500)
 
 
 with main_col:
@@ -260,7 +216,7 @@ with main_col:
         fig1.update_layout(
             template="plotly_dark",
             barmode='group',
-            yaxis_title="Capital Expenditure (₹)",
+            yaxis_title="Capital Expenditure (<span class=\"material-symbols-rounded\">currency_rupee</span>)",
             margin=dict(l=0, r=0, t=30, b=0),
             height=350,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
@@ -335,7 +291,7 @@ with main_col:
         monthly_fleet_savings = dumper_hours_per_month * ((35 * diesel_cost) + (idle_cost * 0.6))
         annual_fleet_savings = monthly_fleet_savings * 12
         
-        st.markdown(f"**Optimization Details:** {fleet_dumpers} active dumpers operating across 6 mines. Dynamic routing saves **{idle_hours_saved_per_month_per_truck} idle engine hours** per truck per month. Fuel consumption: 35 L/hr @ ₹{diesel_cost}/L diesel.")
+        st.markdown(f"**Optimization Details:** {fleet_dumpers} active dumpers operating across 6 mines. Dynamic routing saves **{idle_hours_saved_per_month_per_truck} idle engine hours** per truck per month. Fuel consumption: 35 L/hr @ <span class=\"material-symbols-rounded\">currency_rupee</span>{diesel_cost}/L diesel.")
         
         render_animated_kpi_row([
             {
@@ -393,7 +349,7 @@ with main_col:
         st.subheader("5. Executive Summary & Payback Period")
         
         total_annual_value = capex_saved + revenue_protected + annual_fleet_savings
-        implementation_capex = 5000000 # ₹50.00 Lakh
+        implementation_capex = 5000000 # <span class=\"material-symbols-rounded\">currency_rupee</span>50.00 Lakh
         
         payback_months = max(0.1, round((implementation_capex / total_annual_value) * 12, 1))
         
