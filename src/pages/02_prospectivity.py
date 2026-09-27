@@ -1,4 +1,12 @@
 import streamlit as st
+
+import sys
+import os
+# Add the project root to sys.path so we can import utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css, inject_kpi_animations, inject_volcano_animations
+load_css()
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -28,13 +36,30 @@ def load_model():
         return None
 
 st.markdown("""
+<style>
+/* 
+   Increase font size and brightness of the metric labels (e.g., HIGH PRIORITY)
+   Using high-specificity selectors to guarantee we beat Streamlit's defaults.
+*/
+div[data-testid="stMain"] div[data-testid="stMetricLabel"] p,
+div[data-testid="stMain"] div[data-testid="stMetricLabel"] > div > div > p,
+div[data-testid="stMetricLabel"] label p {
+    font-size: 1.15rem !important;
+    color: #ffffff !important; 
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    opacity: 1.0 !important;
+}
+
+    
+</style>
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1>🎯 GeoProspect AI - Prospectivity Analysis</h1>
+        <h1><span class=\"material-symbols-rounded\">my_location</span> GeoProspect AI - Prospectivity Analysis</h1>
         <div class="fd-subtitle">AI-Powered Mineral Exploration · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">🗺️ Exploration</div>
+        <div class="fd-tag"><span class=\"material-symbols-rounded\">explore</span> Exploration</div>
         <div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>
     </div>
 </div>
@@ -61,10 +86,10 @@ with col_ctrl:
         map_center = dict(lat=15.15, lon=76.55)
 
     st.write("### Layers")
-    show_heatmap = st.toggle("🔥 Prospectivity", value=True)
-    show_iron = st.toggle("🟠 Iron Index", value=False)
-    show_mines = st.toggle("⛏️ Known Mines", value=False)
-    show_drill = st.toggle("🎯 Drill Zones", value=False)
+    show_heatmap = st.toggle(":material/local_fire_department: Prospectivity", value=True)
+    show_iron = st.toggle(":material/circle: Iron Index", value=False)
+    show_mines = st.toggle(":material/architecture: Known Mines", value=False)
+    show_drill = st.toggle(":material/my_location: Drill Zones", value=False)
 
     map_style = st.radio("Map Type", ["Dark", "Satellite", "Terrain", "Street Map"], index=0, horizontal=True)
 
@@ -88,22 +113,44 @@ with col_map:
     # Force Plotly to render the Map canvas even if all toggles are turned off
     fig.add_trace(go.Scattermap(lat=[None], lon=[None], showlegend=False, hoverinfo='none'))
 
-    # ---- LAYER 1: Prospectivity Heatmap ----
+    # ---- LAYER 1: Prospectivity (Sharp Scatter Points) ----
     if show_heatmap and 'mn_probability' in df.columns:
-        # Only plot medium-to-high probability points
-        # This removes the uniform blue grid background and shows actual hotspots
-        hotspots = df[df['mn_probability'] > 0.35].copy()
+        # Filter out very low probability points for cleaner viz
+        viz_df = df[df['mn_probability'] > 0.15].copy()
         
-        fig.add_trace(go.Densitymap(
-            lat=hotspots['latitude'], lon=hotspots['longitude'],
-            z=hotspots['mn_probability'],
-            radius=overlay_radius,
-            opacity=overlay_opacity,
-            colorscale=[[0,'blue'],[0.2,'cyan'],[0.4,'lime'],[0.6,'yellow'],[0.8,'orange'],[1.0,'red']],
-            zmin=0.3, zmax=1.0,
-            colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
+        # Color mapping: Low=blue, Medium=yellow, High=red
+        def prob_to_color(p):
+            if p >= 0.8:
+                return 'rgba(220,30,30,0.85)'    # Red - HIGH
+            elif p >= 0.6:
+                return 'rgba(255,140,0,0.75)'     # Orange
+            elif p >= 0.4:
+                return 'rgba(255,220,50,0.65)'     # Yellow - MEDIUM
+            elif p >= 0.25:
+                return 'rgba(50,200,100,0.50)'     # Green
+            else:
+                return 'rgba(30,100,220,0.35)'     # Blue - LOW
+        
+        viz_df['color'] = viz_df['mn_probability'].apply(prob_to_color)
+        viz_df['size'] = np.clip(viz_df['mn_probability'] * 12, 3, 14)
+        
+        # Sort so high-probability dots render on top
+        viz_df = viz_df.sort_values('mn_probability', ascending=True)
+        
+        fig.add_trace(go.Scattermap(
+            lat=viz_df['latitude'], lon=viz_df['longitude'],
+            mode='markers',
+            marker=dict(
+                size=viz_df['size'],
+                color=viz_df['mn_probability'],
+                colorscale=[[0,'#1a5fb4'],[0.3,'#26a269'],[0.5,'#f5c211'],[0.7,'#ff7800'],[1.0,'#e01b24']],
+                cmin=0.15, cmax=1.0,
+                opacity=overlay_opacity,
+                colorbar=dict(title=dict(text="Mn Prob"), x=1.0, len=0.5, y=0.75, thickness=12),
+            ),
             name='Prospectivity', showlegend=True,
-            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{z:.3f}<extra></extra>',
+            text=viz_df['mn_probability'],
+            hovertemplate='Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<br>Prob: %{text:.3f}<extra></extra>',
         ))
 
 
@@ -150,8 +197,8 @@ with col_map:
             mode='markers+text',
             marker=dict(size=14, color=m_colors),
             text=m_names, textposition='top center',
-            textfont=dict(size=11, color='white'),
-            name='⛏️ Known Mines',
+            textfont=dict(size=11),
+            name='<span class=\"material-symbols-rounded\">architecture</span> Known Mines',
             hovertemplate='%{text}<br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>',
         ))
 
@@ -166,7 +213,7 @@ with col_map:
                 color='#FF00FF',  # Neon Purple/Magenta
                 opacity=1.0
             ),
-            name='🎯 Drill Priority',
+            name='<span class=\"material-symbols-rounded\">my_location</span> Drill Priority',
             hovertemplate='Prob: %{customdata:.3f}<extra>Drill Target</extra>',
             customdata=top_drill['mn_probability'],
         ))
@@ -176,7 +223,7 @@ with col_map:
         height=600,
         margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01,
-                    bgcolor="rgba(0,0,0,0.7)", font=dict(color="white", size=11)),
+                    bgcolor="rgba(0,0,0,0.7)", font=dict(size=11)),
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -197,23 +244,148 @@ def get_region(lat, lon):
 
 if 'mn_probability' in df.columns:
     df['region'] = [get_region(lat, lon) for lat, lon in zip(df['latitude'], df['longitude'])]
+
+    high_count   = int((df['mn_probability'] > 0.45).sum())
+    medium_count = int(((df['mn_probability'] > 0.3) & (df['mn_probability'] <= 0.45)).sum())
+    low_count    = int((df['mn_probability'] <= 0.3).sum())
+
+    ci_high  = int((df[df['region'] == 'Central India']['mn_probability'] > 0.45).sum()) if len(df[df['region'] == 'Central India']) > 0 else 0
+    od_high  = int((df[df['region'] == 'Odisha']['mn_probability'] > 0.45).sum())        if len(df[df['region'] == 'Odisha']) > 0       else 0
+    kar_high = int((df[df['region'] == 'Karnataka']['mn_probability'] > 0.45).sum())     if len(df[df['region'] == 'Karnataka']) > 0    else 0
+
+    st.markdown(f"""
+<style>
+/* KPI cards for GeoProspect — mirrors the Overview dashboard style */
+.geo-kpi-grid {{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+}}
+.geo-kpi-card {{
+    background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
+    border-radius: 16px;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+}}
+.geo-kpi-card:hover {{
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: translateY(-2px);
+}}
+.geo-kpi-header {{ display: flex; justify-content: space-between; align-items: center; }}
+.geo-kpi-title {{
+    color: color-mix(in srgb, var(--text-color) 60%, transparent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}}
+.geo-kpi-icon {{
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+}}
+.geo-icon-red    {{ background: rgba(239, 68, 68, 0.1);   color: #EF4444; }}
+.geo-icon-amber  {{ background: rgba(245, 158, 11, 0.1);  color: #F59E0B; }}
+.geo-icon-green  {{ background: rgba(16, 185, 129, 0.1);  color: #10B981; }}
+.geo-icon-pink   {{ background: rgba(236, 72, 153, 0.1);  color: #EC4899; }}
+.geo-icon-blue   {{ background: rgba(59, 130, 246, 0.1);  color: #3B82F6; }}
+.geo-icon-lime   {{ background: rgba(132, 204, 22, 0.1);  color: #84CC16; }}
+.geo-kpi-value {{
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1.2;
+}}
+.geo-kpi-footer {{ display: flex; align-items: center; gap: 8px; margin-top: 2px; }}
+.geo-kpi-subtext {{ font-size: 0.8rem; color: color-mix(in srgb, var(--text-color) 50%, transparent); }}
+.geo-trend-red    {{ background: rgba(239, 68, 68, 0.15);   color: #F87171; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }}
+.geo-trend-amber  {{ background: rgba(245, 158, 11, 0.15);  color: #FCD34D; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }}
+.geo-trend-green  {{ background: rgba(16, 185, 129, 0.15);  color: #34D399; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }}
+
     
-    # Overall stats
-    c1, c2, c3 = st.columns(3)
-    c1.metric("🔴 High Priority", f"{int((df['mn_probability'] > 0.8).sum())} targets")
-    c2.metric("🟡 Medium Priority", f"{int(((df['mn_probability'] > 0.4) & (df['mn_probability'] <= 0.8)).sum())} targets")
-    c3.metric("🟢 Low Priority", f"{int((df['mn_probability'] <= 0.4).sum())} targets")
-    
-    # Region-wise breakdown
-    st.markdown("**Region-wise High Priority Targets:**")
-    rc1, rc2, rc3 = st.columns(3)
-    for col, reg, emoji in [(rc1, "Central India", "🟥"), (rc2, "Odisha", "🟦"), (rc3, "Karnataka", "🟩")]:
-        reg_df = df[df['region'] == reg]
-        high_count = int((reg_df['mn_probability'] > 0.8).sum()) if len(reg_df) > 0 else 0
-        col.metric(f"{emoji} {reg}", f"{high_count} targets")
+</style>
+
+<div class="geo-kpi-grid">
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header">
+            <div class="geo-kpi-title">High Priority</div>
+            <div class="geo-kpi-icon geo-icon-red"><span class=\"material-symbols-rounded\">crisis_alert</span></div>
+        </div>
+        <div class="geo-kpi-value">{high_count} targets</div>
+        <div class="geo-kpi-footer">
+            <span class="geo-trend-red">Mn Prob &gt; 0.45</span>
+            <span class="geo-kpi-subtext">drill candidates</span>
+        </div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header">
+            <div class="geo-kpi-title">Medium Priority</div>
+            <div class="geo-kpi-icon geo-icon-amber"><span class=\"material-symbols-rounded\">travel_explore</span></div>
+        </div>
+        <div class="geo-kpi-value">{medium_count} targets</div>
+        <div class="geo-kpi-footer">
+            <span class="geo-trend-amber">Mn Prob 0.3–0.45</span>
+            <span class="geo-kpi-subtext">further study</span>
+        </div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header">
+            <div class="geo-kpi-title">Low Priority</div>
+            <div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">map</span></div>
+        </div>
+        <div class="geo-kpi-value">{low_count} targets</div>
+        <div class="geo-kpi-footer">
+            <span class="geo-trend-green">Mn Prob ≤ 0.3</span>
+            <span class="geo-kpi-subtext">low probability</span>
+        </div>
+    </div>
+</div>
+
+<p style="font-weight:600; color:var(--text-color); margin:8px 0 12px 0;">Region-wise High Priority Targets:</p>
+<div class="geo-kpi-grid">
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header">
+            <div class="geo-kpi-title">Central India</div>
+            <div class="geo-kpi-icon geo-icon-pink"><span class=\"material-symbols-rounded\">landscape</span></div>
+        </div>
+        <div class="geo-kpi-value">{ci_high} targets</div>
+        <div class="geo-kpi-footer">
+            <span class="geo-trend-red">Nagpur Belt</span>
+        </div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header">
+            <div class="geo-kpi-title">Odisha</div>
+            <div class="geo-kpi-icon geo-icon-blue"><span class=\"material-symbols-rounded\">terrain</span></div>
+        </div>
+        <div class="geo-kpi-value">{od_high} targets</div>
+        <div class="geo-kpi-footer">
+            <span class="geo-trend-amber">Joda-Barbil Belt</span>
+        </div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header">
+            <div class="geo-kpi-title">Karnataka</div>
+            <div class="geo-kpi-icon geo-icon-lime"><span class=\"material-symbols-rounded\">south</span></div>
+        </div>
+        <div class="geo-kpi-value">{kar_high} targets</div>
+        <div class="geo-kpi-footer">
+            <span class="geo-trend-green">Sandur Schist Belt</span>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ================= TOP DRILL TARGETS =================
-st.subheader("📍 Top 10 Drill Targets")
+st.subheader(":material/location_on: Top 10 Drill Targets")
 if 'mn_probability' in df.columns:
     top_10 = df.nlargest(10, 'mn_probability').copy()
     top_10.insert(0, 'Rank', range(1, len(top_10) + 1))
@@ -225,14 +397,14 @@ if 'mn_probability' in df.columns:
                  use_container_width=True, hide_index=True)
 
 # ================= FEATURE IMPORTANCE =================
-st.subheader("🔬 Feature Importance")
+st.subheader(":material/info: Feature Importance")
 if model is not None:
     try:
         base = model[0] if isinstance(model, list) else model
         if hasattr(base, 'feature_importances_'):
             imp = base.feature_importances_
             names = ['iron_oxide_index','clay_index','ndvi','rock_type','fault_distance_km',
-                     'shear_zone_proximity_km','elevation_m','slope_deg','rainfall_mm','soil_moisture'][:len(imp)]
+                     'shear_zone_proximity_km','elevation_m','slope_deg','rainfall_mm__REAL','soil_moisture'][:len(imp)]
             feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
             fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h',
                            color='Importance', color_continuous_scale='RdYlGn_r')
@@ -240,3 +412,8 @@ if model is not None:
             st.plotly_chart(fig_imp, use_container_width=True)
     except Exception as e:
         st.error(f"Error: {e}")
+
+
+# --- Animations ---
+inject_kpi_animations()
+inject_volcano_animations()

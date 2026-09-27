@@ -1,4 +1,12 @@
 import streamlit as st
+
+import sys
+import os
+# Add the project root to sys.path so we can import utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css, inject_kpi_animations, inject_volcano_animations
+load_css()
+
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -23,9 +31,28 @@ DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
 MODEL_DIR = os.path.join(PROJECT_ROOT, 'models')
 
 st.markdown("""
+<style>
+.geo-kpi-grid { display: grid; gap: 20px; margin-bottom: 24px; }
+.geo-kpi-card { background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important; backdrop-filter: blur(12px); border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transition: all 0.2s ease; }
+.geo-kpi-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-2px); }
+.geo-kpi-header { display: flex; justify-content: space-between; align-items: center; }
+.geo-kpi-title { color: color-mix(in srgb, var(--text-color) 60%, transparent); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.geo-kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+.geo-icon-blue   { background: rgba(59,130,246,0.1); color: #3B82F6; }
+.geo-icon-green  { background: rgba(16,185,129,0.1); color: #10B981; }
+.geo-icon-purple { background: rgba(139,92,246,0.1); color: #8B5CF6; }
+.geo-icon-amber  { background: rgba(245,158,11,0.1); color: #F59E0B; }
+.geo-icon-red    { background: rgba(239,68,68,0.1);  color: #EF4444; }
+.geo-kpi-value { font-size: 2.2rem; font-weight: 700; color: var(--text-color); line-height: 1.2; }
+.geo-kpi-footer { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.geo-trend-up     { background: rgba(16,185,129,0.15); color: #34D399; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+.geo-trend-neutral{ background: rgba(148,163,184,0.15);color: color-mix(in srgb, var(--text-color) 60%, transparent); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+
+    
+</style>
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1>🧬 AI Model Explainability & Validation</h1>
+        <h1><span class=\"material-symbols-rounded\">science</span> AI Model Explainability &amp; Validation</h1>
         <div class="fd-subtitle">Transparent AI Decision Making · MOIL-GeoSync</div>
     </div>
     <div class="fd-header-right">
@@ -38,16 +65,24 @@ st.markdown("Model accuracy proof + SHAP-based AI decision explanations")
 
 PROSPECT_FEATURES = ['iron_oxide_index','clay_index','ndvi','rock_type_encoded','fault_distance_km',
                      'shear_zone_proximity_km','elevation_m','slope_deg','rainfall_mm','soil_moisture']
-PROD_FEATURES = ['planned_production_tpd','rainfall_mm','equipment_availability_pct','blasting_days',
-                 'haul_road_condition','crusher_capacity_tpd','num_dumpers','num_shovels','lag_1','lag_2','lag_3']
+PROD_FEATURES = [
+    'rainfall_mm__REAL', 'rainy_days__REAL', 'temp_max__REAL', 'temp_mean__REAL',
+    'planned_production_tpd__DERIVED', 'weather_penalty_factor__DERIVED', 
+    'equipment_availability_pct__DERIVED', 'haul_road_condition__DERIVED', 
+    'blasting_days__DERIVED', 'high_rainfall_flag__DERIVED', 
+    'lag_1__DERIVED', 'lag_2__DERIVED', 'lag_3__DERIVED',
+    'crusher_capacity_tpd__ASSUMED', 'num_dumpers__ASSUMED', 'num_shovels__ASSUMED',
+    'month', 'mine_encoded'
+]
 
 @st.cache_data
 def load_all_data():
-    prospect_df = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_dataset.csv'))
-    prospect_grid = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'))
-    prod_df = pd.read_csv(os.path.join(DATA_DIR, 'production_dataset.csv'))
+    prospect_df = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_dataset.csv'), comment='#')
+    prospect_grid = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'), comment='#')
+    prod_df = pd.read_csv(os.path.join(DATA_DIR, 'production_dataset_real.csv'), comment='#')
     le = LabelEncoder()
     prospect_df['rock_type_encoded'] = le.fit_transform(prospect_df['rock_type'])
+    prod_df['mine_encoded'] = le.fit_transform(prod_df['mine_id'])
     return prospect_df, prospect_grid, prod_df
 
 @st.cache_resource
@@ -66,7 +101,7 @@ def compute_shap_values(_model, data, is_ensemble=False):
 prospect_df, prospect_grid, prod_df = load_all_data()
 prospect_models, prod_model = load_models()
 
-tab1, tab2 = st.tabs(["🎯 Prospectivity Model", "⛏️ Production Model"])
+tab1, tab2 = st.tabs([":material/my_location: Prospectivity Model", ":material/architecture: Production Model"])
 
 # ================================================================
 # TAB 1: PROSPECTIVITY
@@ -75,7 +110,7 @@ with tab1:
     st.header("Prospectivity Model — PU Bagging Random Forest")
 
     X = prospect_df[PROSPECT_FEATURES]
-    y = prospect_df['mn_occurrence']
+    y = prospect_df['known_occurrence']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
 
     y_proba = np.mean([m.predict_proba(X_test)[:,1] for m in prospect_models], axis=0)
@@ -86,16 +121,33 @@ with tab1:
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     cv_scores = cross_val_score(prospect_models[0], X, y, cv=skf, scoring='f1')
 
-    # ---- KPI ----
-    st.subheader("📊 Performance Metrics")
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Test Accuracy", f"{acc*100:.1f}%")
-    m2.metric("Test F1 Score", f"{f1:.4f}")
-    m3.metric("5-Fold CV F1", f"{cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
-    m4.metric("Ensemble Size", f"{len(prospect_models)} estimators")
+    st.markdown(f"""
+<div class="geo-kpi-grid" style="grid-template-columns: repeat(4,1fr);">
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header"><div class="geo-kpi-title">Test Accuracy</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">my_location</span></div></div>
+        <div class="geo-kpi-value">{acc*100:.1f}<span style="font-size:1.5rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">%</span></div>
+        <div class="geo-kpi-footer"><span class="geo-trend-up">↑ Classification</span></div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header"><div class="geo-kpi-title">Test F1 Score</div><div class="geo-kpi-icon geo-icon-blue"><span class=\"material-symbols-rounded\">monitoring</span></div></div>
+        <div class="geo-kpi-value">{f1:.4f}</div>
+        <div class="geo-kpi-footer"><span class="geo-trend-up">↑ High F1</span></div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header"><div class="geo-kpi-title">5-Fold CV F1</div><div class="geo-kpi-icon geo-icon-purple">🔄</div></div>
+        <div class="geo-kpi-value">{cv_scores.mean():.4f}</div>
+        <div class="geo-kpi-footer"><span class="geo-trend-neutral">± {cv_scores.std():.4f} std</span></div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header"><div class="geo-kpi-title">Ensemble Size</div><div class="geo-kpi-icon geo-icon-amber">🌳</div></div>
+        <div class="geo-kpi-value">{len(prospect_models)}</div>
+        <div class="geo-kpi-footer"><span class="geo-trend-neutral">Estimators</span></div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
     # ---- CONFUSION MATRIX + ROC ----
-    st.subheader("🔍 Model Validation Proof")
+    st.subheader(":material/search: Model Validation Proof")
     col1, col2 = st.columns(2)
 
     with col1:
@@ -219,7 +271,7 @@ with tab2:
     st.header("Production Model — Gradient Boosting Regressor")
 
     X_prod = prod_df[PROD_FEATURES]
-    y_prod = prod_df['actual_production_tpd']
+    y_prod = prod_df['derived_actual_production_tpd__DERIVED']
     X_tr, X_te, y_tr, y_te = train_test_split(X_prod, y_prod, test_size=0.3, random_state=42)
     y_te_pred = prod_model.predict(X_te)
 
@@ -227,16 +279,33 @@ with tab2:
     mae = mean_absolute_error(y_te, y_te_pred)
     rmse = np.sqrt(mean_squared_error(y_te, y_te_pred))
 
-    # ---- KPI ----
-    st.subheader("📊 Performance Metrics")
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("R² Score", f"{r2:.4f}")
-    m2.metric("MAE", f"{mae:.1f} TPD")
-    m3.metric("RMSE", f"{rmse:.1f} TPD")
-    m4.metric("Error %", f"{mae/y_prod.mean()*100:.1f}%")
+    st.markdown(f"""
+<div class="geo-kpi-grid" style="grid-template-columns: repeat(4,1fr);">
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header"><div class="geo-kpi-title">R² Score</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">flare</span></div></div>
+        <div class="geo-kpi-value">{r2:.4f}</div>
+        <div class="geo-kpi-footer"><span class="geo-trend-up">↑ Strong Fit</span></div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header"><div class="geo-kpi-title">MAE</div><div class="geo-kpi-icon geo-icon-amber"><span class=\"material-symbols-rounded\">bar_chart</span></div></div>
+        <div class="geo-kpi-value">{mae:.1f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
+        <div class="geo-kpi-footer"><span class="geo-trend-neutral">Mean Abs Error</span></div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header"><div class="geo-kpi-title">RMSE</div><div class="geo-kpi-icon geo-icon-red"><span class=\"material-symbols-rounded\">trending_down</span></div></div>
+        <div class="geo-kpi-value">{rmse:.1f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
+        <div class="geo-kpi-footer"><span class="geo-trend-neutral">Root Mean Sq Err</span></div>
+    </div>
+    <div class="geo-kpi-card">
+        <div class="geo-kpi-header"><div class="geo-kpi-title">Error %</div><div class="geo-kpi-icon geo-icon-purple">📍</div></div>
+        <div class="geo-kpi-value">{mae/y_prod.mean()*100:.1f}<span style="font-size:1.5rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">%</span></div>
+        <div class="geo-kpi-footer"><span class="geo-trend-up">Relative Error</span></div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
     # ---- ACTUAL vs PREDICTED + RESIDUALS ----
-    st.subheader("🔍 Model Validation Proof")
+    st.subheader(":material/search: Model Validation Proof")
     col1, col2 = st.columns(2)
 
     with col1:
@@ -324,3 +393,8 @@ st.info("""
 
 **Data:** Synthetic for prototype. Same pipeline can retrain on real MOIL data.
 """)
+
+
+# --- Animations ---
+inject_kpi_animations()
+inject_volcano_animations()

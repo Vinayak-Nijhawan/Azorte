@@ -1,0 +1,78 @@
+# MOIL-GeoSync Fleet Alerts
+mine_id,year,month,alert_type,alert_message
+Mine_A_Dongri_Buzurg,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_A_Dongri_Buzurg,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_A_Dongri_Buzurg,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_A_Dongri_Buzurg,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_A_Dongri_Buzurg,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_A_Dongri_Buzurg,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_A_Dongri_Buzurg,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_A_Dongri_Buzurg,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_B_Chikla,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_B_Chikla,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_B_Chikla,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_B_Chikla,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_B_Chikla,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_B_Chikla,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_B_Chikla,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_B_Chikla,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_C_Munsar,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_C_Munsar,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_C_Munsar,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_C_Munsar,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_C_Munsar,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_C_Munsar,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_C_Munsar,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_C_Munsar,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_D_Balaghat,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_D_Balaghat,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_D_Balaghat,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_D_Balaghat,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_D_Balaghat,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_D_Balaghat,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_D_Balaghat,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_D_Balaghat,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 7/8 operational.
+Mine_E_Kandri,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_E_Kandri,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_E_Kandri,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_E_Kandri,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_E_Kandri,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_E_Kandri,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_E_Kandri,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_E_Kandri,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_F_Gumgaon,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_F_Gumgaon,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_F_Gumgaon,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_F_Gumgaon,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_F_Gumgaon,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_F_Gumgaon,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_F_Gumgaon,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_F_Gumgaon,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_G_Joda_East,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_G_Joda_East,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_G_Joda_East,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_G_Joda_East,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_G_Joda_East,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_G_Joda_East,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_G_Joda_East,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_G_Joda_East,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_H_Bamebari,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_H_Bamebari,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_H_Bamebari,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_H_Bamebari,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_H_Bamebari,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_H_Bamebari,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_H_Bamebari,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_H_Bamebari,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_I_Sandur,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_I_Sandur,2026,6,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_I_Sandur,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_I_Sandur,2026,7,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_I_Sandur,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_I_Sandur,2026,8,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_I_Sandur,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_I_Sandur,2026,9,INFO,1 dumper(s) unavailable due to maintenance/weather. 5/6 operational.
+Mine_J_Hospet,2026,6,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_J_Hospet,2026,7,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_J_Hospet,2026,8,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%
+Mine_J_Hospet,2026,9,WARNING,Heavy rainfall scenario (350mm). Haul road degradation expected. Weather penalty: 15%

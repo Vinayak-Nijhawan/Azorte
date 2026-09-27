@@ -1,5 +1,13 @@
 import os
 import streamlit as st
+
+import sys
+import os
+# Add the project root to sys.path so we can import utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css, inject_kpi_animations, inject_volcano_animations
+load_css()
+
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -12,20 +20,20 @@ PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 DISPATCH_PLAN_PATH = os.path.join(DATA_DIR, "dispatch_plan.csv")
 FLEET_ALERTS_PATH = os.path.join(DATA_DIR, "fleet_alerts.csv")
-FORECAST_PATH = os.path.join(DATA_DIR, "production_forecast.csv")
+FORECAST_PATH = os.path.join(DATA_DIR, "production_forecast_real.csv")
 
 # ─── Plotly theme helper ───
 def apply_dark_theme(fig, height=400, show_legend=True):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#c9d1d9', size=13),
+        font=dict(size=13),
         margin=dict(l=40, r=20, t=40, b=40),
         height=height,
         showlegend=show_legend,
     )
-    fig.update_xaxes(gridcolor='rgba(255,255,255,0.05)', zerolinecolor='rgba(255,255,255,0.05)')
-    fig.update_yaxes(gridcolor='rgba(255,255,255,0.05)', zerolinecolor='rgba(255,255,255,0.05)')
+    fig.update_xaxes( )
+    fig.update_yaxes( )
     return fig
 
 # ─── CSS ───
@@ -47,7 +55,7 @@ st.markdown("""
     .fd-header-left h1 {
         font-size: 1.8rem !important;
         font-weight: 700 !important;
-        color: #e2e8f0 !important;
+        color: var(--text-color) !important;
         margin: 0 !important;
         letter-spacing: 0.5px;
     }
@@ -66,12 +74,12 @@ st.markdown("""
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important;
+        border: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent) !important;
         border-radius: 6px;
         padding: 5px 12px;
         font-size: 0.78rem !important;
-        color: #94a3b8 !important;
+        color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
     }
     .fd-live {
         display: inline-flex;
@@ -104,8 +112,9 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .kpi-card {
-        background: rgba(255,255,255,0.025);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--secondary-background-color) !important;
+        border: 1px solid rgba(128, 128, 128, 0.2) !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
         border-radius: 10px;
         padding: 16px 18px;
         transition: border-color 0.2s;
@@ -121,11 +130,21 @@ st.markdown("""
         font-weight: 600 !important;
         margin-bottom: 6px !important;
     }
-    .kpi-value {
+    .kpi-value, .geo-kpi-value {
         font-size: 1.7rem !important;
         font-weight: 700 !important;
-        color: #f1f5f9 !important;
+        color: var(--text-color) !important;
         line-height: 1.1 !important;
+    }
+    /* Volcano bar chart animation */
+    @keyframes volcanoErupt {
+        0% { transform: scaleY(0); opacity: 0; }
+        70% { transform: scaleY(1.05); }
+        100% { transform: scaleY(1); opacity: 1; }
+    }
+    [data-testid="stPlotlyChart"] svg .bars path {
+        transform-origin: bottom !important;
+        animation: volcanoErupt 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
     }
     .kpi-unit {
         font-size: 0.75rem !important;
@@ -147,17 +166,17 @@ st.markdown("""
         font-size: 0.72rem !important;
         text-transform: uppercase;
         letter-spacing: 1.2px;
-        color: #475569 !important;
+        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
         font-weight: 700 !important;
         margin-bottom: 12px !important;
         padding-bottom: 8px;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
     }
 
     /* ── Cards / Panels ── */
     .panel {
-        background: rgba(255,255,255,0.02);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important;
+        border: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent) !important;
         border-radius: 10px;
         padding: 20px;
         height: 100%;
@@ -165,16 +184,17 @@ st.markdown("""
     .panel-header {
         font-size: 0.95rem !important;
         font-weight: 600 !important;
-        color: #e2e8f0 !important;
+        color: var(--text-color) !important;
         margin-bottom: 14px !important;
     }
 
     /* ── AI Recommendation ── */
     .ai-card {
-        background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(15,23,42,0.5) 100%);
-        border: 1px solid rgba(99,102,241,0.2);
+        background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, color-mix(in srgb, var(--text-color) 6%, transparent) 100%);
+        border: 1px solid color-mix(in srgb, #6366f1 30%, transparent);
         border-radius: 10px;
         padding: 20px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     }
     .ai-card-header {
         display: flex;
@@ -182,16 +202,16 @@ st.markdown("""
         gap: 8px;
         font-size: 0.95rem !important;
         font-weight: 700 !important;
-        color: #a5b4fc !important;
+        color: #6366f1 !important;
         margin-bottom: 16px !important;
     }
     .ai-badge {
-        background: rgba(99,102,241,0.2);
+        background: rgba(99,102,241,0.15);
         border: 1px solid rgba(99,102,241,0.3);
         border-radius: 4px;
         padding: 2px 8px;
         font-size: 0.6rem !important;
-        color: #818cf8 !important;
+        color: #6366f1 !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-weight: 700;
@@ -207,7 +227,7 @@ st.markdown("""
     }
     .ai-value {
         font-size: 0.95rem !important;
-        color: #e2e8f0 !important;
+        color: var(--text-color) !important;
     }
     .ai-impact-item {
         display: flex;
@@ -221,7 +241,7 @@ st.markdown("""
 
     /* ── Bottleneck cards ── */
     .bottleneck-card {
-        background: rgba(255,255,255,0.02);
+        background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important;
         border-radius: 8px;
         padding: 14px 16px;
         border-left: 3px solid;
@@ -241,7 +261,7 @@ st.markdown("""
     .bn-info     .bn-label { color: #60a5fa !important; }
     .bn-message {
         font-size: 0.85rem !important;
-        color: #cbd5e1 !important;
+        color: color-mix(in srgb, var(--text-color) 85%, transparent) !important;
     }
 
     /* ── Fleet status items ── */
@@ -250,8 +270,8 @@ st.markdown("""
         align-items: center;
         gap: 10px;
         padding: 8px 12px;
-        background: rgba(255,255,255,0.02);
-        border: 1px solid rgba(255,255,255,0.04);
+        background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important;
+        border: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent) !important;
         border-radius: 6px;
         margin-bottom: 6px;
         font-size: 0.85rem !important;
@@ -266,16 +286,18 @@ st.markdown("""
     .dot-maint    { background: #ef4444; }
     .fleet-id {
         font-weight: 700 !important;
-        color: #e2e8f0 !important;
+        color: var(--text-color) !important;
         min-width: 30px;
     }
     .fleet-status {
-        color: #94a3b8 !important;
+        color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
         flex: 1;
     }
     .fleet-cap {
         color: #64748b !important;
         font-size: 0.78rem !important;
+    }
+    
     }
 </style>
 """, unsafe_allow_html=True)
@@ -293,7 +315,7 @@ def load_data():
     if os.path.exists(FLEET_ALERTS_PATH):
         fleet_alerts = pd.read_csv(FLEET_ALERTS_PATH)
     if os.path.exists(FORECAST_PATH):
-        forecast = pd.read_csv(FORECAST_PATH)
+        forecast = pd.read_csv(FORECAST_PATH, comment='#')
 
     return dispatch_plan, fleet_alerts, forecast
 
@@ -358,22 +380,18 @@ avg_dumper_cap = df_filtered['effective_capacity_tph'].mean() if 'effective_capa
 avg_base_cap = df_filtered['dumper_capacity_tph'].mean() if 'dumper_capacity_tph' in df_filtered.columns else 0
 efficiency_pct = (avg_dumper_cap / avg_base_cap * 100) if avg_base_cap > 0 else 100
 
-# Equipment availability from forecast
-equip_avail = forecast_filtered['equipment_availability_pct'].mean() * 100 if (
-    not forecast_filtered.empty and 'equipment_availability_pct' in forecast_filtered.columns
-) else 0
 
 # Rainfall and road condition
-rainfall = forecast_filtered['rainfall_mm'].mean() if (
-    not forecast_filtered.empty and 'rainfall_mm' in forecast_filtered.columns
+rainfall = forecast_filtered['rainfall_mm__REAL'].mean() if (
+    not forecast_filtered.empty and 'rainfall_mm__REAL' in forecast_filtered.columns
 ) else 0
-road_cond = forecast_filtered['haul_road_condition'].mean() if (
-    not forecast_filtered.empty and 'haul_road_condition' in forecast_filtered.columns
+road_cond = forecast_filtered['haul_road_condition__DERIVED'].mean() if (
+    not forecast_filtered.empty and 'haul_road_condition__DERIVED' in forecast_filtered.columns
 ) else 5
 
 # Shortfall risk
-shortfall_risk = forecast_filtered['shortfall_risk'].mode().iloc[0] if (
-    not forecast_filtered.empty and 'shortfall_risk' in forecast_filtered.columns and len(forecast_filtered['shortfall_risk'].mode()) > 0
+shortfall_risk = forecast_filtered['shortfall_risk__DERIVED'].mode().iloc[0] if (
+    not forecast_filtered.empty and 'shortfall_risk__DERIVED' in forecast_filtered.columns and len(forecast_filtered['shortfall_risk__DERIVED'].mode()) > 0
 ) else "N/A"
 
 # Shovel stats
@@ -402,16 +420,16 @@ month_display = month_names.get(selected_month, str(selected_month))
 # ─────────────────────────────────────────
 status_class = "fd-live" if achievement_pct >= 90 else "fd-tag"
 status_text = "OPERATIONAL" if achievement_pct >= 90 else "AT RISK"
-status_dot = '<div class="fd-live-dot"></div>' if achievement_pct >= 90 else '⚠️'
+status_dot = '<div class="fd-live-dot"></div>' if achievement_pct >= 90 else '<span class=\"material-symbols-rounded\">warning</span>'
 
 st.markdown(f"""
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1>🚛 Intelligent Fleet Dispatch</h1>
+        <h1><span class=\"material-symbols-rounded\">local_shipping</span> Intelligent Fleet Dispatch</h1>
         <div class="fd-subtitle">MineFlow OR-Optimizer · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">⛏️ {mine_display}</div>
+        <div class="fd-tag"><span class=\"material-symbols-rounded\">architecture</span> {mine_display}</div>
         <div class="fd-tag">📅 {month_display} {selected_year}</div>
         <div class="{status_class}">{status_dot} {status_text}</div>
     </div>
@@ -433,42 +451,43 @@ if not alerts_filtered.empty:
 
 avail_dumpers = num_dumpers
 total_fleet = num_dumpers + maint_count
+equip_avail = (avail_dumpers / total_fleet * 100) if total_fleet > 0 else 100
 
 st.markdown(f"""
 <div class="kpi-grid">
     <div class="kpi-card">
         <div class="kpi-label">Production</div>
-        <div class="kpi-value">{achievable_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
+        <div class="kpi-value geo-kpi-value">{achievable_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
         <div class="kpi-delta {delta_class}">{delta_icon} {abs(delta_tpd):,.0f} TPD vs plan</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Planned Production</div>
-        <div class="kpi-value">{planned_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
+        <div class="kpi-value geo-kpi-value">{planned_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
         <div class="kpi-delta neutral">Target for period</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Achievement</div>
-        <div class="kpi-value">{achievement_pct:.1f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-value geo-kpi-value">{achievement_pct:.1f}<span class="kpi-unit">%</span></div>
         <div class="kpi-delta {achieve_class}">{'On track' if achievement_pct >= 100 else ('Near target' if achievement_pct >= 90 else 'Below target')}</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Active Dumpers</div>
-        <div class="kpi-value">{avail_dumpers}<span class="kpi-unit">/ {total_fleet}</span></div>
+        <div class="kpi-value geo-kpi-value">{avail_dumpers}<span class="kpi-unit">/ {total_fleet}</span></div>
         <div class="kpi-delta {'neutral' if maint_count == 0 else 'warning'}">{maint_count} in maintenance</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Active Shovels</div>
-        <div class="kpi-value">{num_shovels}</div>
+        <div class="kpi-value geo-kpi-value">{num_shovels}</div>
         <div class="kpi-delta neutral">Assigned this period</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Fleet Efficiency</div>
-        <div class="kpi-value">{efficiency_pct:.1f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-value geo-kpi-value">{efficiency_pct:.1f}<span class="kpi-unit">%</span></div>
         <div class="kpi-delta {'positive' if efficiency_pct > 90 else 'warning'}">Eff. vs base capacity</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Equip Availability</div>
-        <div class="kpi-value">{equip_avail:.0f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-value geo-kpi-value">{equip_avail:.0f}<span class="kpi-unit">%</span></div>
         <div class="kpi-delta {'positive' if equip_avail > 85 else 'warning'}">{'Healthy' if equip_avail > 85 else 'Below target'}</div>
     </div>
     <div class="kpi-card">
@@ -485,7 +504,7 @@ st.markdown(f"""
 col_main, col_ai = st.columns([2, 1], gap="medium")
 
 with col_main:
-    st.markdown('<div class="section-title">🚛 Fleet Operational Status</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title"><span class=\"material-symbols-rounded\">local_shipping</span> Fleet Operational Status</div>', unsafe_allow_html=True)
 
     # Build fleet status from actual data
     if 'dumper_id' in df_filtered.columns and 'assigned_shovel' in df_filtered.columns:
@@ -579,7 +598,7 @@ from {best_shovel_id} ({best_dumpers} dumpers) → {bn_shovel_id} ({bn_dumpers} 
 <div class="ai-impact-item impact-positive">▲ Better load balancing across shovels</div>
 <div class="ai-impact-item impact-positive">▼ Reduced idle time at {bn_shovel_id}</div>
 <div class="ai-section-label" style="margin-top:14px;">Why This Dispatch?</div>
-<div style="font-size:0.82rem; color:#94a3b8; line-height:1.6;">
+<div style="font-size:0.82rem; color:color-mix(in srgb, var(--text-color) 60%, transparent); line-height:1.6;">
 ✓ {bn_shovel_id} has fewer trucks than other shovels<br>
 ✓ {best_shovel_id} can release a dumper without capacity loss<br>
 ✓ {candidate_dumper} has the lowest effective capacity at {best_shovel_id}<br>
@@ -603,7 +622,7 @@ st.markdown("---")
 col_matrix, col_prod = st.columns([1, 1], gap="medium")
 
 with col_matrix:
-    st.markdown('<div class="section-title">📋 Dumper–Shovel Dispatch Matrix</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title"><span class=\"material-symbols-rounded\">content_paste</span> Dumper–Shovel Dispatch Matrix</div>', unsafe_allow_html=True)
 
     if 'dumper_id' in df_filtered.columns and 'assigned_shovel' in df_filtered.columns:
         matrix_df = df_filtered.copy()
@@ -629,7 +648,7 @@ with col_matrix:
             y=dumpers,
             text=text_values,
             texttemplate='%{text}',
-            textfont=dict(size=18, color='white'),
+            textfont=dict(size=18),
             colorscale=[[0, 'rgba(30,41,59,0.8)'], [1, 'rgba(99,102,241,0.7)']],
             showscale=False,
             hovertemplate='Dumper: %{y}<br>Shovel: %{x}<br>Assigned: %{z}<extra></extra>'
@@ -641,7 +660,7 @@ with col_matrix:
         st.plotly_chart(fig_matrix, use_container_width=True)
 
         # Compact assignment details in expander
-        with st.expander("📄 View Assignment Details"):
+        with st.expander("📄 View Assignment Details", expanded=True):
             detail_cols = ['dumper_id', 'assigned_shovel', 'effective_capacity_tph', 'dumper_capacity_tph']
             avail_cols = [c for c in detail_cols if c in df_filtered.columns]
             detail_df = df_filtered[avail_cols].copy()
@@ -656,7 +675,7 @@ with col_matrix:
         st.info("No dispatch matrix data available.")
 
 with col_prod:
-    st.markdown('<div class="section-title">📈 Production Performance</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title"><span class=\"material-symbols-rounded\">monitoring</span> Production Performance</div>', unsafe_allow_html=True)
 
     # Production comparison: Planned vs Achievable
     if planned_tpd > 0 or achievable_tpd > 0:
@@ -664,10 +683,10 @@ with col_prod:
         fig_prod.add_trace(go.Bar(
             x=['Planned', 'Achievable'],
             y=[planned_tpd, achievable_tpd],
-            marker_color=['#334155', '#6366f1'],
+            marker_color=['rgba(148,163,184,0.3)', '#6366f1'],
             text=[f'{planned_tpd:,.0f}', f'{achievable_tpd:,.0f}'],
             textposition='outside',
-            textfont=dict(size=16, color='#e2e8f0'),
+            textfont=dict(size=16),
             width=0.5,
         ))
         apply_dark_theme(fig_prod, height=300, show_legend=False)
@@ -709,7 +728,7 @@ with col_prod:
 # BOTTLENECKS & ALERTS
 # ─────────────────────────────────────────
 st.markdown("---")
-st.markdown('<div class="section-title">⚠️ Current Bottlenecks & Alerts</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title"><span class=\"material-symbols-rounded\">warning</span> Current Bottlenecks & Alerts</div>', unsafe_allow_html=True)
 
 if not alerts_filtered.empty:
     unique_alerts = alerts_filtered.drop_duplicates(subset=['alert_type', 'alert_message'])
@@ -746,11 +765,11 @@ if not alerts_filtered.empty:
                 atype = row['alert_type']
                 msg = row['alert_message'].replace('\u2014', '—').replace('â\x80\x94', '—').replace('–', '—')
                 if atype == 'CRITICAL':
-                    st.error(f"🔴 {msg}")
+                    st.error(f":material/circle: {msg}")
                 elif atype == 'WARNING':
-                    st.warning(f"⚠️ {msg}")
+                    st.warning(f":material/warning: {msg}")
                 else:
-                    st.info(f"ℹ️ {msg}")
+                    st.info(f":material/info: {msg}")
 
     st.caption(f"Total: {len(critical)} Critical · {len(warnings)} Warning · {len(infos)} Info")
 else:
@@ -769,7 +788,7 @@ if not shovel_stats.empty and len(shovel_stats) > 0:
     col_util, col_dist = st.columns(2, gap="medium")
 
     with col_util:
-        st.markdown('<div class="section-title">📊 Shovel Utilization</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title"><span class=\"material-symbols-rounded\">bar_chart</span> Shovel Utilization</div>', unsafe_allow_html=True)
 
         colors = ['#22c55e' if u >= 80 else ('#f59e0b' if u >= 50 else '#ef4444')
                   for u in shovel_stats['utilization_pct']]
@@ -790,7 +809,7 @@ if not shovel_stats.empty and len(shovel_stats) > 0:
         st.plotly_chart(fig_util, use_container_width=True)
 
     with col_dist:
-        st.markdown('<div class="section-title">🚛 Dumper Distribution by Shovel</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title"><span class=\"material-symbols-rounded\">local_shipping</span> Dumper Distribution by Shovel</div>', unsafe_allow_html=True)
 
         fig_dist = go.Figure(go.Bar(
             x=shovel_stats['assigned_shovel'],
@@ -812,18 +831,18 @@ if not forecast.empty and 'mine_id' in forecast.columns:
     mine_forecast = forecast[forecast['mine_id'] == selected_mine].copy() if selected_mine != 'All' else forecast.copy()
     if not mine_forecast.empty and len(mine_forecast) > 1:
         st.markdown("---")
-        st.markdown('<div class="section-title">📈 Production Trend (Annual View)</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title"><span class=\"material-symbols-rounded\">monitoring</span> Production Trend (Annual View)</div>', unsafe_allow_html=True)
 
         mine_forecast = mine_forecast.sort_values(['year', 'month'])
         mine_forecast['period'] = mine_forecast['month'].map(month_names) + " " + mine_forecast['year'].astype(str)
 
         fig_trend = go.Figure()
-        if 'planned_production_tpd' in mine_forecast.columns:
+        if 'baseline_tpd' in mine_forecast.columns:
             fig_trend.add_trace(go.Scatter(
                 x=mine_forecast['period'],
-                y=mine_forecast['planned_production_tpd'],
+                y=mine_forecast['baseline_tpd'],
                 name='Planned',
-                line=dict(color='#475569', width=2, dash='dash'),
+                line=dict(color='rgba(148,163,184,0.6)', width=2, dash='dash'),
                 mode='lines+markers',
                 marker=dict(size=6),
             ))
@@ -864,7 +883,7 @@ if rainfall > 0 or road_cond < 5:
         st.markdown(f"""
 <div class="kpi-card">
 <div class="kpi-label">Rainfall</div>
-<div class="kpi-value">{rainfall:.0f}<span class="kpi-unit">mm</span></div>
+<div class="kpi-value geo-kpi-value">{rainfall:.0f}<span class="kpi-unit">mm</span></div>
 <div class="kpi-delta {rain_class}">{'Heavy — production impact' if rainfall > 100 else 'Normal'}</div>
 </div>""", unsafe_allow_html=True)
     with ec2:
@@ -872,7 +891,7 @@ if rainfall > 0 or road_cond < 5:
         st.markdown(f"""
 <div class="kpi-card">
 <div class="kpi-label">Haul Road Condition</div>
-<div class="kpi-value">{road_cond:.1f}<span class="kpi-unit">/ 5</span></div>
+<div class="kpi-value geo-kpi-value">{road_cond:.1f}<span class="kpi-unit">/ 5</span></div>
 <div class="kpi-delta {road_class}">{'Poor — speed penalty' if road_cond < 3 else 'Acceptable'}</div>
 </div>""", unsafe_allow_html=True)
     with ec3:
@@ -880,6 +899,11 @@ if rainfall > 0 or road_cond < 5:
         st.markdown(f"""
 <div class="kpi-card">
 <div class="kpi-label">Combined Penalty</div>
-<div class="kpi-value">{penalty:.1f}<span class="kpi-unit">%</span></div>
+<div class="kpi-value geo-kpi-value">{penalty:.1f}<span class="kpi-unit">%</span></div>
 <div class="kpi-delta {'warning' if penalty > 10 else 'neutral'}">Weather + road impact</div>
 </div>""", unsafe_allow_html=True)
+
+
+# --- Animations ---
+inject_kpi_animations()
+inject_volcano_animations()

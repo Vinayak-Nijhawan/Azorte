@@ -1,4 +1,12 @@
 import streamlit as st
+import streamlit.components.v1 as components
+import sys
+import os
+# Add the project root to sys.path so we can import utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css
+load_css()
+
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -7,31 +15,21 @@ import os
 
 st.markdown("""
 <style>
-.header-banner {
-    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-    padding: 30px;
-    border-radius: 15px;
-    margin-bottom: 25px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
+/* Plotly Volcano Eruption Animation */
+@keyframes volcanoErupt {
+    0% { transform: scaleY(0); opacity: 0; }
+    70% { transform: scaleY(1.05); }
+    100% { transform: scaleY(1); opacity: 1; }
 }
-.header-title {
-    font-size: 42px !important;
-    font-weight: 800;
-    color: #ffffff;
-    margin-bottom: 10px;
+
+/* Target Plotly chart SVG bar paths */
+[data-testid="stPlotlyChart"] svg .bars path,
+[data-testid="stPlotlyChart"] svg .point path {
+    transform-origin: bottom !important;
+    animation: volcanoErupt 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
 }
-.header-subtitle {
-    font-size: 22px !important;
-    font-weight: 400;
-    color: #40c9ff;
-    margin-bottom: 15px;
-}
-.header-caption {
-    font-size: 16px !important;
-    color: #a0a0a0;
-    font-style: italic;
-}
+
+
 /* Increase font sizes across the rest of the page */
 .stMarkdown p, .stMarkdown li {
     font-size: 18px !important;
@@ -70,12 +68,26 @@ div[data-testid="stColumn"]:nth-of-type(2) {
     align-self: flex-start;
     z-index: 100;
 }
+
+  .geo-kpi-grid { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+  .geo-kpi-card { background: var(--secondary-background-color) !important; flex: 1; min-width: 200px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; transition: all 0.2s ease; }
+  .geo-kpi-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-2px); }
+  .geo-kpi-title { color: color-mix(in srgb, var(--text-color) 60%, transparent); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2; }
+  .geo-kpi-value { font-size: 1.8rem; font-weight: 700; color: var(--text-color); line-height: 1.2; display: flex; align-items: center; gap: 4px; }
+  .geo-trend-up, .geo-trend-down, .geo-trend-neutral { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-top: 5px; }
+  .geo-trend-up { background: rgba(16,185,129,0.15); color: #10B981; }
+  .geo-trend-down { background: rgba(239,68,68,0.15); color: #EF4444; }
+  .geo-trend-neutral { background: rgba(59,130,246,0.15); color: #3B82F6; }
 </style>
 
-<div class="header-banner">
-    <div class="header-title">Financial Impact & ROI Analysis 💰</div>
-    <div class="header-subtitle">Executive Dashboard: Economic & Environmental Impact of MOIL-GeoSync</div>
-    <div class="header-caption">⚠️ All financial projections are based on standard PSU operational scale (MOIL turnover ~₹1,500 Cr).</div>
+<div class="fd-header">
+    <div class="fd-header-left">
+        <h1><span class="material-symbols-rounded">attach_money</span> Financial Impact & ROI Analysis</h1>
+        <div class="fd-subtitle">Executive Dashboard: Economic & Environmental Impact of MOIL-GeoSync</div>
+    </div>
+    <div class="fd-header-right">
+        <div class="fd-tag"><span class="material-symbols-rounded" style="font-size: 16px; margin-right: 4px; vertical-align: middle;">warning</span> Baseline: MOIL Turnover ~₹1,500 Cr</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -88,17 +100,59 @@ def format_inr(amount):
     else:
         return f'₹{amount:,.0f}'
 
+def render_animated_kpi_row(kpi_list):
+    cards_html = """<div class="geo-kpi-grid">"""
+    
+    for kpi in kpi_list:
+        val = kpi["value"]
+        prefix = kpi.get("prefix", "")
+        suffix = kpi.get("suffix", "")
+        decimals = kpi.get("decimals", 2)
+        
+        if kpi.get("is_money", False):
+            prefix = "₹"
+            if val >= 1e7:
+                val = val / 1e7
+                suffix = " Cr"
+            elif val >= 1e5:
+                val = val / 1e5
+                suffix = " Lakh"
+            else:
+                decimals = 0
+        
+        formatted_val = f"{val:,.{decimals}f}" if decimals > 0 else f"{val:,.0f}"
+        
+        badge_html = ""
+        if kpi.get("badge"):
+            b_color = kpi.get("badge_color", "badge-green")
+            trend_class = "geo-trend-up" if "green" in b_color else ("geo-trend-down" if "red" in b_color else "geo-trend-neutral")
+            badge_html = f"""<div class="geo-kpi-footer"><span class="{trend_class}">{kpi['badge']}</span></div>"""
+            
+        cards_html += f"""
+        <div class="geo-kpi-card">
+            <div class="geo-kpi-title">{kpi['title']}</div>
+            <div class="geo-kpi-value">{prefix}{formatted_val}{suffix}</div>
+            {badge_html}
+        </div>
+        """
+        
+    cards_html += "</div>"
+    cards_html = '\n'.join([line.strip() for line in cards_html.split('\n')])
+    import streamlit as st
+    st.markdown(cards_html, unsafe_allow_html=True)
+
+
 
 main_col, controls_col = st.columns([3, 1], gap="medium")
 
 with controls_col:
     with st.container(border=True):
         st.subheader("Adjust Assumptions")
-        ore_price = st.slider("Manganese Ore Price (₹/ton)", 8000, 20000, 12000, 500)
-        drill_cost = st.slider("Exploration Drill Cost (₹/Site)", 1000000, 3000000, 1500000, 100000)
+        ore_price = st.slider("Manganese Ore Price (:material/currency_rupee:/ton)", 8000, 20000, 12000, 500)
+        drill_cost = st.slider("Exploration Drill Cost (:material/currency_rupee:/Site)", 1000000, 3000000, 1500000, 100000)
         ai_recovery_pct = st.slider("AI Shortfall Recovery Rate (%)", 10, 40, 20, 5)
-        diesel_cost = st.slider("Diesel Cost per Litre (₹)", 80, 110, 95, 1)
-        idle_cost = st.slider("Idle Cost per Dumper/Hour (₹)", 3000, 8000, 5000, 500)
+        diesel_cost = st.slider("Diesel Cost per Litre (:material/currency_rupee:)", 80, 110, 95, 1)
+        idle_cost = st.slider("Idle Cost per Dumper/Hour (:material/currency_rupee:)", 3000, 8000, 5000, 500)
 
 
 with main_col:
@@ -115,10 +169,26 @@ with main_col:
         sites_avoided = trad_boreholes - ai_boreholes
         capex_saved = sites_avoided * drill_cost
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Traditional Capex (100 Sites)", format_inr(trad_cost))
-        c2.metric("GeoProspect Capex (15 Sites)", format_inr(ai_cost), "-85% Capex Reduction", delta_color="inverse")
-        c3.metric("Net Capex Saved", format_inr(capex_saved), f"{sites_avoided} Dry Holes Avoided")
+        render_animated_kpi_row([
+            {
+                "title": "Traditional Capex (100 Sites)",
+                "value": trad_cost,
+                "is_money": True
+            },
+            {
+                "title": "Geoprospect Capex (15 Sites)",
+                "value": ai_cost,
+                "is_money": True,
+                "badge": "↓ -85% Capex Reduction",
+                "highlight": True
+            },
+            {
+                "title": "Net Capex Saved",
+                "value": capex_saved,
+                "is_money": True,
+                "badge": f"↑ {sites_avoided} Dry Holes Avoided"
+            }
+        ])
         
         fig1 = go.Figure(data=[
             go.Bar(name='Traditional Campaign', x=['Exploration Capex'], y=[trad_cost], marker_color='#E03C31', text=[format_inr(trad_cost)], textposition='auto'),
@@ -127,7 +197,7 @@ with main_col:
         fig1.update_layout(
             template="plotly_dark",
             barmode='group',
-            yaxis_title="Capital Expenditure (₹)",
+            yaxis_title="Capital Expenditure (?)",
             margin=dict(l=0, r=0, t=30, b=0),
             height=350,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
@@ -148,10 +218,30 @@ with main_col:
         
         st.markdown(f"**Ground Truth Baseline:** 6 mines across 4 monsoon months experience an average shortfall of ~{tons_at_risk:,} tons total.")
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Revenue at Risk (Annual)", format_inr(revenue_at_risk), f"-{tons_at_risk:,.0f} Tons", delta_color="inverse")
-        c2.metric("AI Recovery Rate", f"{ai_recovery_pct}%", "MILP Dispatch Opt.")
-        c3.metric("Revenue Protected (Annual)", format_inr(revenue_protected), f"+{tons_recovered:,.0f} Tons Recovered")
+        render_animated_kpi_row([
+            {
+                "title": "Revenue at Risk (Annual)",
+                "value": revenue_at_risk,
+                "is_money": True,
+                "badge": f"-{tons_at_risk:,.0f} Tons",
+                "badge_color": "badge-red"
+            },
+            {
+                "title": "AI Recovery Rate",
+                "value": ai_recovery_pct,
+                "decimals": 0,
+                "suffix": "%",
+                "badge": "MILP Dispatch Opt.",
+                "badge_color": "badge-green"
+            },
+            {
+                "title": "Revenue Protected (Annual)",
+                "value": revenue_protected,
+                "is_money": True,
+                "badge": f"+{tons_recovered:,.0f} Tons Recovered",
+                "highlight": True
+            }
+        ])
         
         fig2 = go.Figure(data=[
             go.Pie(labels=['Revenue Protected (AI)', 'Unrecovered Shortfall'], 
@@ -184,9 +274,20 @@ with main_col:
         
         st.markdown(f"**Optimization Details:** {fleet_dumpers} active dumpers operating across 6 mines. Dynamic routing saves **{idle_hours_saved_per_month_per_truck} idle engine hours** per truck per month. Fuel consumption: 35 L/hr @ ₹{diesel_cost}/L diesel.")
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Monthly Fleet Savings", format_inr(monthly_fleet_savings))
-        c2.metric("Annual Fleet OpEx Savings", format_inr(annual_fleet_savings), f"{annual_idle_hours_saved:,.0f} Hours Saved")
+        render_animated_kpi_row([
+            {
+                "title": "Monthly Fleet Savings",
+                "value": monthly_fleet_savings,
+                "is_money": True
+            },
+            {
+                "title": "Annual Fleet OpEx Savings",
+                "value": annual_fleet_savings,
+                "is_money": True,
+                "badge": f"{annual_idle_hours_saved:,.0f} Hours Saved",
+                "highlight": True
+            }
+        ])
 
     # --- Section 4: ESG & Sustainability ---
     with st.container(border=True):
@@ -198,10 +299,30 @@ with main_col:
         forest_preserved_exploration = 21.25 # fixed ha
         trees_preserved = 8500 # fixed trees
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("CO₂ Emissions Avoided", f"{co2_avoided_tons:,.1f} Tons", "Annual Diesel Reduction")
-        c2.metric("Forest Land Preserved", f"{forest_preserved_exploration:,.2f} Hectares", "Avoided Road Cutting")
-        c3.metric("Equivalent Trees Saved", f"{trees_preserved:,.0f} Trees", "Exploratory Pads Avoided")
+        render_animated_kpi_row([
+            {
+                "title": "CO₂ Emissions Avoided",
+                "value": co2_avoided_tons,
+                "decimals": 1,
+                "suffix": "Tons",
+                "badge": "Annual Diesel Reduction"
+            },
+            {
+                "title": "Forest Land Preserved",
+                "value": forest_preserved_exploration,
+                "decimals": 2,
+                "suffix": "Hectares",
+                "badge": "Avoided Road Cutting"
+            },
+            {
+                "title": "Equivalent Trees Saved",
+                "value": trees_preserved,
+                "decimals": 0,
+                "suffix": "Trees",
+                "badge": "Exploratory Pads Avoided",
+                "highlight": True
+            }
+        ])
 
     # --- Section 5: Executive ROI Summary ---
     with st.container(border=True):
@@ -209,13 +330,31 @@ with main_col:
         st.subheader("5. Executive Summary & Payback Period")
         
         total_annual_value = capex_saved + revenue_protected + annual_fleet_savings
-        implementation_capex = 5000000 # ₹50.00 Lakh
+        implementation_capex = 5000000 # ?50.00 Lakh
         
         payback_months = max(0.1, round((implementation_capex / total_annual_value) * 12, 1))
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Total Annual Value Created", format_inr(total_annual_value), "Capex + Rev + OpEx")
-        c2.metric("Implementation Capex", format_inr(implementation_capex), "Software & Cloud")
-        c3.metric("Payback Period", f"{payback_months:.1f} Months", f"~ {payback_months*30:.0f} Days")
+        render_animated_kpi_row([
+            {
+                "title": "Total Annual Value Created",
+                "value": total_annual_value,
+                "is_money": True,
+                "badge": "Capex + Rev + OpEx",
+                "highlight": True
+            },
+            {
+                "title": "Implementation Capex",
+                "value": implementation_capex,
+                "is_money": True,
+                "badge": "Software & Cloud"
+            },
+            {
+                "title": "Payback Period",
+                "value": payback_months,
+                "decimals": 1,
+                "suffix": "Months",
+                "badge": f"~ {payback_months*30:.0f} Days"
+            }
+        ])
         
         st.success(f"**Lightning Fast ROI:** With an estimated implementation Capex of **{format_inr(implementation_capex)}**, the MOIL-GeoSync ecosystem pays for itself in just **{payback_months:.1f} months**.")

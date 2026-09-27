@@ -1,0 +1,325 @@
+2026-09-26 02:42:13,813 [INFO] Initializing MOIL-GeoSync PU Learning Pipeline...
+2026-09-26 02:42:13,934 [INFO] --- Data Validation Started ---
+2026-09-26 02:42:13,934 [INFO] Dataset shape: (3000, 20)
+2026-09-26 02:42:13,949 [INFO] Target distribution: 999 Known Positives (1), 2001 Unlabeled (0)
+2026-09-26 02:42:13,949 [INFO] --- Data Validation Passed ---
+2026-09-26 02:42:13,949 [INFO] Creating spatial blocks of 0.1 degrees...
+2026-09-26 02:42:13,960 [INFO] Generated 241 unique spatial blocks.
+2026-09-26 02:42:13,960 [INFO] --- Starting Spatial Block Cross-Validation ---
+2026-09-26 02:42:27,403 [INFO] Fold 1 | Val Positives: 186 | Recall@0.5: 0.995
+2026-09-26 02:42:44,198 [INFO] Fold 2 | Val Positives: 195 | Recall@0.5: 0.995
+2026-09-26 02:43:00,110 [INFO] Fold 3 | Val Positives: 190 | Recall@0.5: 1.000
+2026-09-26 02:43:14,686 [INFO] Fold 4 | Val Positives: 204 | Recall@0.5: 1.000
+2026-09-26 02:43:31,964 [INFO] Fold 5 | Val Positives: 224 | Recall@0.5: 1.000
+2026-09-26 02:43:32,006 [INFO] Training Final Full Model on all data...
+2026-09-26 02:43:44,041 [INFO] Calculating Feature Importance...
+2026-09-26 02:43:48,165 [INFO] Saving models and predictions...
+2026-09-26 02:43:49,942 [INFO] Generating Maps...
+2026-09-26 02:43:51,037 [INFO] 
+
+==================================================
+MOIL-GEOSYNC FINAL PIPELINE REPORT
+==================================================
+Date generated: 2026-09-26 02:43:51
+
+1. DATASET SUMMARY
+-------------------
+Total samples: 3000
+Known positives (Label=1): 999
+Unlabeled samples (Label=0): 2001
+Spatial blocks created: 241
+
+2. FEATURE SUMMARY
+-------------------
+Spectral (Sentinel-2): iron_oxide_index, clay_index, ndvi
+Topography (SRTM DEM): elevation_m, slope_deg
+Geology (GSI-Simulated): rock_type_encoded, fault_distance_km, shear_zone_proximity_km
+Environment (APIs): rainfall_mm, soil_moisture
+
+3. METHODOLOGY
+-------------------
+Algorithm: Positive-Unlabeled (PU) Bagging Random Forest
+Number of PU Bags: 50
+Unlabeled Sampling Ratio: 1.0:1
+Spatial CV: GroupKFold (5 Folds) block size 0.1 deg
+
+4. EVALUATION (Spatial CV)
+-------------------
+Mean Recall on Known Positives: 0.998 +/- 0.003
+Mean PR-AUC (Relative to U): 0.856 +/- 0.033
+
+* Note: Ordinary binary accuracy and ROC-AUC are excluded as U samples are not confirmed negatives.
+
+5. FEATURE IMPORTANCE (Top 5)
+-------------------
+                Feature  Importance
+       iron_oxide_index    0.305351
+             clay_index    0.287940
+      fault_distance_km    0.258180
+      rock_type_encoded    0.038824
+shear_zone_proximity_km    0.020595
+* Note: Feature importance indicates model reliance, NOT geological causation.
+
+6. DOMAIN ADJUSTMENT (NDVI)
+-------------------
+Points penalized due to dense vegetation (NDVI > 0.7): 829
+Penalty factor: 0.7
+
+7. PROSPECTIVITY DISTRIBUTION
+-------------------
+HIGH (>= 0.8): 695 points
+MEDIUM (0.4 - 0.8): 486 points
+LOW (< 0.4): 1819 points
+
+8. REPRODUCIBILITY
+-------------------
+Random Seed: 42
+Outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+==================================================
+    
+2026-09-26 02:44:45,013 [INFO] Initializing MOIL-GeoSync PU Learning Pipeline...
+2026-09-26 02:44:45,046 [INFO] Renamed 'mn_occurrence' -> 'known_occurrence'
+2026-09-26 02:44:45,105 [INFO] Encoded 'rock_type' -> 'rock_type_encoded': {'Bichhua_Calc_Silicate': np.int64(0), 'Chorbahuli_Formation': np.int64(1), 'Dharwar_Schist': np.int64(2), 'Gondite_Horizon': np.int64(3), 'Iron_Ore_Group': np.int64(4), 'Mansar_Quartz_Mica_Schist': np.int64(5)}
+2026-09-26 02:44:45,105 [INFO] --- Data Validation Started ---
+2026-09-26 02:44:45,106 [INFO] Dataset shape: (3000, 20)
+2026-09-26 02:44:45,119 [INFO] Target distribution: 999 Known Positives (1), 2001 Unlabeled (0)
+2026-09-26 02:44:45,119 [INFO] --- Data Validation Passed ---
+2026-09-26 02:44:45,119 [INFO] Creating spatial blocks of 0.1 degrees...
+2026-09-26 02:44:45,128 [INFO] Generated 241 unique spatial blocks.
+2026-09-26 02:44:45,128 [INFO] --- Starting Spatial Block Cross-Validation ---
+2026-09-26 02:45:01,781 [INFO] Fold 1 | Val Positives: 186 | Recall@0.5: 0.995
+2026-09-26 02:45:14,186 [INFO] Fold 2 | Val Positives: 195 | Recall@0.5: 0.995
+2026-09-26 02:45:26,984 [INFO] Fold 3 | Val Positives: 190 | Recall@0.5: 1.000
+2026-09-26 02:45:41,531 [INFO] Fold 4 | Val Positives: 204 | Recall@0.5: 1.000
+2026-09-26 02:45:56,112 [INFO] Fold 5 | Val Positives: 224 | Recall@0.5: 1.000
+2026-09-26 02:45:56,155 [INFO] Training Final Full Model on all data...
+2026-09-26 02:46:09,249 [INFO] Calculating Feature Importance...
+2026-09-26 02:46:11,353 [INFO] Saving models and predictions...
+2026-09-26 02:46:13,413 [INFO] Generating Maps...
+2026-09-26 02:46:14,523 [INFO] 
+
+==================================================
+MOIL-GEOSYNC FINAL PIPELINE REPORT
+==================================================
+Date generated: 2026-09-26 02:46:14
+
+1. DATASET SUMMARY
+-------------------
+Total samples: 3000
+Known positives (Label=1): 999
+Unlabeled samples (Label=0): 2001
+Spatial blocks created: 241
+
+2. FEATURE SUMMARY
+-------------------
+Spectral (Sentinel-2): iron_oxide_index, clay_index, ndvi
+Topography (SRTM DEM): elevation_m, slope_deg
+Geology (GSI-Simulated): rock_type_encoded, fault_distance_km, shear_zone_proximity_km
+Environment (APIs): rainfall_mm, soil_moisture
+
+3. METHODOLOGY
+-------------------
+Algorithm: Positive-Unlabeled (PU) Bagging Random Forest
+Number of PU Bags: 50
+Unlabeled Sampling Ratio: 1.0:1
+Spatial CV: GroupKFold (5 Folds) block size 0.1 deg
+
+4. EVALUATION (Spatial CV)
+-------------------
+Mean Recall on Known Positives: 0.998 +/- 0.003
+Mean PR-AUC (Relative to U): 0.856 +/- 0.033
+
+* Note: Ordinary binary accuracy and ROC-AUC are excluded as U samples are not confirmed negatives.
+
+5. FEATURE IMPORTANCE (Top 5)
+-------------------
+                Feature  Importance
+       iron_oxide_index    0.305351
+             clay_index    0.287940
+      fault_distance_km    0.258180
+      rock_type_encoded    0.038824
+shear_zone_proximity_km    0.020595
+* Note: Feature importance indicates model reliance, NOT geological causation.
+
+6. DOMAIN ADJUSTMENT (NDVI)
+-------------------
+Points penalized due to dense vegetation (NDVI > 0.7): 829
+Penalty factor: 0.7
+
+7. PROSPECTIVITY DISTRIBUTION
+-------------------
+HIGH (>= 0.8): 695 points
+MEDIUM (0.4 - 0.8): 486 points
+LOW (< 0.4): 1819 points
+
+8. REPRODUCIBILITY
+-------------------
+Random Seed: 42
+Outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+==================================================
+    
+2026-09-26 02:46:14,529 [INFO] All outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+2026-09-26 02:50:38,102 [INFO] Initializing MOIL-GeoSync PU Learning Pipeline...
+2026-09-26 02:50:38,245 [INFO] Encoded 'rock_type' -> 'rock_type_encoded': {'Bichhua_Calc_Silicate': np.int64(0), 'Chorbahuli_Formation': np.int64(1), 'Dharwar_Schist': np.int64(2), 'Gondite_Horizon': np.int64(3), 'Iron_Ore_Group': np.int64(4), 'Mansar_Quartz_Mica_Schist': np.int64(5)}
+2026-09-26 02:50:38,245 [INFO] --- Data Validation Started ---
+2026-09-26 02:50:38,245 [INFO] Dataset shape: (23957, 21)
+2026-09-26 02:50:38,261 [INFO] Target distribution: 3055 Known Positives (1), 20902 Unlabeled (0)
+2026-09-26 02:50:38,261 [INFO] --- Data Validation Passed ---
+2026-09-26 02:50:38,261 [INFO] Creating spatial blocks of 0.1 degrees...
+2026-09-26 02:50:38,281 [INFO] Generated 270 unique spatial blocks.
+2026-09-26 02:50:38,281 [INFO] --- Starting Spatial Block Cross-Validation ---
+2026-09-26 02:50:57,264 [INFO] Fold 1 | Val Positives: 573 | Recall@0.5: 0.899
+2026-09-26 02:51:17,908 [INFO] Fold 2 | Val Positives: 710 | Recall@0.5: 0.882
+2026-09-26 02:51:38,257 [INFO] Fold 3 | Val Positives: 565 | Recall@0.5: 0.874
+2026-09-26 02:52:02,113 [INFO] Fold 4 | Val Positives: 591 | Recall@0.5: 0.861
+2026-09-26 02:52:26,414 [INFO] Fold 5 | Val Positives: 616 | Recall@0.5: 0.873
+2026-09-26 02:52:26,582 [INFO] Training Final Full Model on all data...
+2026-09-26 02:52:48,610 [INFO] Calculating Feature Importance...
+2026-09-26 02:52:51,700 [INFO] Saving models and predictions...
+2026-09-26 02:52:54,575 [INFO] Generating Maps...
+2026-09-26 02:52:56,336 [INFO] 
+
+==================================================
+MOIL-GEOSYNC FINAL PIPELINE REPORT
+==================================================
+Date generated: 2026-09-26 02:52:56
+
+1. DATASET SUMMARY
+-------------------
+Total samples: 23957
+Known positives (Label=1): 3055
+Unlabeled samples (Label=0): 20902
+Spatial blocks created: 270
+
+2. FEATURE SUMMARY
+-------------------
+Spectral (Sentinel-2): iron_oxide_index, clay_index, ndvi
+Topography (SRTM DEM): elevation_m, slope_deg
+Geology (GSI-Simulated): rock_type_encoded, fault_distance_km, shear_zone_proximity_km
+Environment (APIs): rainfall_mm, soil_moisture
+
+3. METHODOLOGY
+-------------------
+Algorithm: Positive-Unlabeled (PU) Bagging Random Forest
+Number of PU Bags: 50
+Unlabeled Sampling Ratio: 1.0:1
+Spatial CV: GroupKFold (5 Folds) block size 0.1 deg
+
+4. EVALUATION (Spatial CV)
+-------------------
+Mean Recall on Known Positives: 0.878 +/- 0.014
+Mean PR-AUC (Relative to U): 0.712 +/- 0.031
+
+* Note: Ordinary binary accuracy and ROC-AUC are excluded as U samples are not confirmed negatives.
+
+5. FEATURE IMPORTANCE (Top 5)
+-------------------
+                Feature  Importance
+      rock_type_encoded    0.397998
+      fault_distance_km    0.223898
+shear_zone_proximity_km    0.112391
+       iron_oxide_index    0.093285
+            rainfall_mm    0.039167
+* Note: Feature importance indicates model reliance, NOT geological causation.
+
+6. DOMAIN ADJUSTMENT (NDVI)
+-------------------
+Points penalized due to dense vegetation (NDVI > 0.7): 292
+Penalty factor: 0.7
+
+7. PROSPECTIVITY DISTRIBUTION
+-------------------
+HIGH (>= 0.8): 3227 points
+MEDIUM (0.4 - 0.8): 1307 points
+LOW (< 0.4): 19423 points
+
+8. REPRODUCIBILITY
+-------------------
+Random Seed: 42
+Outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+==================================================
+    
+2026-09-26 02:52:56,338 [INFO] Pipeline Execution Completed Successfully!
+2026-09-26 02:52:56,338 [INFO] All outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+2026-09-26 13:33:33,046 [INFO] Initializing MOIL-GeoSync PU Learning Pipeline...
+2026-09-26 13:33:33,338 [INFO] Encoded 'rock_type' -> 'rock_type_encoded': {'Bichhua_Calc_Silicate': np.int64(0), 'Chorbahuli_Formation': np.int64(1), 'Dharwar_Schist': np.int64(2), 'Gondite_Horizon': np.int64(3), 'Iron_Ore_Group': np.int64(4), 'Mansar_Quartz_Mica_Schist': np.int64(5)}
+2026-09-26 13:33:33,338 [INFO] --- Data Validation Started ---
+2026-09-26 13:33:33,338 [INFO] Dataset shape: (23957, 21)
+2026-09-26 13:33:33,363 [INFO] Target distribution: 2233 Known Positives (1), 21724 Unlabeled (0)
+2026-09-26 13:33:33,363 [INFO] --- Data Validation Passed ---
+2026-09-26 13:33:33,363 [INFO] Creating spatial blocks of 0.1 degrees...
+2026-09-26 13:33:33,396 [INFO] Generated 270 unique spatial blocks.
+2026-09-26 13:33:33,396 [INFO] --- Starting Spatial Block Cross-Validation ---
+2026-09-26 13:33:55,898 [INFO] Fold 1 | Val Positives: 486 | Recall@0.5: 0.823
+2026-09-26 13:34:14,644 [INFO] Fold 2 | Val Positives: 384 | Recall@0.5: 0.818
+2026-09-26 13:34:29,777 [INFO] Fold 3 | Val Positives: 418 | Recall@0.5: 0.871
+2026-09-26 13:34:47,367 [INFO] Fold 4 | Val Positives: 525 | Recall@0.5: 0.777
+2026-09-26 13:35:06,190 [INFO] Fold 5 | Val Positives: 420 | Recall@0.5: 0.807
+2026-09-26 13:35:06,321 [INFO] Training Final Full Model on all data...
+2026-09-26 13:35:26,245 [INFO] Calculating Feature Importance...
+2026-09-26 13:35:30,466 [INFO] Saving models and predictions...
+2026-09-26 13:35:33,423 [INFO] Generating Maps...
+2026-09-26 13:35:35,508 [INFO] 
+
+==================================================
+MOIL-GEOSYNC FINAL PIPELINE REPORT
+==================================================
+Date generated: 2026-09-26 13:35:35
+
+1. DATASET SUMMARY
+-------------------
+Total samples: 23957
+Known positives (Label=1): 2233
+Unlabeled samples (Label=0): 21724
+Spatial blocks created: 270
+
+2. FEATURE SUMMARY
+-------------------
+Spectral (Sentinel-2): iron_oxide_index, clay_index, ndvi
+Topography (SRTM DEM): elevation_m, slope_deg
+Geology (GSI-Simulated): rock_type_encoded, fault_distance_km, shear_zone_proximity_km
+Environment (APIs): rainfall_mm, soil_moisture
+
+3. METHODOLOGY
+-------------------
+Algorithm: Positive-Unlabeled (PU) Bagging Random Forest
+Number of PU Bags: 50
+Unlabeled Sampling Ratio: 1.0:1
+Spatial CV: GroupKFold (5 Folds) block size 0.1 deg
+
+4. EVALUATION (Spatial CV)
+-------------------
+Mean Recall on Known Positives: 0.819 +/- 0.034
+Mean PR-AUC (Relative to U): 0.523 +/- 0.023
+
+* Note: Ordinary binary accuracy and ROC-AUC are excluded as U samples are not confirmed negatives.
+
+5. FEATURE IMPORTANCE (Top 5)
+-------------------
+                Feature  Importance
+      rock_type_encoded    0.325662
+      fault_distance_km    0.194318
+shear_zone_proximity_km    0.122872
+            elevation_m    0.104657
+            rainfall_mm    0.055866
+* Note: Feature importance indicates model reliance, NOT geological causation.
+
+6. DOMAIN ADJUSTMENT (NDVI)
+-------------------
+Points penalized due to dense vegetation (NDVI > 0.7): 292
+Penalty factor: 0.7
+
+7. PROSPECTIVITY DISTRIBUTION
+-------------------
+HIGH (>= 0.8): 2403 points
+MEDIUM (0.4 - 0.8): 4040 points
+LOW (< 0.4): 17514 points
+
+8. REPRODUCIBILITY
+-------------------
+Random Seed: 42
+Outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+==================================================
+    
+2026-09-26 13:35:35,510 [INFO] Pipeline Execution Completed Successfully!
+2026-09-26 13:35:35,510 [INFO] All outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs

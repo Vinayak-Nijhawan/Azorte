@@ -1,4 +1,12 @@
 import streamlit as st
+
+import sys
+import os
+# Add the project root to sys.path so we can import utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css, inject_kpi_animations, inject_volcano_animations
+load_css()
+
 import pandas as pd
 import os
 
@@ -21,7 +29,7 @@ except ImportError:
 st.markdown("""
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1>🤖 G-Sync AI Assistant</h1>
+        <h1><span class=\"material-symbols-rounded\">smart_toy</span> G-Sync AI Assistant</h1>
         <div class="fd-subtitle">Natural Language Analytics · Powered by Groq Llama-3</div>
     </div>
     <div class="fd-header-right">
@@ -48,12 +56,12 @@ with st.expander("Example Queries"):
 def load_csv(filename):
     path = os.path.join(DATA_DIR, filename)
     if os.path.exists(path):
-        return pd.read_csv(path)
+        return pd.read_csv(path, comment='#')
     return None
 
-df_prod = load_csv("production_dataset.csv")
+df_prod = load_csv("production_dataset_real.csv")
 df_prospect = load_csv("prospectivity_grid.csv")
-df_forecast = load_csv("production_forecast.csv")
+df_forecast = load_csv("production_forecast_real.csv")
 df_dispatch = load_csv("dispatch_plan.csv")
 df_alerts = load_csv("fleet_alerts.csv")
 
@@ -88,13 +96,22 @@ st.sidebar.markdown("""
         user-select: none !important;
         -webkit-user-select: none !important;
     }
-</style>
+
+        @media (prefers-color-scheme: light) {
+            .kpi-card { background: #F3F4F6 !important; border-color: #E5E7EB !important; color: #111827 !important; }
+            .kpi-card.highlight { background: linear-gradient(180deg, #F3F4F6 0%, #E5E7EB 100%) !important; }
+            .kpi-title { color: #6B7280 !important; }
+            .kpi-value { color: #111827 !important; }
+            body { color: #111827; }
+        }
+        </style>
+
 """, unsafe_allow_html=True)
 
 if GROQ_AVAILABLE:
     env_key = os.environ.get("GROQ_API_KEY", "")
     if env_key and env_key != "your_api_key_here":
-        st.sidebar.success("✅ Secure API Key loaded from environment.")
+        st.sidebar.success("<span class=\"material-symbols-rounded\">check_circle</span> Secure API Key loaded from environment.")
         api_key = env_key
     else:
         api_key = st.sidebar.text_input("Enter Groq API Key", type="password", help="Enter your Groq key to enable real LLM responses.")
@@ -140,12 +157,12 @@ def process_query(prompt):
     # 1. Risk/Shortfall
     if any(k in query for k in ['risk', 'shortfall', 'danger', 'problem']):
         data_to_use = df_forecast if df_forecast is not None else df_prod
-        if data_to_use is not None and 'shortfall_risk' in data_to_use.columns:
-            high_risk = data_to_use[data_to_use['shortfall_risk'] == 'High']
+        if data_to_use is not None and 'shortfall_risk__DERIVED' in data_to_use.columns:
+            high_risk = data_to_use[data_to_use['shortfall_risk__DERIVED'] == 'High']
             if not high_risk.empty:
                 mines = high_risk['mine_id'].unique()
                 response = f"Based on our MineFlow analysis, the following mines face high shortfall risk: {', '.join(mines)}."
-                return response, high_risk[['mine_id', 'month', 'year', 'shortfall_risk']]
+                return response, high_risk[['mine_id', 'month', 'year', 'shortfall_risk__DERIVED']]
             else:
                 return "Good news! Currently, no mines are flagged with high shortfall risk.", None
         return "I couldn't find risk forecast data.", None
@@ -188,8 +205,8 @@ def process_query(prompt):
     # 5. Compare/Best/Worst
     elif any(k in query for k in ['compare', 'best', 'worst', 'rank']):
         if df_prod is not None:
-            summary = df_prod.groupby('mine_id')['actual_production_tpd'].mean().reset_index()
-            summary = summary.sort_values(by='actual_production_tpd', ascending=False)
+            summary = df_prod.groupby('mine_id')['derived_actual_production_tpd__DERIVED'].mean().reset_index()
+            summary = summary.sort_values(by='derived_actual_production_tpd__DERIVED', ascending=False)
             best_mine = summary.iloc[0]['mine_id']
             worst_mine = summary.iloc[-1]['mine_id']
             return f"Comparing production across mines: **{best_mine}** has the highest average production, while **{worst_mine}** has the lowest.", summary
@@ -207,8 +224,8 @@ def process_query(prompt):
         if df_prod is not None:
             mine_filter = next((m for m in ['Mine_A', 'Mine_B', 'Mine_C'] if m.lower() in query), None)
             df_show = df_prod[df_prod['mine_id'] == mine_filter] if mine_filter else df_prod
-            heavy_rain = df_show[df_show['rainfall_mm'] > df_show['rainfall_mm'].mean()]
-            return f"Weather impact analysis{' for ' + mine_filter if mine_filter else ''}: Heavy rainfall months show notable dips in equipment availability and production.", heavy_rain[['mine_id', 'month', 'rainfall_mm', 'actual_production_tpd']]
+            heavy_rain = df_show[df_show['rainfall_mm__REAL'] > df_show['rainfall_mm__REAL'].mean()]
+            return f"Weather impact analysis{' for ' + mine_filter if mine_filter else ''}: Heavy rainfall months show notable dips in equipment availability and production.", heavy_rain[['mine_id', 'month', 'rainfall_mm__REAL', 'derived_actual_production_tpd__DERIVED']]
         return "Weather data unavailable.", None
 
     # 8. Help
@@ -238,3 +255,8 @@ if prompt := st.chat_input("Ask a question about the G-Sync system..."):
         st.markdown(response_text)
         if response_df is not None:
             st.dataframe(response_df, use_container_width=True)
+
+
+# --- Animations ---
+inject_kpi_animations()
+inject_volcano_animations()

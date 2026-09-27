@@ -23,7 +23,7 @@ prospectivity_dataset_path = os.path.join(DATA_DIR, 'prospectivity_dataset.csv')
 prospectivity_grid_path = os.path.join(DATA_DIR, 'prospectivity_grid.csv')
 
 print(f"Loading data from {prospectivity_dataset_path}...")
-df = pd.read_csv(prospectivity_dataset_path)
+df = pd.read_csv(prospectivity_dataset_path, comment='#')
 
 # Print initial verification
 print("Dataset Head:")
@@ -37,7 +37,7 @@ df['rock_type_encoded'] = le.fit_transform(df['rock_type'])
 features = ['iron_oxide_index', 'clay_index', 'ndvi', 'rock_type_encoded', 
             'fault_distance_km', 'shear_zone_proximity_km', 'elevation_m', 
             'slope_deg', 'rainfall_mm', 'soil_moisture']
-target = 'mn_occurrence'
+target = 'known_occurrence'
 
 # Spatial Block Cross-Validation
 # Block IDs based on 0.1 degree lat/lon quantization
@@ -48,7 +48,7 @@ df['block_id'] = df['lat_block'].astype(str) + '_' + df['lon_block'].astype(str)
 gkf = GroupKFold(n_splits=5)
 
 class PUBaggingRF:
-    def __init__(self, k_iterations=30, n_estimators=100, random_state=42):
+    def __init__(self, k_iterations=10, n_estimators=50, random_state=42):
         self.k_iterations = k_iterations
         self.n_estimators = n_estimators
         self.random_state = random_state
@@ -109,7 +109,7 @@ for train_idx, test_idx in gkf.split(df, groups=df['block_id']):
     X_train, y_train = train_df[features], train_df[target]
     X_test, y_test = test_df[features], test_df[target]
     
-    model = PUBaggingRF(k_iterations=30, n_estimators=100, random_state=42)
+    model = PUBaggingRF(k_iterations=5, n_estimators=30, random_state=42)
     model.fit(X_train, y_train)
     
     y_pred = model.predict(X_test, threshold=0.5)
@@ -129,7 +129,7 @@ print("\nTraining final model on all data...")
 X_all = df[features]
 y_all = df[target]
 
-final_model = PUBaggingRF(k_iterations=30, n_estimators=100, random_state=42)
+final_model = PUBaggingRF(k_iterations=5, n_estimators=30, random_state=42)
 final_model.fit(X_all, y_all)
 
 # 9. Save final model ensemble
