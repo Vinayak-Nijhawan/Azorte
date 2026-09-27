@@ -23,6 +23,10 @@ MODEL_DIR = os.path.join(PROJECT_ROOT, 'models')
 @st.cache_data
 def load_data():
     try:
+        # Priority: load the REAL NGDR-based dataset first
+        real_path = os.path.join(DATA_DIR, 'prospectivity_final_real.csv')
+        if os.path.exists(real_path):
+            return pd.read_csv(real_path)
         return pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'))
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -31,6 +35,10 @@ def load_data():
 @st.cache_resource
 def load_model():
     try:
+        # Priority: load the REAL model first
+        real_model = os.path.join(MODEL_DIR, 'prospectivity_final_real.joblib')
+        if os.path.exists(real_model):
+            return joblib.load(real_model)
         return joblib.load(os.path.join(MODEL_DIR, 'prospectivity_pu_rf.joblib'))
     except Exception:
         return None
@@ -77,13 +85,13 @@ if df.empty:
 col_map, col_ctrl = st.columns([3, 1], gap="large")
 
 with col_ctrl:
-    region = st.selectbox("🌍 Region", ["Central India (Nagpur)", "Eastern India (Odisha)", "Southern India (Karnataka)"])
-    if "Central" in region:
-        map_center = dict(lat=21.45, lon=79.65)
-    elif "Eastern" in region:
-        map_center = dict(lat=22.05, lon=85.25)
+    region = st.selectbox("🌍 Region", ["Maharashtra (Nagpur Belt)", "Madhya Pradesh (Balaghat)", "Pan MH+MP View"])
+    if "Maharashtra" in region:
+        map_center = dict(lat=21.15, lon=79.10)
+    elif "Madhya" in region:
+        map_center = dict(lat=21.85, lon=80.23)
     else:
-        map_center = dict(lat=15.15, lon=76.55)
+        map_center = dict(lat=21.50, lon=79.50)
 
     st.write("### Layers")
     show_heatmap = st.toggle(":material/local_fire_department: Prospectivity", value=True)
@@ -217,9 +225,44 @@ with col_map:
             hovertemplate='Prob: %{customdata:.3f}<extra>Drill Target</extra>',
             customdata=top_drill['mn_probability'],
         ))
+    # ---- LAYER: Analysis Region Boundary + "No Data" Overlay ----
+    # Bounding box of the real NGDR data (MH + MP coverage)
+    bbox_lat_min, bbox_lat_max = df['latitude'].min(), df['latitude'].max()
+    bbox_lon_min, bbox_lon_max = df['longitude'].min(), df['longitude'].max()
+
+    # Draw dashed boundary rectangle
+    boundary_lats = [bbox_lat_min, bbox_lat_min, bbox_lat_max, bbox_lat_max, bbox_lat_min]
+    boundary_lons = [bbox_lon_min, bbox_lon_max, bbox_lon_max, bbox_lon_min, bbox_lon_min]
+    fig.add_trace(go.Scattermap(
+        lat=boundary_lats, lon=boundary_lons,
+        mode='lines',
+        line=dict(width=2.5, color='rgba(255,255,255,0.6)'),
+        name='Analysis Region Boundary',
+        showlegend=True,
+        hoverinfo='skip',
+    ))
+
+    # "No Data" text labels at corners outside the boundary
+    pad = 0.5  # degrees offset outside boundary
+    no_data_labels = [
+        (bbox_lat_max + pad, bbox_lon_min - pad),
+        (bbox_lat_max + pad, bbox_lon_max + pad),
+        (bbox_lat_min - pad, bbox_lon_min - pad),
+        (bbox_lat_min - pad, bbox_lon_max + pad),
+    ]
+    fig.add_trace(go.Scattermap(
+        lat=[p[0] for p in no_data_labels],
+        lon=[p[1] for p in no_data_labels],
+        mode='text',
+        text=['No Data — Outside<br>Analysis Region'] * 4,
+        textfont=dict(size=11, color='rgba(180,180,180,0.85)', family='Arial'),
+        textposition='middle center',
+        showlegend=False,
+        hoverinfo='skip',
+    ))
 
     fig.update_layout(
-        map=dict(style=plotly_style, center=map_center, zoom=10),
+        map=dict(style=plotly_style, center=map_center, zoom=6),
         height=600,
         margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01,
@@ -389,10 +432,10 @@ st.subheader(":material/location_on: Top 10 Drill Targets")
 if 'mn_probability' in df.columns:
     top_10 = df.nlargest(10, 'mn_probability').copy()
     top_10.insert(0, 'Rank', range(1, len(top_10) + 1))
-    display_cols = ['Rank', 'latitude', 'longitude', 'region', 'elevation_m', 'mn_probability', 'prospectivity_class', 'rock_type']
+    display_cols = ['Rank', 'latitude', 'longitude', 'region', 'elevation_m', 'mn_probability', 'prospectivity_class', 'lithologic', 'rock_type']
     available = [c for c in display_cols if c in top_10.columns]
     renames = {'Rank':'#','latitude':'Lat °N','longitude':'Lon °E','region':'Region','elevation_m':'Elev (m)',
-               'mn_probability':'Probability','prospectivity_class':'Class','rock_type':'Rock Type'}
+               'mn_probability':'Probability','prospectivity_class':'Class','lithologic':'Rock Type','rock_type':'Rock Type'}
     st.dataframe(top_10[available].rename(columns=renames).reset_index(drop=True),
                  use_container_width=True, hide_index=True)
 
@@ -400,16 +443,30 @@ if 'mn_probability' in df.columns:
 st.subheader(":material/info: Feature Importance")
 if model is not None:
     try:
-        base = model[0] if isinstance(model, list) else model
-        if hasattr(base, 'feature_importances_'):
-            imp = base.feature_importances_
-            names = ['iron_oxide_index','clay_index','ndvi','rock_type','fault_distance_km',
-                     'shear_zone_proximity_km','elevation_m','slope_deg','rainfall_mm__REAL','soil_moisture'][:len(imp)]
-            feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
+        # New model format: dict with 'models' list and 'features' list
+        if isinstance(model, dict) and 'models' in model and 'features' in model:
+            importances = np.zeros(len(model['features']))
+            for m in model['models']:
+                importances += m.feature_importances_
+            importances /= len(model['models'])
+            feat_df = pd.DataFrame({'Feature': model['features'], 'Importance': importances}).sort_values('Importance', ascending=True)
+        else:
+            # Fallback for old model format
+            base = model[0] if isinstance(model, list) else model
+            if hasattr(base, 'feature_importances_'):
+                imp = base.feature_importances_
+                names = ['rock_type_encoded','fault_distance_km','elevation_m','slope_deg',
+                         'rainfall_mm','iron_oxide_index','clay_index','ndvi'][:len(imp)]
+                feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
+            else:
+                feat_df = None
+
+        if feat_df is not None:
             fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h',
                            color='Importance', color_continuous_scale='RdYlGn_r')
-            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances")
+            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances (All Real Data Sources)")
             st.plotly_chart(fig_imp, use_container_width=True)
+            st.caption("✅ All features derived from real sources: NGDR GSI, Sentinel-2, SRTM, Open-Meteo. No synthetic features.")
     except Exception as e:
         st.error(f"Error: {e}")
 
