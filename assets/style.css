@@ -271,7 +271,7 @@
        FD-HEADER (page banners)
        ================================================================ */
     .fd-header {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 8%, transparent) 0%, var(--secondary-background-color) 100%) !important;
+        background: #EBF2FA !important;
         border: 1px solid rgba(59,130,246,0.18) !important;
         border-radius: 14px !important;
         padding: 22px 26px !important;
@@ -283,6 +283,7 @@
         gap: 12px !important;
         position: relative !important;
         overflow: hidden !important;
+        border-left: 4px solid #FF9933 !important;
     }
     .fd-header::before {
         content: '';
@@ -294,12 +295,12 @@
     .fd-header-left h1 {
         font-size: 1.4rem !important;
         font-weight: 700 !important;
-        color: var(--text-color) !important;
+        color: #111827 !important;
         margin: 0 !important;
     }
     .fd-header-left .fd-subtitle {
         font-size: 0.78rem !important;
-        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
+        color: #4B5563 !important;
         margin-top: 3px !important;
     }
     .fd-header-right { display: flex !important; align-items: center !important; gap: 10px !important; flex-wrap: wrap !important; }
@@ -307,12 +308,12 @@
         display: inline-flex !important;
         align-items: center !important;
         gap: 5px !important;
-        background: color-mix(in srgb, var(--text-color) 5%, transparent) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: rgba(255, 255, 255, 0.6) !important;
+        border: 1px solid rgba(17, 24, 39, 0.15) !important;
         border-radius: 7px !important;
         padding: 4px 12px !important;
         font-size: 0.72rem !important;
-        color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
+        color: #374151 !important;
         font-weight: 500 !important;
         font-family: 'Inter', sans-serif !important;
     }
@@ -320,12 +321,12 @@
         display: inline-flex !important;
         align-items: center !important;
         gap: 6px !important;
-        background: rgba(16, 185, 129,0.07) !important;
-        border: 1px solid rgba(16, 185, 129,0.25) !important;
+        background: rgba(16, 185, 129, 0.1) !important;
+        border: 1px solid rgba(16, 185, 129, 0.3) !important;
         border-radius: 7px !important;
         padding: 4px 12px !important;
         font-size: 0.72rem !important;
-        color: #34D399 !important;
+        color: #059669 !important;
         font-weight: 600 !important;
         font-family: 'Inter', sans-serif !important;
     }

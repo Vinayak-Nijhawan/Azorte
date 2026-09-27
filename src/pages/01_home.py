@@ -29,17 +29,19 @@ st.markdown("""
     align-items: center;
     padding: 24px 32px;
     margin-bottom: 32px;
+    background: #EBF2FA !important;
+    border-left: 4px solid #FF9933 !important;
 }
 .header-titles h1 {
     font-size: 2.4rem !important;
     font-weight: 800 !important;
-    color: var(--text-color) !important;
+    color: #111827 !important;
     margin: 0 0 4px 0 !important;
     letter-spacing: -0.02em;
 }
 .header-titles p {
     font-size: 1.05rem !important;
-    color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
+    color: #4B5563 !important;
     margin: 0 !important;
     font-weight: 400;
 }
