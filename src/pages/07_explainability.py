@@ -172,8 +172,7 @@ with tab1:
                               xaxis_title="False Positive Rate", yaxis_title="True Positive Rate")
         st.plotly_chart(fig_roc, use_container_width=True)
 
-    # ---- PR CURVE + CV BARS ----
-    col3, col4 = st.columns(2)
+    col3, col4 = st.columns([1, 1])
 
     with col3:
         precision, recall, _ = precision_recall_curve(y_test, y_proba)
@@ -182,16 +181,21 @@ with tab1:
         fig_pr.add_trace(go.Scatter(x=recall, y=precision, mode='lines',
                                      name=f'PR (AUC = {pr_auc:.4f})', line=dict(color='#2ecc71', width=3)))
         fig_pr.update_layout(height=400, title=f"Precision-Recall (AUC = {pr_auc:.4f})",
-                             xaxis_title="Recall", yaxis_title="Precision")
+                             xaxis_title="Recall", yaxis_title="Precision",
+                             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_pr, use_container_width=True)
 
     with col4:
         cv_df = pd.DataFrame({'Fold': [f'Fold {i+1}' for i in range(5)], 'F1 Score': cv_scores})
-        fig_cv = px.bar(cv_df, x='Fold', y='F1 Score', color='F1 Score',
-                        color_continuous_scale='RdYlGn', range_color=[0.8, 1.0])
-        fig_cv.add_hline(y=cv_scores.mean(), line_dash="dash", line_color="white",
-                         annotation_text=f"Mean: {cv_scores.mean():.4f}")
-        fig_cv.update_layout(height=400, title="5-Fold Cross Validation", showlegend=False)
+        fig_cv = px.bar(cv_df, x='Fold', y='F1 Score',
+                        color_discrete_sequence=['#3498db'])
+        fig_cv.add_hline(y=cv_scores.mean(), line_dash="dash", line_color="#e74c3c",
+                         annotation_text=f"Mean: {cv_scores.mean():.4f}",
+                         annotation_font_color="#e74c3c")
+        fig_cv.update_layout(height=400, title=f"5-Fold Cross Validation F1", showlegend=False,
+                             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                             yaxis=dict(range=[0, 1.05]))
+        fig_cv.update_traces(marker_line_color='rgba(0,0,0,0.2)', marker_line_width=1)
         st.plotly_chart(fig_cv, use_container_width=True)
 
     # ---- CLASSIFICATION REPORT ----

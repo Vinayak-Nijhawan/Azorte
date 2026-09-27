@@ -466,7 +466,6 @@ summary::-webkit-details-marker {{ display: none; }}
         </div>
     </div>
 </div>
-</div>
 """, unsafe_allow_html=True)
 
 # --- JavaScript Injection for Search Navigation ---
@@ -483,26 +482,28 @@ function setupSearch() {
             if (!val) return;
             val = val.toLowerCase();
             let searchStr = val;
-            if (val.includes('prospect')) searchStr = 'prospectivity';
+            if (val.includes('prospect')) searchStr = 'geoprospect';
             if (val.includes('product')) searchStr = 'production';
             if (val.includes('fleet')) searchStr = 'fleet';
-            if (val.includes('simulator') || val.includes('what')) searchStr = 'what_if';
+            if (val.includes('simulator') || val.includes('what')) searchStr = 'what-if';
             if (val.includes('roi') || val.includes('financ')) searchStr = 'financial';
             if (val.includes('shap') || val.includes('explain')) searchStr = 'explainability';
-            if (val.includes('ai') || val.includes('assistant')) searchStr = 'ai assistant';
+            if (val.includes('ai') || val.includes('assistant')) searchStr = 'g-sync ai';
 
-            const links = Array.from(doc.querySelectorAll('[data-testid="stPageLink-NavLink"]'));
-            const targetLink = links.find(a => a.textContent.toLowerCase().includes(searchStr));
+            const links = Array.from(doc.querySelectorAll('[data-testid="stPageLink"]'));
+            const targetLink = links.find(el => el.textContent.toLowerCase().includes(searchStr));
             if (targetLink) {
                 targetLink.click();
             }
         }
 
-        searchInput.addEventListener('change', (e) => handleSearch(e.target.value));
+        searchInput.addEventListener('change', (e) => { e.stopPropagation(); handleSearch(e.target.value); });
         searchInput.addEventListener('keydown', (e) => {
+            e.stopPropagation(); // Prevents Streamlit's global shortcut listener from crashing
             if (e.key === 'Enter') handleSearch(e.target.value);
         });
         searchInput.addEventListener('input', (e) => {
+            e.stopPropagation();
             const options = ["Prospectivity Map", "Production Forecast", "Fleet Optimization", "What-If Simulator", "Financial ROI", "Explainability", "AI Assistant"];
             if (options.includes(e.target.value)) {
                 handleSearch(e.target.value);

@@ -45,7 +45,7 @@ with st.sidebar:
     st.caption("Intelligence Platform")
     
     with st.container(border=True):
-        st.markdown("**Workspace:** Team Azorte")
+        st.markdown("**Workspace:** Team Vinayak")
     
     # 2. NAVIGATION
     st.caption("COMMAND CENTER")

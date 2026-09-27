@@ -109,9 +109,9 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 if GROQ_AVAILABLE:
-    env_key = os.environ.get("GROQ_API_KEY", "")
+    env_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
     if env_key and env_key != "your_api_key_here":
-        st.sidebar.success("<span class=\"material-symbols-rounded\">check_circle</span> Secure API Key loaded from environment.")
+        st.sidebar.success("✅ Secure API Key loaded.")
         api_key = env_key
     else:
         api_key = st.sidebar.text_input("Enter Groq API Key", type="password", help="Enter your Groq key to enable real LLM responses.")
