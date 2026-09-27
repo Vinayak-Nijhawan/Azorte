@@ -15,10 +15,17 @@ import os
 # --- DATA LOADING ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-MOIL_MINES = [
+MOIL_MINES_PREFIXED = [
     "Mine_A_Dongri_Buzurg", "Mine_B_Chikla", "Mine_C_Munsar",
     "Mine_D_Balaghat", "Mine_E_Kandri", "Mine_F_Gumgaon",
 ]
+MOIL_MINES_SHORT = [
+    "Dongri_Buzurg", "Chikla", "Munsar",
+    "Balaghat", "Kandri", "Gumgaon",
+    "Beldongri", "Sitapatore", "Tirodi", "Ukwa",
+]
+# Match whichever naming convention the data uses
+MOIL_MINES = MOIL_MINES_PREFIXED + MOIL_MINES_SHORT
 
 @st.cache_data
 def load_project_data():

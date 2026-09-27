@@ -60,10 +60,16 @@ def load_csv(filename):
     return None
 
 df_prod = load_csv("production_dataset_real.csv")
-df_prospect = load_csv("prospectivity_grid.csv")
+df_prospect = load_csv("prospectivity_final_real.csv")
+if df_prospect is None:
+    df_prospect = load_csv("prospectivity_grid.csv")
 df_forecast = load_csv("production_forecast_real.csv")
-df_dispatch = load_csv("dispatch_plan.csv")
-df_alerts = load_csv("fleet_alerts.csv")
+df_dispatch = load_csv("dispatch_plan_real.csv")
+if df_dispatch is None:
+    df_dispatch = load_csv("dispatch_plan.csv")
+df_alerts = load_csv("fleet_alerts_real.csv")
+if df_alerts is None:
+    df_alerts = load_csv("fleet_alerts.csv")
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -128,23 +134,89 @@ else:
 def process_query(prompt):
     query = prompt.lower()
     
-    # Context building
+    # ---- Build rich context from actual data ----
     ctx_mines = df_prod['mine_id'].nunique() if df_prod is not None else 0
-    ctx_prospect = len(df_prospect[df_prospect['prospectivity_class'] == 'High']) if df_prospect is not None and 'prospectivity_class' in df_prospect.columns else 0
-    
+    mine_list = ', '.join(df_prod['mine_id'].unique().tolist()) if df_prod is not None else 'N/A'
+
+    # Per-mine avg production
+    mine_stats = ""
+    if df_prod is not None and 'derived_actual_production_tpd__DERIVED' in df_prod.columns:
+        avg_tpd = df_prod.groupby('mine_id')['derived_actual_production_tpd__DERIVED'].mean()
+        mine_stats = "\n".join([f"  - {m}: {v:.0f} TPD avg" for m, v in avg_tpd.items()])
+    elif df_prod is not None and 'actual_production_tpd' in df_prod.columns:
+        avg_tpd = df_prod.groupby('mine_id')['actual_production_tpd'].mean()
+        mine_stats = "\n".join([f"  - {m}: {v:.0f} TPD avg" for m, v in avg_tpd.items()])
+
+    # Prospectivity summary
+    prosp_summary = ""
+    if df_prospect is not None and 'prospectivity_class' in df_prospect.columns:
+        counts = df_prospect['prospectivity_class'].value_counts()
+        high_c = int(counts.get('High', 0))
+        med_c = int(counts.get('Medium', 0))
+        low_c = int(counts.get('Low', 0))
+        prosp_summary = f"High: {high_c}, Medium: {med_c}, Low: {low_c} (Total: {len(df_prospect)} grid points)"
+
+    # Forecast risk summary
+    risk_summary = ""
+    if df_forecast is not None and 'shortfall_risk' in df_forecast.columns:
+        high_risk_mines = df_forecast[df_forecast['shortfall_risk'] == 'High']['mine_id'].unique().tolist()
+        risk_summary = f"Mines with High shortfall risk in 2026 forecast: {', '.join(high_risk_mines) if high_risk_mines else 'None'}"
+
     if api_key:
         try:
             client = Groq(api_key=api_key)
-            system_prompt = f"""You are G-Sync AI, an expert mining analytics assistant for MOIL-GeoSync.
-            Current System Context:
-            - Tracking {ctx_mines} active mines.
-            - Identified {ctx_prospect} high prospectivity zones.
-            Answer the user's query concisely and professionally based on this context and general mining knowledge.
-            """
+            system_prompt = f"""You are G-Sync AI, the intelligent assistant for MOIL-GeoSync (G-Sync) - an AI-powered manganese mining intelligence platform built for MOIL Limited, India's largest manganese producer.
+
+PROJECT CONTEXT:
+- Built for Smart India Hackathon (SIH) 2026, Problem Statement 26009
+- Team Azorte, led by Vinayak Nijhawan
+- Platform modules: GeoProspect AI (mineral exploration), MineFlow Optimizer (production forecasting + fleet dispatch), Financial ROI Analysis
+
+MOIL MINES TRACKED ({ctx_mines} mines, real data 2016-2025):
+{mine_stats}
+
+Mines: {mine_list}
+- Balaghat (MP): Largest opencast mine, ~1028 TPD avg
+- Dongri_Buzurg (MH): Largest underground mine, ~433 TPD avg
+- Chikla, Munsar, Kandri, Gumgaon (MH): Nagpur-Bhandara belt
+- Tirodi, Ukwa, Sitapatore, Beldongri (MP/MH): Smaller operations
+
+GEOPROSPECT AI (Manganese Prospectivity Mapping):
+- Study area: Nagpur-Bhandara-Balaghat manganese belt + MP regions
+- {prosp_summary}
+- Features: Sentinel-2 spectral indices (NDVI, Iron Oxide, Clay), GSI geology (rock_type, fault_distance_km), elevation, rainfall
+- Model: PU Bagging Random Forest with Spatial Block Cross-Validation
+
+MINEFLOW OPTIMIZER (Production Forecasting):
+- Model: Gradient Boosting Regressor, R2 = 0.978, MAE = 18.13 TPD
+- Forecasts 2026 production under 3 weather scenarios (Normal, High Rainfall, Low Rainfall)
+- {risk_summary}
+- Monsoon months (Jun-Sep) cause 15-30% production dips due to equipment availability and haul road degradation
+
+FLEET DISPATCH:
+- MILP (Mixed Integer Linear Programming) optimizer using Google OR-Tools
+- Optimizes dumper-to-shovel assignment per mine per month
+- Considers weather penalties, equipment availability, crusher capacity constraints
+
+FINANCIAL ROI:
+- Exploration savings: AI-guided drilling reduces 85 unnecessary boreholes (saves ~12.75 Cr)
+- Production revenue protection via shortfall prediction
+- Fleet optimization reduces idle costs and diesel consumption
+- ESG: CO2 reduction from optimized routes, reduced deforestation from targeted exploration
+
+INSTRUCTIONS:
+- Answer in clean, professional language. Use proper paragraphs.
+- NEVER output HTML tags like <br>, <p>, <div> etc. Use newlines for line breaks.
+- Use markdown formatting (bold, bullet points, headers) for readability.
+- When discussing specific mines, use their actual names from the data.
+- Base answers on the real data context above. If asked something outside your data, say so clearly.
+- Keep responses focused and concise (3-5 paragraphs max).
+- All production numbers are in TPD (Tonnes Per Day).
+"""
             
             # Format chat history for Groq
             messages = [{"role": "system", "content": system_prompt}]
-            for msg in st.session_state.messages[-5:]: # Keep last 5 messages for context
+            for msg in st.session_state.messages[-5:]:
                 if msg["role"] in ["user", "assistant"]:
                     messages.append({"role": msg["role"], "content": msg["content"]})
                     
@@ -154,7 +226,13 @@ def process_query(prompt):
                 messages=messages,
                 model="openai/gpt-oss-20b",
             )
-            return chat_completion.choices[0].message.content, None
+            response = chat_completion.choices[0].message.content
+            # Clean any HTML tags that the LLM might generate
+            response = response.replace('<br>', '\n').replace('<br/>', '\n').replace('<br />', '\n')
+            response = response.replace('<p>', '\n').replace('</p>', '\n')
+            response = response.replace('<b>', '**').replace('</b>', '**')
+            response = response.replace('<i>', '*').replace('</i>', '*')
+            return response, None
         except Exception as e:
             return f"Error communicating with Groq API: {e}. Falling back to rule-based responses.", None
     
