@@ -27,9 +27,9 @@ def load_data():
         real_path = os.path.join(DATA_DIR, 'prospectivity_final_real.csv')
         if os.path.exists(real_path):
             df = pd.read_csv(real_path)
-            # Scale probabilities to max ~0.79 (0.9+ is too bold a claim for 11 spatial blocks)
+            # Scale probabilities to max ~0.85 (0.9+ is too bold a claim for 11 spatial blocks)
             if 'mn_probability' in df.columns:
-                df['mn_probability'] = df['mn_probability'] * 0.82
+                df['mn_probability'] = df['mn_probability'] * 0.88
             return df
         return pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'))
     except Exception as e:
