@@ -22,6 +22,7 @@ MODEL_DIR = os.path.join(PROJECT_ROOT, 'models')
 
 @st.cache_data
 def load_data():
+    # Cache busted to load new mn_probability
     try:
         return pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'))
     except Exception as e:
@@ -75,13 +76,13 @@ if df.empty:
 col_map, col_ctrl = st.columns([3, 1], gap="large")
 
 with col_ctrl:
-    region = st.selectbox("🌍 Region", ["Central India (Nagpur)", "Eastern India (Odisha)", "Southern India (Karnataka)"])
+    region = st.selectbox("🌍 Region", ["Central India (Nagpur)", "Madhya Pradesh (Balaghat)"])
     if "Central" in region:
         map_center = dict(lat=21.45, lon=79.65)
-    elif "Eastern" in region:
-        map_center = dict(lat=22.05, lon=85.25)
+    elif "Madhya" in region:
+        map_center = dict(lat=21.98, lon=80.42)
     else:
-        map_center = dict(lat=15.15, lon=76.55)
+        map_center = dict(lat=21.45, lon=79.65)
 
     st.write("### Layers")
     show_heatmap = st.toggle("🔥 Prospectivity", value=True)
@@ -118,9 +119,9 @@ with col_map:
         
         # Color mapping: Low=blue, Medium=yellow, High=red
         def prob_to_color(p):
-            if p >= 0.8:
+            if p >= 0.7:
                 return 'rgba(220,30,30,0.85)'    # Red - HIGH
-            elif p >= 0.6:
+            elif p >= 0.55:
                 return 'rgba(255,140,0,0.75)'     # Orange
             elif p >= 0.4:
                 return 'rgba(255,220,50,0.65)'     # Yellow - MEDIUM
@@ -176,19 +177,16 @@ with col_map:
             (21.850, 80.228, "Balaghat Mine", "Central"),
             (21.400, 79.267, "Kandri Mine", "Central"),
             (21.400, 78.983, "Gumgaon Mine", "Central"),
-            # Odisha (Joda-Barbil belt)
-            (22.010, 85.437, "Joda East Mine", "Odisha"),
-            (22.100, 85.250, "Bamebari Mine", "Odisha"),
-            # Karnataka (Sandur schist belt)
-            (15.083, 76.550, "Sandur Mine", "Karnataka"),
-            (15.250, 76.350, "Hospet Mine", "Karnataka"),
+            # Madhya Pradesh (Balaghat belt)
+            (21.974, 80.385, "Lugma Mine", "Madhya Pradesh"),
+            (21.986, 80.457, "Ukwa Mine", "Madhya Pradesh"),
         ]
         
         m_lats = [m[0] for m in mines_data]
         m_lons = [m[1] for m in mines_data]
         m_names = [m[2] for m in mines_data]
         m_regions = [m[3] for m in mines_data]
-        m_colors = ['red' if r == 'Central' else 'cyan' if r == 'Odisha' else 'lime' for r in m_regions]
+        m_colors = ['red' if r == 'Central' else 'cyan' if r == 'Madhya Pradesh' else 'lime' for r in m_regions]
         
         fig.add_trace(go.Scattermap(
             lat=m_lats, lon=m_lons,
@@ -202,7 +200,7 @@ with col_map:
 
     # ---- LAYER 5: Drilling Priority Zones ----
     if show_drill and 'mn_probability' in df.columns:
-        top_drill = df[df['mn_probability'] > 0.8].nlargest(25, 'mn_probability')
+        top_drill = df[df['mn_probability'] > 0.7].nlargest(25, 'mn_probability')
         fig.add_trace(go.Scattermap(
             lat=top_drill['latitude'], lon=top_drill['longitude'],
             mode='markers',
@@ -232,12 +230,10 @@ st.subheader("Target Statistics")
 
 # Add region column to df for filtering
 def get_region(lat, lon):
-    if lat >= 21.0 and lat <= 22.0 and lon >= 78.5 and lon <= 80.5:
+    if lat >= 21.0 and lat <= 22.0 and lon >= 78.5 and lon <= 80.2:
         return "Central India"
-    elif lat >= 21.5 and lon >= 84.5:
-        return "Odisha"
-    elif lat < 16.0:
-        return "Karnataka"
+    elif lat >= 21.8 and lon >= 80.2 and lon <= 80.6:
+        return "Madhya Pradesh"
     return "Other"
 
 if 'mn_probability' in df.columns:
@@ -248,8 +244,7 @@ if 'mn_probability' in df.columns:
     low_count    = int((df['mn_probability'] <= 0.3).sum())
 
     ci_high  = int((df[df['region'] == 'Central India']['mn_probability'] > 0.45).sum()) if len(df[df['region'] == 'Central India']) > 0 else 0
-    od_high  = int((df[df['region'] == 'Odisha']['mn_probability'] > 0.45).sum())        if len(df[df['region'] == 'Odisha']) > 0       else 0
-    kar_high = int((df[df['region'] == 'Karnataka']['mn_probability'] > 0.45).sum())     if len(df[df['region'] == 'Karnataka']) > 0    else 0
+    mp_high  = int((df[df['region'] == 'Madhya Pradesh']['mn_probability'] > 0.45).sum())        if len(df[df['region'] == 'Madhya Pradesh']) > 0       else 0
 
     st.markdown(f"""
 <style>
@@ -359,22 +354,12 @@ if 'mn_probability' in df.columns:
     </div>
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
-            <div class="geo-kpi-title">Odisha</div>
+            <div class="geo-kpi-title">Madhya Pradesh</div>
             <div class="geo-kpi-icon geo-icon-blue">🟦</div>
         </div>
-        <div class="geo-kpi-value">{od_high} targets</div>
+        <div class="geo-kpi-value">{mp_high} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-amber">Joda-Barbil Belt</span>
-        </div>
-    </div>
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header">
-            <div class="geo-kpi-title">Karnataka</div>
-            <div class="geo-kpi-icon geo-icon-lime">🟩</div>
-        </div>
-        <div class="geo-kpi-value">{kar_high} targets</div>
-        <div class="geo-kpi-footer">
-            <span class="geo-trend-green">Sandur Schist Belt</span>
+            <span class="geo-trend-amber">Balaghat Belt</span>
         </div>
     </div>
 </div>

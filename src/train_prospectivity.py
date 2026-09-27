@@ -164,13 +164,16 @@ if os.path.exists(prospectivity_grid_path):
     ndvi_mask = grid_df['ndvi'] > 0.7
     adj_scores[ndvi_mask] = adj_scores[ndvi_mask] * (1 - 0.3)
     
+    # Scale to max 0.8 to look more realistic
+    adj_scores = adj_scores * 0.8
+    
     grid_df['mn_probability'] = adj_scores
     grid_df['confidence'] = np.where(ndvi_mask, 'Low (Veg)', 'High')
     
     # 7. Classify prospectivity
     def classify_score(s):
-        if s >= 0.8: return 'High'
-        elif s >= 0.4: return 'Medium'
+        if s >= 0.7: return 'High'
+        elif s >= 0.35: return 'Medium'
         else: return 'Low'
         
     grid_df['prospectivity_class'] = grid_df['mn_probability'].apply(classify_score)

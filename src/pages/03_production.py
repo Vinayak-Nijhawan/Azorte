@@ -84,7 +84,7 @@ if not df_forecast.empty:
 avg_planned = mine_data['planned_production_tpd__DERIVED'].mean()
 avg_actual = mine_data['derived_actual_production_tpd__DERIVED'].mean()
 efficiency = (avg_actual / avg_planned * 100) if avg_planned > 0 else 0
-high_risk_months = (mine_data['shortfall_risk'] == 'High').sum()
+high_risk_months = (mine_data['shortfall_risk__DERIVED'] == 'High').sum()
 
 st.markdown(f"""
 <div class="geo-kpi-grid" style="grid-template-columns: repeat(4,1fr);">
@@ -179,7 +179,7 @@ st.plotly_chart(fig_bar, use_container_width=True)
 st.subheader("Risk Indicators (Latest Month)")
 
 latest = mine_data.iloc[-1]
-risk = str(latest.get('shortfall_risk', 'N/A'))
+risk = str(latest.get('shortfall_risk__DERIVED', 'N/A'))
 planned = latest.get('planned_production_tpd__DERIVED', 0)
 actual = latest.get('derived_actual_production_tpd__DERIVED', 0)
 shortfall = max(0, planned - actual) if pd.notnull(planned) and pd.notnull(actual) else 0
@@ -235,7 +235,7 @@ with col_rain:
 st.subheader("Shortfall Summary (Last 12 Months)")
 
 table_df = mine_data.tail(12)[['date', 'planned_production_tpd__DERIVED', 'derived_actual_production_tpd__DERIVED', 
-                                 'equipment_availability_pct__DERIVED', 'rainfall_mm__REAL', 'shortfall_risk']].copy()
+                                 'equipment_availability_pct__DERIVED', 'rainfall_mm__REAL', 'shortfall_risk__DERIVED']].copy()
 table_df['date'] = table_df['date'].dt.strftime('%b %Y')
 table_df.columns = ['Month', 'Planned (TPD)', 'Actual (TPD)', 'Equip Avail (%)', 'Rainfall (mm)', 'Risk']
 

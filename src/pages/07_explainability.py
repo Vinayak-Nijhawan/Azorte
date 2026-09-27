@@ -75,6 +75,7 @@ PROD_FEATURES = [
 
 @st.cache_data
 def load_all_data():
+    # Cache busted on 2026-09-27
     prospect_df = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_dataset.csv'), comment='#')
     prospect_grid = pd.read_csv(os.path.join(DATA_DIR, 'prospectivity_grid.csv'), comment='#')
     prod_df = pd.read_csv(os.path.join(DATA_DIR, 'production_dataset_real.csv'), comment='#')

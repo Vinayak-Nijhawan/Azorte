@@ -2,7 +2,7 @@
 MOIL-GeoSync - Stage 2
 Generates the prospectivity dataset (Real Spectral + Synthetic Geological/Label)
 and the production dataset (100% Synthetic).
-Expands data to 3 regions: Central India, Odisha, and Karnataka.
+Expands data to Central India and Madhya Pradesh.
 """
 
 import os
@@ -25,16 +25,12 @@ def main():
     lat_cen = np.random.uniform(21.0, 22.0, 1500)
     lon_cen = np.random.uniform(78.8, 80.5, 1500)
     
-    # Region 2: Eastern (Joda-Barbil, Odisha)
-    lat_east = np.random.uniform(21.8, 22.3, 750)
-    lon_east = np.random.uniform(85.0, 85.7, 750)
+    # Region 2: Madhya Pradesh (Balaghat)
+    lat_east = np.random.uniform(21.9, 22.1, 1500)
+    lon_east = np.random.uniform(80.2, 80.6, 1500)
     
-    # Region 3: Southern (Sandur-Bellary, Karnataka)
-    lat_south = np.random.uniform(14.8, 15.4, 750)
-    lon_south = np.random.uniform(76.2, 76.8, 750)
-    
-    lats = np.concatenate([lat_cen, lat_east, lat_south])
-    lons = np.concatenate([lon_cen, lon_east, lon_south])
+    lats = np.concatenate([lat_cen, lat_east])
+    lons = np.concatenate([lon_cen, lon_east])
     
     n_total = len(lats)
     df_spectral = pd.DataFrame({
@@ -55,10 +51,7 @@ def main():
     
     # Add synthetic columns
     def assign_rock_type(lat, lon):
-        if lat < 16.0: return 'Dharwar_Schist' # Karnataka
-        if lon > 84.0: return 'Iron_Ore_Group' # Odisha
-        
-        # Central India - Mapped to Sausar Group Stratigraphy (from G4 Report)
+        # Central India & MP - Mapped to Sausar Group Stratigraphy (from G4 Report)
         val = lat * 1.5 + lon
         if val > 111.5: return 'Mansar_Quartz_Mica_Schist' # Main host rock
         elif val > 111.0: return 'Gondite_Horizon'         # Mn bearing
@@ -75,9 +68,8 @@ def main():
     df_prospectivity['slope_deg'] = np.clip(df_prospectivity['slope_deg'], 0, 25)
     
     # Regional Rainfall adjustment
-    base_rain = np.where(df_prospectivity['longitude'] > 84.0, 1400, # High rain in Odisha
-                  np.where(df_prospectivity['latitude'] < 16.0, 600, # Low rain in Karnataka
-                           1000)) # Medium in Central
+    base_rain = np.where(df_prospectivity['longitude'] > 80.2, 1600, # MP
+                           1000) # Medium in Central
     df_prospectivity['rainfall_mm'] = base_rain + np.random.normal(0, 100, n_samples)
     df_prospectivity['rainfall_mm'] = np.clip(df_prospectivity['rainfall_mm'], 300, 2000)
     
@@ -98,17 +90,16 @@ def main():
     
     noise_mask = (base_labels == 1) & (np.random.rand(n_samples) < 0.15)
     base_labels[noise_mask] = 0
-    df_prospectivity['mn_occurrence'] = base_labels
+    df_prospectivity['known_occurrence'] = base_labels
     df_prospectivity['vegetation_masked'] = df_prospectivity['ndvi'] > 0.7
     
-    df_prospectivity_grid = df_prospectivity.drop(columns=['mn_occurrence'])
+    df_prospectivity_grid = df_prospectivity.drop(columns=['known_occurrence'])
     
     # 2. Generate production dataset (10 mines across 3 regions)
     mines = [
         'Mine_A_Dongri_Buzurg', 'Mine_B_Chikla', 'Mine_C_Munsar', 
         'Mine_D_Balaghat', 'Mine_E_Kandri', 'Mine_F_Gumgaon', # Central
-        'Mine_G_Joda_East', 'Mine_H_Bamebari', # Odisha
-        'Mine_I_Sandur', 'Mine_J_Hospet' # Karnataka
+        'Mine_G_Lugma', 'Mine_H_Ukwa' # Madhya Pradesh
     ]
     start_date = datetime(2016, 1, 1)
     months = 120 # 10 years (Jan 2016 - Dec 2025)
@@ -117,28 +108,23 @@ def main():
     
     for mine in mines:
         # Determine regional characteristics
-        is_odisha = mine in ['Mine_G_Joda_East', 'Mine_H_Bamebari']
-        is_karnataka = mine in ['Mine_I_Sandur', 'Mine_J_Hospet']
+        is_mp = mine in ['Mine_G_Lugma', 'Mine_H_Ukwa']
         
         for i in range(months):
             dt = start_date + pd.DateOffset(months=i)
             month = dt.month
             year = dt.year
             
-            planned_tpd = np.random.uniform(800, 2000) if is_odisha else np.random.uniform(500, 1500)
+            planned_tpd = np.random.uniform(300, 350) if is_mp else np.random.uniform(500, 1500)
             
             # Different monsoon impact
-            if is_odisha: monsoon_months = [6, 7, 8, 9, 10]
-            elif is_karnataka: monsoon_months = [7, 8, 9]
-            else: monsoon_months = [6, 7, 8, 9]
-            
+            monsoon_months = [6, 7, 8, 9]
             is_monsoon = month in monsoon_months
             
             equipment_availability = np.random.uniform(0.6, 0.8) if is_monsoon else np.random.uniform(0.8, 1.0)
             
             # Rainfall logic based on region
-            if is_odisha: base_rain_monsoon = np.random.uniform(300, 600)
-            elif is_karnataka: base_rain_monsoon = np.random.uniform(100, 250)
+            if is_mp: base_rain_monsoon = np.random.uniform(300, 600)
             else: base_rain_monsoon = np.random.uniform(200, 500)
             
             rainfall_mm = base_rain_monsoon if is_monsoon else np.random.uniform(0, 50)
@@ -204,8 +190,7 @@ def main():
     start_date_forecast = datetime(2026, 1, 1)
     
     for mine in mines:
-        is_odisha = mine in ['Mine_G_Joda_East', 'Mine_H_Bamebari']
-        is_karnataka = mine in ['Mine_I_Sandur', 'Mine_J_Hospet']
+        is_mp = mine in ['Mine_G_Lugma', 'Mine_H_Ukwa']
         
         last_actuals = df_production[df_production['mine_id'] == mine]['actual_production_tpd'].tail(3).values
         
@@ -214,17 +199,13 @@ def main():
             month = dt.month
             year = dt.year
             
-            if is_odisha: monsoon_months = [6, 7, 8, 9, 10]
-            elif is_karnataka: monsoon_months = [7, 8, 9]
-            else: monsoon_months = [6, 7, 8, 9]
-            
+            monsoon_months = [6, 7, 8, 9]
             is_monsoon = month in monsoon_months
             
-            planned_tpd = np.random.uniform(800, 2000) if is_odisha else np.random.uniform(500, 1500)
+            planned_tpd = 330 if is_mp else np.random.uniform(500, 1500)
             equipment_availability = 0.7 if is_monsoon else 0.9
             
-            if is_odisha: base_rain_monsoon = 450
-            elif is_karnataka: base_rain_monsoon = 150
+            if is_mp: base_rain_monsoon = 450
             else: base_rain_monsoon = 300
             
             rainfall_mm = base_rain_monsoon if is_monsoon else 10
@@ -265,7 +246,7 @@ def main():
     df_forecast.to_csv(os.path.join(data_dir, 'production_forecast.csv'), index=False)
     
     print("Stage 2 Data Generation Complete!")
-    print(f"Generated {len(df_prospectivity)} prospectivity records (3 Regions).")
+    print(f"Generated {len(df_prospectivity)} prospectivity records (2 Regions).")
     print(f"Generated {len(df_production)} production records ({len(mines)} Mines, 10 Years).")
     print(f"Generated {len(df_forecast)} forecast records (1 Year).")
 
