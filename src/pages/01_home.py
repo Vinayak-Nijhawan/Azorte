@@ -488,7 +488,7 @@ components.html("""
                 const pageMap = {
                     'Prospectivity Map': '02_prospectivity',
                     'Production Forecast': '03_production',
-                    'Fleet Optimization': '04_fleet',
+                    'Fleet Optimization': '04_fleet_dispatch',
                     'What-If Simulator': '06_what_if',
                     'Financial ROI': '09_financial',
                     'Explainability': '07_explainability'
@@ -512,7 +512,7 @@ components.html("""
 st.markdown("<div style='display: none;'>", unsafe_allow_html=True)
 st.page_link("src/pages/02_prospectivity.py", label="Hidden")
 st.page_link("src/pages/03_production.py", label="Hidden")
-st.page_link("src/pages/04_fleet.py", label="Hidden")
+st.page_link("src/pages/04_fleet_dispatch.py", label="Hidden")
 st.page_link("src/pages/06_what_if.py", label="Hidden")
 st.page_link("src/pages/09_financial.py", label="Hidden")
 st.page_link("src/pages/07_explainability.py", label="Hidden")
