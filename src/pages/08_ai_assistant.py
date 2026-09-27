@@ -109,7 +109,12 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 if GROQ_AVAILABLE:
-    env_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+    env_key = os.environ.get("GROQ_API_KEY", "")
     if env_key and env_key != "your_api_key_here":
         st.sidebar.success("✅ Secure API Key loaded.")
         api_key = env_key
