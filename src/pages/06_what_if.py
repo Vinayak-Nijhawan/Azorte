@@ -26,6 +26,14 @@ def load_data():
     hp = os.path.join(DATA_DIR, 'production_dataset_real.csv')
     forecast = pd.read_csv(fp, comment='#') if os.path.exists(fp) else pd.DataFrame()
     history = pd.read_csv(hp, comment='#') if os.path.exists(hp) else pd.DataFrame()
+    if not history.empty:
+        from sklearn.preprocessing import LabelEncoder
+        if 'mine_encoded' not in history.columns:
+            history['mine_encoded'] = LabelEncoder().fit_transform(history['mine_id'])
+        if 'state_encoded' not in history.columns and 'state__REAL' in history.columns:
+            history['state_encoded'] = LabelEncoder().fit_transform(history['state__REAL'])
+        if 'mine_type_encoded' not in history.columns and 'mine_type__REAL' in history.columns:
+            history['mine_type_encoded'] = LabelEncoder().fit_transform(history['mine_type__REAL'])
     return forecast, history
 
 @st.cache_resource
@@ -246,17 +254,15 @@ with control_dock:
                 'equipment_availability_pct__DERIVED', 'haul_road_condition__DERIVED', 
                 'blasting_days__DERIVED', 'high_rainfall_flag__DERIVED', 
                 'lag_1__DERIVED', 'lag_2__DERIVED', 'lag_3__DERIVED',
-                'crusher_capacity_tpd__ASSUMED', 'num_dumpers__ASSUMED', 'num_shovels__ASSUMED',
-                'month', 'mine_encoded'
+                'mine_share_pct__DERIVED', 'month', 'mine_encoded',
+                'state_encoded', 'mine_type_encoded'
             ]
             scenario = {f: float(row.get(f, 0)) for f in FEATURES}
             scenario.update({
                 'rainfall_mm__REAL': rain, 
                 'equipment_availability_pct__DERIVED': equip, 
                 'blasting_days__DERIVED': blast,
-                'haul_road_condition__DERIVED': road, 
-                'num_dumpers__ASSUMED': dump, 
-                'num_shovels__ASSUMED': shov
+                'haul_road_condition__DERIVED': road,
             })
             ml_pred = max(0, float(prod_model.predict(pd.DataFrame([scenario])[FEATURES])[0]))
 
