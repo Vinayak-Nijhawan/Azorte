@@ -318,7 +318,11 @@ if os.path.exists(live_path):
             elif efficiency_live >= 85:
                 st.warning(f"⚠️ **{selected_mine}** may see a **{100 - efficiency_live:.1f}%** shortfall. Consider pre-positioning water pumps and adjusting blasting schedules.")
             else:
-                st.error(f"🚨 **{selected_mine}** is at risk of a **{100 - efficiency_live:.1f}%** production shortfall due to heavy rainfall ({row['rainfall_mm_scenario']:.0f}mm projected). Activate monsoon contingency plan.")
+                rainfall = row.get('rainfall_mm_scenario', 0)
+                if rainfall > 150:
+                    st.error(f"🚨 **{selected_mine}** is at risk of a **{100 - efficiency_live:.1f}%** production shortfall due to heavy rainfall ({rainfall:.0f}mm projected). Activate monsoon contingency plan.")
+                else:
+                    st.error(f"🚨 **{selected_mine}** is at risk of a **{100 - efficiency_live:.1f}%** production shortfall based on current operational and environmental conditions. Activate contingency protocols.")
         
         # All mines summary
         st.subheader("All Mines — Live Risk Dashboard")
