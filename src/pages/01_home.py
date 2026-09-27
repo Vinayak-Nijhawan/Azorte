@@ -466,7 +466,23 @@ summary::-webkit-details-marker {{ display: none; }}
         </div>
     </div>
 </div>
+</div>
 """, unsafe_allow_html=True)
+
+# CSS to hide the utility page links we inject into the main body
+st.markdown("""
+<style>
+section.main div[data-testid="stPageLink"] { display: none !important; }
+</style>
+""", unsafe_allow_html=True)
+
+# Hidden native page links for JS to click on
+st.page_link("src/pages/02_prospectivity.py", label="Hidden")
+st.page_link("src/pages/03_production.py", label="Hidden")
+st.page_link("src/pages/04_fleet_dispatch.py", label="Hidden")
+st.page_link("src/pages/06_what_if.py", label="Hidden")
+st.page_link("src/pages/09_financial.py", label="Hidden")
+st.page_link("src/pages/07_explainability.py", label="Hidden")
 
 
 # --- JavaScript Injection for Search Navigation ---
@@ -496,7 +512,6 @@ components.html("""
                 
                 const targetScript = pageMap[val];
                 if (targetScript) {
-                    // Find the hidden st.page_link we generated and click it
                     const link = parentDoc.querySelector(`a[href$="${targetScript}"]`);
                     if (link) {
                         link.click();
@@ -507,16 +522,7 @@ components.html("""
     }, 500);
 </script>
 """, height=0)
-
-# Hidden native page links for JS to click on
-st.markdown("<div style='display: none;'>", unsafe_allow_html=True)
-st.page_link("src/pages/02_prospectivity.py", label="Hidden")
-st.page_link("src/pages/03_production.py", label="Hidden")
-st.page_link("src/pages/04_fleet_dispatch.py", label="Hidden")
-st.page_link("src/pages/06_what_if.py", label="Hidden")
-st.page_link("src/pages/09_financial.py", label="Hidden")
-st.page_link("src/pages/07_explainability.py", label="Hidden")
-st.markdown("</div>", unsafe_allow_html=True)
+# ------------------------------------------------
 # ------------------------------------------------
 
 # 3. Outcomes Section
