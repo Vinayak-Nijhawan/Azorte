@@ -12,6 +12,57 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+# --- DATA LOADING ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+MOIL_MINES = [
+    "Mine_A_Dongri_Buzurg", "Mine_B_Chikla", "Mine_C_Munsar",
+    "Mine_D_Balaghat", "Mine_E_Kandri", "Mine_F_Gumgaon",
+]
+
+@st.cache_data
+def load_project_data():
+    files = {
+        "forecast": "production_forecast_real.csv",
+        "dispatch": "dispatch_plan_real.csv",
+        "alerts": "fleet_alerts_real.csv",
+    }
+    dfs = {}
+    for key, fname in files.items():
+        path = os.path.join(DATA_DIR, fname)
+        if os.path.exists(path):
+            dfs[key] = pd.read_csv(path, comment="#")
+    return dfs
+
+dfs = load_project_data()
+
+tons_at_risk_dynamic = 72000
+fleet_dumpers_dynamic = 48
+annual_actionable_alerts = 150
+
+if "forecast" in dfs:
+    fc = dfs["forecast"]
+    target_col = 'baseline_tpd' if 'baseline_tpd' in fc.columns else 'planned_production_tpd'
+    pred_col = 'predicted_production_tpd'
+    if target_col in fc.columns and pred_col in fc.columns:
+        fc["shortfall_tpd"] = (fc[target_col] - fc[pred_col]).clip(lower=0)
+        fc["shortfall_tons_month"] = fc["shortfall_tpd"] * 30
+        fc_moil = fc[fc["mine_id"].isin(MOIL_MINES)] if 'mine_id' in fc.columns else fc
+        tons_at_risk_dynamic = float(fc_moil["shortfall_tons_month"].sum())
+
+if "dispatch" in dfs:
+    dp = dfs["dispatch"]
+    dp_moil = dp[dp["mine_id"].isin(MOIL_MINES)] if 'mine_id' in dp.columns else dp
+    if 'mine_id' in dp_moil.columns and 'dumper_id' in dp_moil.columns:
+        fleet_dumpers_dynamic = int(dp_moil.groupby("mine_id")["dumper_id"].nunique().sum())
+
+if "alerts" in dfs:
+    al = dfs["alerts"]
+    al_moil = al[al["mine_id"].isin(MOIL_MINES)] if 'mine_id' in al.columns else al
+    if 'alert_type' in al_moil.columns:
+        counts = al_moil["alert_type"].value_counts()
+        annual_actionable_alerts = int(counts.get("WARNING", 0)) + int(counts.get("CRITICAL", 0))
+# --------------------
 
 st.markdown("""
 <style>
@@ -148,10 +199,10 @@ main_col, controls_col = st.columns([3, 1], gap="medium")
 with controls_col:
     with st.container(border=True):
         st.subheader("Adjust Assumptions")
-        ore_price = st.slider("Manganese Ore Price (:material/currency_rupee:/ton)", 8000, 20000, 12000, 500)
+        ore_price = st.slider("Manganese Ore Price (:material/currency_rupee:/ton)", 6000, 15000, 9164, 50)
         drill_cost = st.slider("Exploration Drill Cost (:material/currency_rupee:/Site)", 1000000, 3000000, 1500000, 100000)
-        ai_recovery_pct = st.slider("AI Shortfall Recovery Rate (%)", 10, 40, 20, 5)
-        diesel_cost = st.slider("Diesel Cost per Litre (:material/currency_rupee:)", 80, 110, 95, 1)
+        ai_recovery_pct = st.slider("AI Shortfall Recovery Rate (%)", 5, 25, 12, 1)
+        diesel_cost = st.slider("Diesel Cost per Litre (:material/currency_rupee:)", 80.0, 110.0, 98.4, 0.1)
         idle_cost = st.slider("Idle Cost per Dumper/Hour (:material/currency_rupee:)", 3000, 8000, 5000, 500)
 
 
@@ -209,14 +260,14 @@ with main_col:
         st.markdown('<div class="badge-blue">MineFlow Optimizer</div>', unsafe_allow_html=True)
         st.subheader("2. Operational Revenue Protection")
         
-        tons_at_risk = 72000
+        tons_at_risk = tons_at_risk_dynamic
         revenue_at_risk = tons_at_risk * ore_price
         
         recovery_pct_dec = ai_recovery_pct / 100.0
         tons_recovered = tons_at_risk * recovery_pct_dec
         revenue_protected = revenue_at_risk * recovery_pct_dec
         
-        st.markdown(f"**Ground Truth Baseline:** 6 mines across 4 monsoon months experience an average shortfall of ~{tons_at_risk:,} tons total.")
+        st.markdown(f"**Ground Truth Baseline:** {len(MOIL_MINES)} mines across 4 monsoon months experience an average shortfall of ~{tons_at_risk:,.0f} tons total.")
         
         render_animated_kpi_row([
             {
@@ -263,16 +314,16 @@ with main_col:
         st.markdown('<div class="badge-blue">Dynamic Dispatch</div>', unsafe_allow_html=True)
         st.subheader("3. Fleet Optimization & Diesel Savings")
         
-        fleet_dumpers = 48
-        idle_hours_saved_per_month_per_truck = 2.5
-        dumper_hours_per_month = fleet_dumpers * idle_hours_saved_per_month_per_truck # 60
-        annual_idle_hours_saved = dumper_hours_per_month * 12 # 720
+        fleet_dumpers = fleet_dumpers_dynamic
+        annual_idle_hours_saved = annual_actionable_alerts * 2.5
+        dumper_hours_per_month = annual_idle_hours_saved / 12
+        idle_hours_saved_per_month_per_truck = dumper_hours_per_month / max(1, fleet_dumpers)
         
         # User defined formula
         monthly_fleet_savings = dumper_hours_per_month * ((35 * diesel_cost) + (idle_cost * 0.6))
         annual_fleet_savings = monthly_fleet_savings * 12
         
-        st.markdown(f"**Optimization Details:** {fleet_dumpers} active dumpers operating across 6 mines. Dynamic routing saves **{idle_hours_saved_per_month_per_truck} idle engine hours** per truck per month. Fuel consumption: 35 L/hr @ ₹{diesel_cost}/L diesel.")
+        st.markdown(f"**Optimization Details:** {fleet_dumpers} active dumpers operating across {len(MOIL_MINES)} mines. Dynamic routing saves **{idle_hours_saved_per_month_per_truck:.1f} idle engine hours** per truck per month based on {annual_actionable_alerts} historical critical alerts. Fuel consumption: 35 L/hr @ ₹{diesel_cost}/L diesel.")
         
         render_animated_kpi_row([
             {
