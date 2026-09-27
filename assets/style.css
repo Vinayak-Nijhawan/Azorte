@@ -18,11 +18,11 @@
        SIDEBAR BASE
        ================================================================ */
     section[data-testid="stSidebar"] {
-        background-color: var(--secondary-background-color) !important;
-        border-right: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent) !important;
+        background-color: #F3F4F6 !important;
+        border-right: 1px solid color-mix(in srgb, #111827 12%, transparent) !important;
     }
     section[data-testid="stSidebar"] > div:first-child {
-        background-color: var(--secondary-background-color) !important;
+        background-color: #F3F4F6 !important;
         padding-top: 0 !important;
         display: flex !important;
         flex-direction: column !important;
@@ -46,13 +46,13 @@
         align-items: center !important;
         gap: 12px !important;
         padding: 20px 16px 14px !important;
-        border-bottom: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent) !important;
-        background: var(--secondary-background-color) !important;
+        border-bottom: 1px solid color-mix(in srgb, #111827 12%, transparent) !important;
+        background: #F3F4F6 !important;
     }
     .sb-logo-icon {
         width: 40px !important;
         height: 40px !important;
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color) 100%) !important;
+        background: linear-gradient(135deg, #000080 0%, #000080 100%) !important;
         border-radius: 10px !important;
         display: flex !important;
         align-items: center !important;
@@ -64,14 +64,14 @@
     .sb-logo-title {
         font-size: 0.95rem !important;
         font-weight: 800 !important;
-        color: var(--text-color) !important;
+        color: #111827 !important;
         letter-spacing: 2px !important;
         font-family: 'Inter', sans-serif !important;
         line-height: 1.1 !important;
     }
     .sb-logo-sub {
         font-size: 0.67rem !important;
-        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
+        color: color-mix(in srgb, #111827 50%, transparent) !important;
         margin-top: 2px !important;
         font-family: 'Inter', sans-serif !important;
     }
@@ -83,8 +83,8 @@
         display: flex !important;
         align-items: center !important;
         gap: 10px !important;
-        background: color-mix(in srgb, var(--text-color) 12%, transparent) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: color-mix(in srgb, #111827 12%, transparent) !important;
+        border: 1px solid color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 10px !important;
         padding: 10px 12px !important;
         margin: 12px 10px !important;
@@ -95,7 +95,7 @@
     .sb-ws-avatar {
         width: 30px !important;
         height: 30px !important;
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-color)) !important;
+        background: linear-gradient(135deg, #000080, #000080) !important;
         border-radius: 7px !important;
         display: flex !important;
         align-items: center !important;
@@ -109,7 +109,7 @@
     .sb-ws-info { flex: 1 !important; min-width: 0 !important; }
     .sb-ws-label {
         font-size: 0.6rem !important;
-        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
+        color: color-mix(in srgb, #111827 50%, transparent) !important;
         font-weight: 600 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.8px !important;
@@ -117,12 +117,12 @@
     }
     .sb-ws-name {
         font-size: 0.82rem !important;
-        color: color-mix(in srgb, var(--text-color) 85%, transparent) !important;
+        color: color-mix(in srgb, #111827 85%, transparent) !important;
         font-weight: 600 !important;
         font-family: 'Inter', sans-serif !important;
     }
     .sb-ws-arrow {
-        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
+        color: color-mix(in srgb, #111827 50%, transparent) !important;
         font-size: 0.9rem !important;
     }
     
@@ -146,8 +146,8 @@
         bottom: 0 !important;
         left: 0 !important;
         width: 244px !important;
-        background: var(--secondary-background-color) !important;
-        border-top: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent) !important;
+        background: #F3F4F6 !important;
+        border-top: 1px solid color-mix(in srgb, #111827 12%, transparent) !important;
         z-index: 9999 !important;
     }
     .sb-status-bar {
@@ -172,12 +172,12 @@
     .sb-status-text {
         font-size: 0.75rem !important;
         font-weight: 600 !important;
-        color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
+        color: color-mix(in srgb, #111827 60%, transparent) !important;
         font-family: 'Inter', sans-serif !important;
     }
     .sb-status-sub {
         font-size: 0.63rem !important;
-        color: color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        color: color-mix(in srgb, #111827 20%, transparent) !important;
         font-family: 'Inter', sans-serif !important;
         margin-top: 1px !important;
     }
@@ -190,7 +190,7 @@
     .sb-user-avatar {
         width: 32px !important;
         height: 32px !important;
-        background: linear-gradient(135deg, var(--primary-color), #6366f1) !important;
+        background: linear-gradient(135deg, #000080, #6366f1) !important;
         border-radius: 50% !important;
         display: flex !important;
         align-items: center !important;
@@ -205,18 +205,18 @@
     .sb-user-name {
         font-size: 0.8rem !important;
         font-weight: 600 !important;
-        color: color-mix(in srgb, var(--text-color) 85%, transparent) !important;
+        color: color-mix(in srgb, #111827 85%, transparent) !important;
         font-family: 'Inter', sans-serif !important;
     }
     .sb-user-role {
         font-size: 0.63rem !important;
-        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
+        color: color-mix(in srgb, #111827 50%, transparent) !important;
         font-family: 'Inter', sans-serif !important;
         margin-top: 1px !important;
     }
     .sb-user-menu {
         font-size: 1rem !important;
-        color: color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        color: color-mix(in srgb, #111827 20%, transparent) !important;
         cursor: pointer !important;
         padding: 3px !important;
     }
@@ -224,42 +224,42 @@
     /* ================================================================
        HEADINGS & TYPOGRAPHY
        ================================================================ */
-    h1 { font-size: 2rem !important; font-weight: 700 !important; color: var(--text-color) !important; }
-    h2 { font-size: 1.6rem !important; font-weight: 700 !important; color: var(--text-color) !important; }
-    h3 { font-size: 1.2rem !important; font-weight: 600 !important; color: var(--text-color) !important; }
-    h4 { font-size: 1rem !important; font-weight: 600 !important; color: color-mix(in srgb, var(--text-color) 85%, transparent) !important; }
+    h1 { font-size: 2rem !important; font-weight: 700 !important; color: #111827 !important; }
+    h2 { font-size: 1.6rem !important; font-weight: 700 !important; color: #111827 !important; }
+    h3 { font-size: 1.2rem !important; font-weight: 600 !important; color: #111827 !important; }
+    h4 { font-size: 1rem !important; font-weight: 600 !important; color: color-mix(in srgb, #111827 85%, transparent) !important; }
     .stMarkdown p, .stMarkdown li {
         font-size: 0.93rem !important;
         line-height: 1.75 !important;
-        color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
+        color: color-mix(in srgb, #111827 60%, transparent) !important;
     }
     
     /* ================================================================
        METRIC CARDS
        ================================================================ */
     [data-testid="stMetric"] {
-        background: var(--background-color) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: #FFFFFF !important;
+        border: 1px solid color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 12px !important;
         padding: 18px 20px !important;
         transition: border-color 0.25s, transform 0.2s !important;
     }
     [data-testid="stMetric"]:hover {
-        border-color: var(--primary-color) !important;
+        border-color: #000080 !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important;
     }
     [data-testid="stMetricValue"] > div {
         font-size: 2rem !important;
         font-weight: 800 !important;
-        color: var(--text-color) !important;
+        color: #111827 !important;
         letter-spacing: -0.5px !important;
         font-family: 'Inter', sans-serif !important;
     }
     [data-testid="stMetricLabel"] > div > div > p {
         font-size: 0.75rem !important;
         font-weight: 600 !important;
-        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
+        color: color-mix(in srgb, #111827 50%, transparent) !important;
         text-transform: uppercase !important;
         letter-spacing: 0.6px !important;
     }
@@ -341,8 +341,8 @@
        HOVER CARDS
        ================================================================ */
     .hover-card {
-        background: var(--background-color) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: #FFFFFF !important;
+        border: 1px solid color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 12px !important;
         padding: 20px 22px !important;
         height: 160px !important;
@@ -353,7 +353,7 @@
         cursor: pointer !important;
     }
     .hover-card:hover {
-        border-color: var(--primary-color) !important;
+        border-color: #000080 !important;
         box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(59,130,246,0.2) !important;
         transform: translateY(-3px) !important;
     }
@@ -361,7 +361,7 @@
     .hover-card-title {
         font-size: 0.72rem !important;
         font-weight: 600 !important;
-        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
+        color: color-mix(in srgb, #111827 50%, transparent) !important;
         text-transform: uppercase !important;
         letter-spacing: 0.7px !important;
         margin-bottom: 10px !important;
@@ -370,23 +370,23 @@
     .hover-card-value {
         font-size: 2.2rem !important;
         font-weight: 800 !important;
-        color: var(--text-color) !important;
+        color: #111827 !important;
         letter-spacing: -0.5px !important;
         line-height: 1 !important;
     }
     .hover-card-text {
         font-size: 0.85rem !important;
         line-height: 1.65 !important;
-        color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
+        color: color-mix(in srgb, #111827 60%, transparent) !important;
     }
     
     /* ================================================================
        BUTTONS
        ================================================================ */
     .stButton > button {
-        background: color-mix(in srgb, var(--text-color) 8%, transparent) !important;
-        color: var(--text-color) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: color-mix(in srgb, #111827 8%, transparent) !important;
+        color: #111827 !important;
+        border: 1px solid color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 8px !important;
         padding: 8px 18px !important;
         font-weight: 600 !important;
@@ -395,8 +395,8 @@
         transition: background 0.2s, box-shadow 0.2s, transform 0.15s !important;
     }
     .stButton > button:hover {
-        background: color-mix(in srgb, var(--text-color) 12%, transparent) !important;
-        border-color: color-mix(in srgb, var(--text-color) 40%, transparent) !important;
+        background: color-mix(in srgb, #111827 12%, transparent) !important;
+        border-color: color-mix(in srgb, #111827 40%, transparent) !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
         transform: translateY(-1px) !important;
     }
@@ -408,13 +408,13 @@
        ================================================================ */
     [data-baseweb="tab-list"] {
         background: transparent !important;
-        border-bottom: 1px solid color-mix(in srgb, var(--text-color) 12%, transparent) !important;
+        border-bottom: 1px solid color-mix(in srgb, #111827 12%, transparent) !important;
     }
     [data-baseweb="tab"] {
         background: transparent !important;
         border: none !important;
         border-bottom: 2px solid transparent !important;
-        color: color-mix(in srgb, var(--text-color) 50%, transparent) !important;
+        color: color-mix(in srgb, #111827 50%, transparent) !important;
         font-size: 0.85rem !important;
         font-weight: 500 !important;
         padding: 10px 16px !important;
@@ -422,10 +422,10 @@
         transition: color 0.2s, border-color 0.2s !important;
         margin-bottom: -1px !important;
     }
-    [data-baseweb="tab"]:hover { color: color-mix(in srgb, var(--text-color) 60%, transparent) !important; }
+    [data-baseweb="tab"]:hover { color: color-mix(in srgb, #111827 60%, transparent) !important; }
     [aria-selected="true"][data-baseweb="tab"] {
-        color: var(--primary-color) !important;
-        border-bottom-color: var(--primary-color) !important;
+        color: #000080 !important;
+        border-bottom-color: #000080 !important;
         font-weight: 600 !important;
         background: transparent !important;
     }
@@ -437,17 +437,17 @@
     [data-testid="stTextInput"] input,
     [data-testid="stNumberInput"] input,
     [data-testid="stTextArea"] textarea {
-        background: var(--background-color) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: #FFFFFF !important;
+        border: 1px solid color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 8px !important;
-        color: var(--text-color) !important;
+        color: #111827 !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 0.875rem !important;
     }
     [data-baseweb="select"] > div:focus-within,
     [data-testid="stTextInput"] input:focus,
     [data-testid="stTextArea"] textarea:focus {
-        border-color: var(--primary-color) !important;
+        border-color: #000080 !important;
         box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
     }
     
@@ -455,8 +455,8 @@
        EXPANDER
        ================================================================ */
     [data-testid="stExpander"] {
-        background: var(--background-color) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: #FFFFFF !important;
+        border: 1px solid color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 10px !important;
         overflow: hidden !important;
         margin-bottom: 6px !important;
@@ -465,16 +465,16 @@
     [data-testid="stExpander"] summary span {
         font-size: 0.875rem !important;
         font-weight: 500 !important;
-        color: color-mix(in srgb, var(--text-color) 85%, transparent) !important;
+        color: color-mix(in srgb, #111827 85%, transparent) !important;
     }
-    [data-testid="stExpander"][open] { border-left: 2px solid var(--primary-color) !important; }
+    [data-testid="stExpander"][open] { border-left: 2px solid #000080 !important; }
     
     /* ================================================================
        ALERTS
        ================================================================ */
     [data-testid="stAlert"] {
         border-radius: 9px !important;
-        background: var(--secondary-background-color) !important;
+        background: #F3F4F6 !important;
         font-size: 0.875rem !important;
     }
     
@@ -482,17 +482,17 @@
        CHAT
        ================================================================ */
     [data-testid="stChatInput"] {
-        background: var(--background-color) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: #FFFFFF !important;
+        border: 1px solid color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 10px !important;
     }
     [data-testid="stChatInput"]:focus-within {
-        border-color: var(--primary-color) !important;
+        border-color: #000080 !important;
         box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
     }
     [data-testid="stChatMessage"] {
-        background: var(--background-color) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: #FFFFFF !important;
+        border: 1px solid color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 10px !important;
     }
     
@@ -500,19 +500,19 @@
        SCROLLBAR
        ================================================================ */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: var(--background-color); }
-    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-color) 20%, transparent); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
+    ::-webkit-scrollbar-track { background: #FFFFFF; }
+    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, #111827 20%, transparent); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #000080; }
     
     /* ================================================================
        PROGRESS BAR
        ================================================================ */
     [data-testid="stProgress"] > div > div > div > div {
-        background: linear-gradient(90deg, var(--primary-color), #60A5FA) !important;
+        background: linear-gradient(90deg, #000080, #60A5FA) !important;
         border-radius: 4px !important;
     }
     [data-testid="stProgress"] > div > div > div {
-        background: color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+        background: color-mix(in srgb, #111827 20%, transparent) !important;
         border-radius: 4px !important;
     }
     
@@ -532,43 +532,83 @@
     }
     
     
+
     /* ================================================================
-       SIDEBAR PAGE LINKS (Sleek Pills)
+       SIDEBAR PAGE LINKS — Dot-border pop-out animation (global)
        ================================================================ */
+    [data-testid="stSidebar"] [data-testid="stPageLink"] {
+        position: relative !important;
+        --dot-size: 4px;
+        --dot-color: rgba(0, 0, 128, 0.5);
+        --animation-speed: 0.3s;
+    }
     [data-testid="stSidebar"] [data-testid="stPageLink"] a {
         display: inline-flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
         gap: 12px !important;
-        background: transparent !important;
-        border: none !important;
-        border-radius: 6px !important;
+        background-color: #F3F4F6 !important;
+        border: 1px solid rgba(17, 24, 39, 0.12) !important;
+        border-radius: 8px !important;
         padding: 10px 14px !important;
-        color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
+        color: #374151 !important;
         font-weight: 500 !important;
-        font-size: 0.9rem !important;
-        transition: all 0.2s !important;
+        font-size: 0.88rem !important;
         text-decoration: none !important;
         width: 100% !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+        transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.2s ease !important;
+        position: relative !important;
+        z-index: 10 !important;
     }
-    [data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
-        background: color-mix(in srgb, var(--text-color) 15%, transparent) !important;
-        color: #F8FAFC !important;
-        transform: translateX(4px) !important;
+    [data-testid="stSidebar"] [data-testid="stPageLink"]:hover a {
+        background-color: #FFFFFF !important;
+        color: #000080 !important;
+        border-color: rgba(0, 0, 128, 0.3) !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 128, 0.12) !important;
+        transform: translateY(-1px) !important;
     }
     [data-testid="stSidebar"] [data-testid="stPageLink"] a[data-active="true"] {
-        background: rgba(59, 130, 246, 0.1) !important;
-        color: var(--primary-color) !important;
-        border-left: 3px solid var(--primary-color) !important;
-        border-radius: 0 6px 6px 0 !important;
+        background: #EBF2FA !important;
+        color: #000080 !important;
+        border-color: #000080 !important;
+        border-left: 3px solid #000080 !important;
+        font-weight: 600 !important;
+        box-shadow: 0 2px 8px rgba(0,0,128,0.1) !important;
     }
-    /* Prevent dot-border pseudo-elements from appearing in the sidebar */
+    /* Corner dots — appear on hover */
     [data-testid="stSidebar"] [data-testid="stPageLink"]::before,
     [data-testid="stSidebar"] [data-testid="stPageLink"]::after,
     [data-testid="stSidebar"] [data-testid="stPageLink"] a::before,
     [data-testid="stSidebar"] [data-testid="stPageLink"] a::after {
-        content: none !important;
-        display: none !important;
+        content: '' !important;
+        position: absolute !important;
+        width: var(--dot-size) !important;
+        height: var(--dot-size) !important;
+        background-color: var(--dot-color) !important;
+        border-radius: 50% !important;
+        opacity: 0 !important;
+        z-index: 20 !important;
+        transition: all var(--animation-speed) ease-in-out !important;
+        pointer-events: none !important;
+    }
+    /* Top-Left */
+    [data-testid="stSidebar"] [data-testid="stPageLink"]::before { top: -2px !important; left: -2px !important; transform: translate(8px, 8px) !important; transition-delay: 0s !important; }
+    /* Top-Right */
+    [data-testid="stSidebar"] [data-testid="stPageLink"]::after  { top: -2px !important; right: -2px !important; transform: translate(-8px, 8px) !important; transition-delay: 0.08s !important; }
+    /* Bottom-Right */
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a::before { bottom: -2px !important; right: -2px !important; transform: translate(-8px, -8px) !important; transition-delay: 0.16s !important; }
+    /* Bottom-Left */
+    [data-testid="stSidebar"] [data-testid="stPageLink"] a::after  { bottom: -2px !important; left: -2px !important; transform: translate(8px, -8px) !important; transition-delay: 0.24s !important; }
+
+    [data-testid="stSidebar"] [data-testid="stPageLink"]:hover::before,
+    [data-testid="stSidebar"] [data-testid="stPageLink"]:hover::after,
+    [data-testid="stSidebar"] [data-testid="stPageLink"]:hover a::before,
+    [data-testid="stSidebar"] [data-testid="stPageLink"]:hover a::after {
+        transform: translate(0, 0) !important;
+        opacity: 1 !important;
+    }
+
 
 
 /* ================================================================
@@ -606,10 +646,26 @@
     [data-testid="stMetric"] {
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
         border: 1px solid rgba(0, 0, 0, 0.1) !important;
-        background: var(--secondary-background-color) !important;
+        background: #F3F4F6 !important;
     }
     
     .fd-header {
         border-left: 4px solid #FF9933 !important;
+    }
+}
+
+    .fd-header-left h1 {
+        color: #111827 !important;
+    }
+    .fd-header-left .fd-subtitle {
+        color: #4B5563 !important;
+    }
+    .fd-tag {
+        background: rgba(255, 255, 255, 0.6) !important;
+        border-color: rgba(17, 24, 39, 0.15) !important;
+        color: #374151 !important;
+    }
+    .fd-live {
+        color: #059669 !important;
     }
 }
