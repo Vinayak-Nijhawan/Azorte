@@ -50,7 +50,6 @@ st.markdown("""
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
 
-@st.cache_data
 def load_production_data():
     prod_path = os.path.join(DATA_DIR, 'production_dataset_real.csv')
     forecast_path = os.path.join(DATA_DIR, 'production_forecast_real.csv')
