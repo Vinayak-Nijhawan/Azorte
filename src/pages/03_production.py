@@ -74,10 +74,19 @@ mine_data = df_prod[df_prod['mine_id'] == selected_mine].copy()
 mine_data['date'] = pd.to_datetime(mine_data['year'].astype(str) + '-' + mine_data['month'].astype(str) + '-01')
 mine_data = mine_data.sort_values('date')
 
+# Scenario selector
+scenario = "normal_weather"
+if not df_forecast.empty and 'scenario' in df_forecast.columns:
+    scenarios = df_forecast['scenario'].unique().tolist()
+    scenario = st.sidebar.selectbox("Forecast Scenario", scenarios, index=0)
+
 # Forecast data for selected mine
 forecast_data = pd.DataFrame()
 if not df_forecast.empty:
-    forecast_data = df_forecast[df_forecast['mine_id'] == selected_mine].copy()
+    fc_filter = df_forecast['mine_id'] == selected_mine
+    if 'scenario' in df_forecast.columns:
+        fc_filter = fc_filter & (df_forecast['scenario'] == scenario)
+    forecast_data = df_forecast[fc_filter].copy()
     if not forecast_data.empty:
         forecast_data['date'] = pd.to_datetime(forecast_data['year'].astype(str) + '-' + forecast_data['month'].astype(str) + '-01')
         forecast_data = forecast_data.sort_values('date')
@@ -134,17 +143,27 @@ fig.add_trace(go.Scatter(
 ))
 
 # Forecast: Predicted (dashed orange)
-if not forecast_data.empty and 'predicted_production_tpd__DERIVED' in forecast_data.columns:
+if not forecast_data.empty and 'predicted_production_tpd' in forecast_data.columns:
     fig.add_trace(go.Scatter(
-        x=forecast_data['date'], y=forecast_data['planned_production_tpd__DERIVED'],
+        x=forecast_data['date'], y=forecast_data['baseline_tpd'],
         name='Planned (2026)', line=dict(color='#3498db', dash='dot', width=1.5),
         hovertemplate='%{x|%b %Y}<br>Planned: %{y:.0f} TPD<extra></extra>'
     ))
     fig.add_trace(go.Scatter(
-        x=forecast_data['date'], y=forecast_data['predicted_production_tpd__DERIVED'],
+        x=forecast_data['date'], y=forecast_data['predicted_production_tpd'],
         name='ML Predicted', line=dict(color='#e67e22', width=2.5, dash='dash'),
         hovertemplate='%{x|%b %Y}<br>Predicted: %{y:.0f} TPD<extra></extra>'
     ))
+    
+    # Add vertical line at forecast boundary
+    last_hist_date = mine_data['date'].iloc[-1]
+    fig.add_vline(x=last_hist_date, line_dash="dot", line_color="rgba(255,255,255,0.3)")
+    fig.add_annotation(
+        x=last_hist_date, y=1, yref="paper",
+        text="← Historical | Forecast →",
+        showarrow=False, font=dict(size=11, color="rgba(255,255,255,0.6)"),
+        yshift=10
+    )
 
 fig.update_layout(
     xaxis_title="Date", yaxis_title="Production (TPD)",
@@ -258,8 +277,79 @@ styled = table_df.style.map(color_risk, subset=['Risk']).format({
 
 st.dataframe(styled, use_container_width=True, hide_index=True)
 
-st.info(":material/lightbulb: **Business Impact:** 5% reduction in production shortfall across 3 mines ≈ 2,500 tons/month saved (illustrative)")
+# ================= LIVE REAL-TIME FORECAST =================
+live_path = os.path.join(DATA_DIR, 'production_forecast_live.csv')
+if os.path.exists(live_path):
+    df_live = pd.read_csv(live_path)
+    
+    if not df_live.empty:
+        st.markdown("---")
+        st.subheader("🔴 Live Real-Time Forecast (Next 30 Days)")
+        
+        # Show timestamp
+        if 'timestamp' in df_live.columns:
+            ts = df_live['timestamp'].iloc[0]
+            st.caption(f"🕐 **Last Updated:** {ts} | **Source:** Open-Meteo Live 14-Day Weather API → ML Model")
+        
+        # Live forecast for selected mine
+        live_mine = df_live[df_live['mine_id'] == selected_mine]
+        
+        if not live_mine.empty:
+            row = live_mine.iloc[0]
+            
+            # Big KPI cards
+            lc1, lc2, lc3, lc4 = st.columns(4)
+            
+            risk_color = "🔴" if row['shortfall_risk'] == 'High' else ("🟡" if row['shortfall_risk'] == 'Medium' else "🟢")
+            
+            lc1.metric(
+                "Live Predicted TPD", 
+                f"{row['predicted_production_tpd']:.0f}",
+                delta=f"{row['predicted_production_tpd'] - row['baseline_tpd']:+.0f} vs baseline",
+                delta_color="normal"
+            )
+            lc2.metric("Baseline TPD", f"{row['baseline_tpd']:.0f}")
+            lc3.metric("Live Rainfall (30d est.)", f"{row['rainfall_mm_scenario']:.0f} mm")
+            lc4.metric(f"{risk_color} Risk Level", row['shortfall_risk'])
+            
+            efficiency_live = row['predicted_production_tpd'] / row['baseline_tpd'] * 100
+            if efficiency_live >= 92:
+                st.success(f"✅ **{selected_mine}** is expected to operate at **{efficiency_live:.1f}%** of baseline capacity this month. No intervention needed.")
+            elif efficiency_live >= 85:
+                st.warning(f"⚠️ **{selected_mine}** may see a **{100 - efficiency_live:.1f}%** shortfall. Consider pre-positioning water pumps and adjusting blasting schedules.")
+            else:
+                st.error(f"🚨 **{selected_mine}** is at risk of a **{100 - efficiency_live:.1f}%** production shortfall due to heavy rainfall ({row['rainfall_mm_scenario']:.0f}mm projected). Activate monsoon contingency plan.")
+        
+        # All mines summary
+        st.subheader("All Mines — Live Risk Dashboard")
+        
+        live_display = df_live[['mine_id', 'baseline_tpd', 'predicted_production_tpd', 'rainfall_mm_scenario', 'weather_penalty', 'shortfall_risk']].copy()
+        live_display.columns = ['Mine', 'Baseline (TPD)', 'Predicted (TPD)', 'Rainfall (mm)', 'Weather Penalty', 'Risk']
+        live_display['Efficiency'] = (live_display['Predicted (TPD)'] / live_display['Baseline (TPD)'] * 100).round(1)
+        live_display = live_display.sort_values('Efficiency')
+        
+        styled_live = live_display.style.map(color_risk, subset=['Risk']).format({
+            'Baseline (TPD)': '{:.0f}', 
+            'Predicted (TPD)': '{:.0f}', 
+            'Rainfall (mm)': '{:.0f}',
+            'Weather Penalty': '{:.2f}',
+            'Efficiency': '{:.1f}%'
+        })
+        st.dataframe(styled_live, use_container_width=True, hide_index=True)
+        
+        # Summary stats
+        high_count = (df_live['shortfall_risk'] == 'High').sum()
+        med_count = (df_live['shortfall_risk'] == 'Medium').sum()
+        low_count = (df_live['shortfall_risk'] == 'Low').sum()
+        
+        sc1, sc2, sc3 = st.columns(3)
+        sc1.metric("🔴 High Risk Mines", high_count)
+        sc2.metric("🟡 Medium Risk Mines", med_count)
+        sc3.metric("🟢 Low Risk Mines", low_count)
+        
+        st.caption("📡 This forecast uses **LIVE weather data** from the Open-Meteo API, fed into the trained ML model. Run `python src/generate_live_forecast.py` to refresh.")
 
+st.info(":material/lightbulb: **Business Impact:** Proactive identification of high-risk months enables MOIL to pre-position equipment and adjust blasting schedules, potentially recovering 5-10% of shortfall tonnage.")
 
 # --- Animations ---
 inject_kpi_animations()
