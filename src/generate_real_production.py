@@ -91,26 +91,36 @@ def get_mine_shares(year):
     """
     Return mine-wise production shares for a given year.
     Uses real data where available, interpolates for others.
+    
+    KEY ANCHOR (BSE Investors Meet 17-Mar-2026):
+      - Balaghat = 3.5 lakh tons/year (confirmed by Dir. Production M.M. Abdulla)
+      - Balaghat EC = 6.5 lakh, max capacity after high-speed shaft = 8 lakh
+      - Balaghat was flat at ~3.5 LT while total MOIL grew from 13 to 19 LT
     """
     total = MOIL_ANNUAL_PRODUCTION_REAL.get(year, 1300000)
     
     # Real anchor points from verified data
+    # Balaghat: confirmed 3.5 LT (BSE Meet Mar 2026), was ~3.0 LT pre-2020
     if year <= 2019:
-        balaghat_share = 300000 / total  # Real: 3 LT baseline pre-shaft
-        gumgaon_share  = 150000 / total  # Real: 1.5 LT baseline
-        ukwa_share     = 115000 / total  # Real: existing block capacity
+        balaghat_abs = 300000   # ~3.0 LT pre-shaft era
+        gumgaon_abs  = 150000   # Real: 1.5 LT baseline
+        ukwa_abs     = 115000   # Real: existing block capacity
     elif year <= 2022:
-        balaghat_share = 320000 / total  # Gradual increase during shaft work
-        gumgaon_share  = 155000 / total
-        ukwa_share     = 200000 / total  # Post-expansion (2 blocks combined)
+        balaghat_abs = 320000   # Slight increase, shaft work ongoing
+        gumgaon_abs  = 155000
+        ukwa_abs     = 170000   # Post-expansion
     elif year <= 2024:
-        balaghat_share = 350000 / total  # Further ramp
-        gumgaon_share  = 160000 / total
-        ukwa_share     = 220000 / total
+        balaghat_abs = 350000   # Confirmed 3.5 LT (BSE Meet)
+        gumgaon_abs  = 200000   # Gumgaon shaft commissioned
+        ukwa_abs     = 200000
     else:
-        balaghat_share = 380000 / total  # Near-target
-        gumgaon_share  = 165000 / total
-        ukwa_share     = 230000 / total
+        balaghat_abs = 350000   # Still 3.5 LT — shaft not yet operational (BSE Meet: "6 months more")
+        gumgaon_abs  = 220000   # Gumgaon mine winding commissioned
+        ukwa_abs     = 220000
+    
+    balaghat_share = balaghat_abs / total
+    gumgaon_share  = gumgaon_abs / total
+    ukwa_share     = ukwa_abs / total
     
     # Remaining production distributed among 7 other mines
     # Based on mine type: UG mines > OC mines typically
@@ -118,12 +128,12 @@ def get_mine_shares(year):
     
     other_weights = {
         "Chikla":        0.22,  # Large UG mine, 2nd shaft done
-        "Dongri_Buzurg": 0.18,  # Transitioning OC→UG, EMD plant
-        "Kandri":        0.15,  # UG, shaft deepened
+        "Dongri_Buzurg": 0.18,  # Transitioning OC->UG, biggest opencast (BSE transcript)
+        "Kandri":        0.15,  # UG, new shaft planned (BSE transcript)
         "Munsar":        0.14,  # UG, 2nd shaft done
-        "Tirodi":        0.13,  # OC, active (EC violation = was producing heavily)
+        "Tirodi":        0.13,  # OC, pocket deposits (BSE: M.M. Abdulla)
         "Beldongri":     0.10,  # UG, smaller
-        "Sitapatore":    0.08,  # OC, smaller
+        "Sitapatore":    0.08,  # OC, pocket deposits (BSE: M.M. Abdulla)
     }
     
     shares = {
