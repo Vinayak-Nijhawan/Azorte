@@ -71,7 +71,6 @@ PROD_FEATURES = [
     'equipment_availability_pct__DERIVED', 'haul_road_condition__DERIVED', 
     'blasting_days__DERIVED', 'high_rainfall_flag__DERIVED', 
     'lag_1__DERIVED', 'lag_2__DERIVED', 'lag_3__DERIVED',
-    'crusher_capacity_tpd__ASSUMED', 'num_dumpers__ASSUMED', 'num_shovels__ASSUMED',
     'month', 'mine_encoded'
 ]
 
