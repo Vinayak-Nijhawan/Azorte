@@ -468,6 +468,42 @@ summary::-webkit-details-marker {{ display: none; }}
 </div>
 """, unsafe_allow_html=True)
 
+
+# --- JavaScript Injection for Search Navigation ---
+import streamlit.components.v1 as components
+components.html("""
+<script>
+    // Execute after a short delay to ensure DOM is fully mounted
+    setTimeout(function() {
+        const parentDoc = window.parent.document;
+        const inputElement = parentDoc.querySelector('.search-input-mock');
+        
+        if (inputElement) {
+            // Prevent multiple listeners if re-run
+            if (inputElement.hasAttribute('data-listener-attached')) return;
+            inputElement.setAttribute('data-listener-attached', 'true');
+            
+            inputElement.addEventListener('change', function(e) {
+                const val = e.target.value;
+                let targetUrl = '';
+                
+                if (val === 'Prospectivity Map') targetUrl = 'prospectivity';
+                else if (val === 'Production Forecast') targetUrl = 'production';
+                else if (val === 'Fleet Optimization') targetUrl = 'fleet';
+                else if (val === 'What-If Simulator') targetUrl = 'what_if';
+                else if (val === 'Financial ROI') targetUrl = 'financial';
+                else if (val === 'Explainability') targetUrl = 'explainability';
+                
+                if (targetUrl !== '') {
+                    window.parent.location.href = targetUrl;
+                }
+            });
+        }
+    }, 500);
+</script>
+""", height=0)
+# ------------------------------------------------
+
 # 3. Outcomes Section
 st.markdown("""<h3 style="font-size: 1.1rem; color: var(--text-color); margin-bottom: 16px; font-weight: 600;">System Capabilities</h3>""", unsafe_allow_html=True)
 st.markdown("""
