@@ -24,6 +24,8 @@ st.markdown("""
 
 /* Header Area */
 .modern-header {
+    position: relative;
+    z-index: 1000;
     display: flex;
     justify-content: space-between;
     align-items: center;
