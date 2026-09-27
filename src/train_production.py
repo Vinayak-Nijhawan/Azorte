@@ -140,12 +140,12 @@ def main():
     print("\n[4/7] Training GradientBoostingRegressor...")
     
     model = GradientBoostingRegressor(
-        n_estimators=200,
-        max_depth=5,
-        learning_rate=0.08,
-        subsample=0.8,
-        min_samples_split=10,
-        min_samples_leaf=5,
+        n_estimators=100,
+        max_depth=2,
+        learning_rate=0.05,
+        subsample=1.0,
+        min_samples_split=5,
+        min_samples_leaf=20,
         random_state=42,
     )
     
@@ -260,11 +260,11 @@ def main():
         type_enc = le_type.transform([mine_type])[0]
         mine_share = mine_latest['mine_share_pct__DERIVED'].iloc[-1]
         
-        lag_values = mine_latest[TARGET].tolist()
-        while len(lag_values) < 3:
-            lag_values.insert(0, baseline_tpd)
-        
         for scenario_name, scenario_weather in scenarios.items():
+            lag_values = mine_latest[TARGET].tolist()
+            while len(lag_values) < 3:
+                lag_values.insert(0, baseline_tpd)
+
             for month in range(1, 13):
                 rain = scenario_weather["rainfall_mm"]
                 temp = scenario_weather["temp_max"]

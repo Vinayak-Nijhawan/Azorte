@@ -188,8 +188,13 @@ if not forecast_data.empty and 'predicted_production_tpd' in forecast_data.colum
     ))
     
     # Add vertical line at forecast boundary
-    fig.add_vline(x=last_hist_date, line_dash="dot", line_color="rgba(255,255,255,0.3)",
-                  annotation_text="← Historical | Forecast →", annotation_position="top")
+    fig.add_vline(x=last_hist_date, line_dash="dot", line_color="rgba(255,255,255,0.3)")
+    fig.add_annotation(
+        x=last_hist_date, y=1, yref="paper",
+        text="← Historical | Forecast →",
+        showarrow=False, font=dict(size=11, color="rgba(255,255,255,0.6)"),
+        yshift=10
+    )
 
 fig.update_layout(
     xaxis_title="Date", yaxis_title="Production (TPD)",
