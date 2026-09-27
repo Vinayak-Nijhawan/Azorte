@@ -197,14 +197,26 @@ fig_bar.update_layout(
 st.plotly_chart(fig_bar, use_container_width=True)
 
 # ================= RISK INDICATORS =================
-st.subheader("Risk Indicators (Latest Month)")
+st.subheader("Risk Indicators (Historical Snapshot)")
 
-latest = mine_data.iloc[-1]
+# Let user pick which month to view
+available_months = mine_data['date'].dt.strftime('%b %Y').unique().tolist()
+# Default to the most recent month
+selected_month_str = st.selectbox("Select Historical Month to Analyze", available_months, index=len(available_months)-1)
+
+# Filter data to the selected month
+snapshot_data = mine_data[mine_data['date'].dt.strftime('%b %Y') == selected_month_str]
+
+if not snapshot_data.empty:
+    latest = snapshot_data.iloc[-1]
+else:
+    latest = pd.Series()
+
 risk = str(latest.get('shortfall_risk__DERIVED', 'N/A'))
 planned = latest.get('planned_production_tpd__DERIVED', 0)
 actual = latest.get('derived_actual_production_tpd__DERIVED', 0)
 shortfall = max(0, planned - actual) if pd.notnull(planned) and pd.notnull(actual) else 0
-eff = (actual / planned * 100) if planned > 0 else 0
+eff = (actual / planned * 100) if pd.notnull(planned) and planned > 0 else 0
 
 r1, r2, r3 = st.columns(3)
 color = "<span class=\"material-symbols-rounded\">circle</span>" if risk == "High" else ("<span class=\"material-symbols-rounded\">circle</span>" if risk == "Medium" else "<span class=\"material-symbols-rounded\">circle</span>")
