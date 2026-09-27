@@ -277,24 +277,21 @@ st.subheader("Target Statistics")
 
 # Add region column to df for filtering
 def get_region(lat, lon):
-    if lat >= 21.0 and lat <= 22.0 and lon >= 78.5 and lon <= 80.5:
-        return "Central India"
-    elif lat >= 21.5 and lon >= 84.5:
-        return "Odisha"
-    elif lat < 16.0:
-        return "Karnataka"
-    return "Other"
+    if lat >= 21.0 and lon >= 78.5 and lon <= 80.5:
+        return "Maharashtra"
+    elif lat >= 21.5 and lon >= 80.0:
+        return "Madhya Pradesh"
+    return "Maharashtra"  # default for MH+MP dataset
 
 if 'mn_probability' in df.columns:
     df['region'] = [get_region(lat, lon) for lat, lon in zip(df['latitude'], df['longitude'])]
 
-    high_count   = int((df['mn_probability'] > 0.45).sum())
-    medium_count = int(((df['mn_probability'] > 0.3) & (df['mn_probability'] <= 0.45)).sum())
-    low_count    = int((df['mn_probability'] <= 0.3).sum())
+    high_count   = int((df['mn_probability'] > 0.7).sum())
+    medium_count = int(((df['mn_probability'] > 0.4) & (df['mn_probability'] <= 0.7)).sum())
+    low_count    = int((df['mn_probability'] <= 0.4).sum())
 
-    ci_high  = int((df[df['region'] == 'Central India']['mn_probability'] > 0.45).sum()) if len(df[df['region'] == 'Central India']) > 0 else 0
-    od_high  = int((df[df['region'] == 'Odisha']['mn_probability'] > 0.45).sum())        if len(df[df['region'] == 'Odisha']) > 0       else 0
-    kar_high = int((df[df['region'] == 'Karnataka']['mn_probability'] > 0.45).sum())     if len(df[df['region'] == 'Karnataka']) > 0    else 0
+    mh_high  = int((df[df['region'] == 'Maharashtra']['mn_probability'] > 0.7).sum())
+    mp_high  = int((df[df['region'] == 'Madhya Pradesh']['mn_probability'] > 0.7).sum())
 
     st.markdown(f"""
 <style>
@@ -364,7 +361,7 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{high_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-red">Mn Prob &gt; 0.45</span>
+            <span class="geo-trend-red">Mn Prob &gt; 0.7</span>
             <span class="geo-kpi-subtext">drill candidates</span>
         </div>
     </div>
@@ -375,7 +372,7 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{medium_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-amber">Mn Prob 0.3–0.45</span>
+            <span class="geo-trend-amber">Mn Prob 0.4–0.7</span>
             <span class="geo-kpi-subtext">further study</span>
         </div>
     </div>
@@ -386,42 +383,32 @@ if 'mn_probability' in df.columns:
         </div>
         <div class="geo-kpi-value">{low_count} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-green">Mn Prob ≤ 0.3</span>
+            <span class="geo-trend-green">Mn Prob ≤ 0.4</span>
             <span class="geo-kpi-subtext">low probability</span>
         </div>
     </div>
 </div>
 
 <p style="font-weight:600; color:var(--text-color); margin:8px 0 12px 0;">Region-wise High Priority Targets:</p>
-<div class="geo-kpi-grid">
+<div class="geo-kpi-grid" style="grid-template-columns: repeat(2, 1fr);">
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
-            <div class="geo-kpi-title">Central India</div>
+            <div class="geo-kpi-title">Maharashtra</div>
             <div class="geo-kpi-icon geo-icon-pink"><span class=\"material-symbols-rounded\">landscape</span></div>
         </div>
-        <div class="geo-kpi-value">{ci_high} targets</div>
+        <div class="geo-kpi-value">{mh_high} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-red">Nagpur Belt</span>
+            <span class="geo-trend-red">Nagpur–Bhandara Belt</span>
         </div>
     </div>
     <div class="geo-kpi-card">
         <div class="geo-kpi-header">
-            <div class="geo-kpi-title">Odisha</div>
+            <div class="geo-kpi-title">Madhya Pradesh</div>
             <div class="geo-kpi-icon geo-icon-blue"><span class=\"material-symbols-rounded\">terrain</span></div>
         </div>
-        <div class="geo-kpi-value">{od_high} targets</div>
+        <div class="geo-kpi-value">{mp_high} targets</div>
         <div class="geo-kpi-footer">
-            <span class="geo-trend-amber">Joda-Barbil Belt</span>
-        </div>
-    </div>
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header">
-            <div class="geo-kpi-title">Karnataka</div>
-            <div class="geo-kpi-icon geo-icon-lime"><span class=\"material-symbols-rounded\">south</span></div>
-        </div>
-        <div class="geo-kpi-value">{kar_high} targets</div>
-        <div class="geo-kpi-footer">
-            <span class="geo-trend-green">Sandur Schist Belt</span>
+            <span class="geo-trend-amber">Balaghat–Chhindwara Belt</span>
         </div>
     </div>
 </div>
