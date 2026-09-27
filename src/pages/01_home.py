@@ -485,23 +485,38 @@ components.html("""
             
             inputElement.addEventListener('change', function(e) {
                 const val = e.target.value;
-                let targetUrl = '';
+                const pageMap = {
+                    'Prospectivity Map': '02_prospectivity',
+                    'Production Forecast': '03_production',
+                    'Fleet Optimization': '04_fleet',
+                    'What-If Simulator': '06_what_if',
+                    'Financial ROI': '09_financial',
+                    'Explainability': '07_explainability'
+                };
                 
-                if (val === 'Prospectivity Map') targetUrl = 'prospectivity';
-                else if (val === 'Production Forecast') targetUrl = 'production';
-                else if (val === 'Fleet Optimization') targetUrl = 'fleet';
-                else if (val === 'What-If Simulator') targetUrl = 'what_if';
-                else if (val === 'Financial ROI') targetUrl = 'financial';
-                else if (val === 'Explainability') targetUrl = 'explainability';
-                
-                if (targetUrl !== '') {
-                    window.parent.location.href = targetUrl;
+                const targetScript = pageMap[val];
+                if (targetScript) {
+                    // Find the hidden st.page_link we generated and click it
+                    const link = parentDoc.querySelector(`a[href$="${targetScript}"]`);
+                    if (link) {
+                        link.click();
+                    }
                 }
             });
         }
     }, 500);
 </script>
 """, height=0)
+
+# Hidden native page links for JS to click on
+st.markdown("<div style='display: none;'>", unsafe_allow_html=True)
+st.page_link("src/pages/02_prospectivity.py", label="Hidden")
+st.page_link("src/pages/03_production.py", label="Hidden")
+st.page_link("src/pages/04_fleet.py", label="Hidden")
+st.page_link("src/pages/06_what_if.py", label="Hidden")
+st.page_link("src/pages/09_financial.py", label="Hidden")
+st.page_link("src/pages/07_explainability.py", label="Hidden")
+st.markdown("</div>", unsafe_allow_html=True)
 # ------------------------------------------------
 
 # 3. Outcomes Section
