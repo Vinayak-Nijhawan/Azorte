@@ -519,8 +519,8 @@ road_cond = forecast_filtered['haul_road_condition__DERIVED'].mean() if (
 ) else 5
 
 # Shortfall risk
-shortfall_risk = forecast_filtered['shortfall_risk__DERIVED'].mode().iloc[0] if (
-    not forecast_filtered.empty and 'shortfall_risk__DERIVED' in forecast_filtered.columns and len(forecast_filtered['shortfall_risk__DERIVED'].mode()) > 0
+shortfall_risk = forecast_filtered['shortfall_risk'].mode().iloc[0] if (
+    not forecast_filtered.empty and 'shortfall_risk' in forecast_filtered.columns and len(forecast_filtered['shortfall_risk'].mode()) > 0
 ) else "N/A"
 
 # Shovel stats

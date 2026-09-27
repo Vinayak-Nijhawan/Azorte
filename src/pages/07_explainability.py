@@ -216,8 +216,7 @@ with tab1:
                               xaxis_title="False Positive Rate", yaxis_title="True Positive Rate")
         st.plotly_chart(fig_roc, use_container_width=True)
 
-    # ---- PR CURVE + CV BARS ----
-    col3, col4 = st.columns(2)
+    col3, col4 = st.columns([1, 1])
 
     with col3:
         precision, recall, _ = precision_recall_curve(y_test, y_proba)
@@ -226,7 +225,8 @@ with tab1:
         fig_pr.add_trace(go.Scatter(x=recall, y=precision, mode='lines',
                                      name=f'PR (AUC = {pr_auc:.4f})', line=dict(color='#2ecc71', width=3)))
         fig_pr.update_layout(height=400, title=f"Precision-Recall (AUC = {pr_auc:.4f})",
-                             xaxis_title="Recall", yaxis_title="Precision")
+                             xaxis_title="Recall", yaxis_title="Precision",
+                             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_pr, use_container_width=True)
 
     with col4:

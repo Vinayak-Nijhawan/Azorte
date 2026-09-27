@@ -132,9 +132,9 @@ with col_map:
         
         # Color mapping: Low=blue, Medium=yellow, High=red
         def prob_to_color(p):
-            if p >= 0.8:
+            if p >= 0.7:
                 return 'rgba(220,30,30,0.85)'    # Red - HIGH
-            elif p >= 0.6:
+            elif p >= 0.55:
                 return 'rgba(255,140,0,0.75)'     # Orange
             elif p >= 0.4:
                 return 'rgba(255,220,50,0.65)'     # Yellow - MEDIUM
@@ -190,19 +190,16 @@ with col_map:
             (21.850, 80.228, "Balaghat Mine", "Central"),
             (21.400, 79.267, "Kandri Mine", "Central"),
             (21.400, 78.983, "Gumgaon Mine", "Central"),
-            # Odisha (Joda-Barbil belt)
-            (22.010, 85.437, "Joda East Mine", "Odisha"),
-            (22.100, 85.250, "Bamebari Mine", "Odisha"),
-            # Karnataka (Sandur schist belt)
-            (15.083, 76.550, "Sandur Mine", "Karnataka"),
-            (15.250, 76.350, "Hospet Mine", "Karnataka"),
+            # Madhya Pradesh (Balaghat belt)
+            (21.974, 80.385, "Lugma Mine", "Madhya Pradesh"),
+            (21.986, 80.457, "Ukwa Mine", "Madhya Pradesh"),
         ]
         
         m_lats = [m[0] for m in mines_data]
         m_lons = [m[1] for m in mines_data]
         m_names = [m[2] for m in mines_data]
         m_regions = [m[3] for m in mines_data]
-        m_colors = ['red' if r == 'Central' else 'cyan' if r == 'Odisha' else 'lime' for r in m_regions]
+        m_colors = ['red' if r == 'Central' else 'cyan' if r == 'Madhya Pradesh' else 'lime' for r in m_regions]
         
         fig.add_trace(go.Scattermap(
             lat=m_lats, lon=m_lons,
@@ -216,7 +213,7 @@ with col_map:
 
     # ---- LAYER 5: Drilling Priority Zones ----
     if show_drill and 'mn_probability' in df.columns:
-        top_drill = df[df['mn_probability'] > 0.8].nlargest(25, 'mn_probability')
+        top_drill = df[df['mn_probability'] > 0.7].nlargest(25, 'mn_probability')
         fig.add_trace(go.Scattermap(
             lat=top_drill['latitude'], lon=top_drill['longitude'],
             mode='markers',

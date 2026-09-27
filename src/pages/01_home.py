@@ -24,22 +24,26 @@ st.markdown("""
 
 /* Header Area */
 .modern-header {
+    position: relative;
+    z-index: 1000;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 24px 32px;
     margin-bottom: 32px;
+    background: #EBF2FA !important;
+    border-left: 4px solid #FF9933 !important;
 }
 .header-titles h1 {
     font-size: 2.4rem !important;
     font-weight: 800 !important;
-    color: var(--text-color) !important;
+    color: #111827 !important;
     margin: 0 0 4px 0 !important;
     letter-spacing: -0.02em;
 }
 .header-titles p {
     font-size: 1.05rem !important;
-    color: color-mix(in srgb, var(--text-color) 60%, transparent) !important;
+    color: #4B5563 !important;
     margin: 0 !important;
     font-weight: 400;
 }
@@ -354,35 +358,75 @@ def load_kpi_data():
 
 kpi = load_kpi_data()
 
-# 1. Header Area
-st.markdown("""
+# Combine Header and KPI into ONE block to fix z-index clipping of the dropdown
+st.markdown(f"""
+<style>
+details {{ position: relative; display: inline-block; }}
+summary {{ list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; outline: none; }}
+summary::-webkit-details-marker {{ display: none; }}
+.profile-dropdown-menu {{
+    position: absolute; right: 0; top: 100%; margin-top: 10px;
+    background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); z-index: 99999; min-width: 240px;
+    overflow: hidden;
+}}
+.dropdown-item {{ padding: 12px 16px; color: #334155; font-size: 0.9rem; transition: all 0.2s; display: flex; align-items: center; gap: 10px; cursor: pointer; }}
+.dropdown-item:hover {{ background: #F1F5F9; color: #0F172A; }}
+.dropdown-header {{ padding: 16px; color: #0F172A; font-weight: 600; border-bottom: 1px solid rgba(0, 0, 0, 0.05); display: flex; align-items: center; gap: 12px; }}
+.dropdown-header .small-avatar {{ background: linear-gradient(135deg, #FF9933, #FF7700); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; color: white; }}
+.search-input-mock {{ background: transparent; border: none; color: #0F172A; width: 100%; outline: none; font-size: 0.9rem; padding: 4px; }}
+.search-input-mock::placeholder {{ color: #94A3B8; }}
+</style>
+
 <div class="glass-panel modern-header">
     <div class="header-titles">
         <h1>MOIL-GeoSync (G-Sync)</h1>
         <p>AI-Powered Manganese Exploration & Production Optimization</p>
     </div>
     <div class="header-actions">
-        <div class="search-bar">
-            <span class=\"material-symbols-rounded\" style="vertical-align: middle; font-size: 1.2rem;">search</span> Search modules or reports...
+        <div class="search-bar" style="display: flex; align-items: center; padding: 8px 16px;">
+            <span class="material-symbols-rounded" style="margin-right: 8px; font-size: 1.2rem; color: white; font-weight: bold;">search</span> 
+            <input type="text" list="search-options" class="search-input-mock" placeholder="Search modules or reports..." />
+            <datalist id="search-options">
+                <option value="Prospectivity Map"></option>
+                <option value="Production Forecast"></option>
+                <option value="Fleet Optimization"></option>
+                <option value="What-If Simulator"></option>
+                <option value="Financial ROI"></option>
+                <option value="Explainability"></option>
+                <option value="AI Assistant"></option>
+            </datalist>
         </div>
-        <div class="profile-action">
-            <div class="profile-avatar">VN</div>
-            <div class="profile-name">Vinayak Nijhawan</div>
-            <span style="color: color-mix(in srgb, var(--text-color) 50%, transparent); font-size: 0.8rem; margin-left: 4px;">▼</span>
-        </div>
+        <details>
+            <summary class="profile-action">
+                <div class="profile-avatar">VN</div>
+                <div class="profile-name" style="color: white; font-weight: bold;">Vinayak Nijhawan</div>
+                <span class="material-symbols-rounded" style="color: white; font-weight: bold; font-size: 1.2rem; margin-left: 4px;">expand_more</span>
+            </summary>
+            <div class="profile-dropdown-menu">
+                <div class="dropdown-header">
+                    <div class="small-avatar">VN</div>
+                    <div>
+                        <div style="font-size: 0.95rem;">Vinayak Nijhawan</div>
+                        <div style="font-size: 0.75rem; color: #64748b; font-weight: 400;">Admin Account</div>
+                    </div>
+                </div>
+                <div class="dropdown-item"><span class="material-symbols-rounded" style="font-size:1.1rem; margin-right:4px;">settings</span> Settings</div>
+                <div class="dropdown-item"><span class="material-symbols-rounded" style="font-size:1.1rem; margin-right:4px;">person_add</span> Add other account</div>
+                <div class="dropdown-item" style="color: #ef4444; border-top: 1px solid rgba(0, 0, 0, 0.05);"><span class="material-symbols-rounded" style="font-size:1.1rem; margin-right:4px;">logout</span> Logout</div>
+            </div>
+        </details>
     </div>
 </div>
-""", unsafe_allow_html=True)
 
-# 2. KPI Section
-st.markdown("""
 <div class="kpi-grid">
     <div class="glass-panel kpi-card">
         <div class="kpi-header">
             <div class="kpi-title">Total Grid Points</div>
             <div class="kpi-icon icon-blue"><span class=\"material-symbols-rounded\">my_location</span></div>
         </div>
-        <div class="kpi-value">{:,}</div>
+        <div class="kpi-value">{kpi["total_grid_points"]:,}</div>
         <div class="kpi-footer">
             <span class="trend-badge trend-up">↑ 12%</span>
             <span class="kpi-subtext">vs last scan</span>
@@ -393,7 +437,7 @@ st.markdown("""
             <div class="kpi-title">High Prospectivity</div>
             <div class="kpi-icon icon-emerald"><span class=\"material-symbols-rounded\">flare</span></div>
         </div>
-        <div class="kpi-value">{}</div>
+        <div class="kpi-value">{kpi["high_prospectivity_zones"]}</div>
         <div class="kpi-footer">
             <span class="trend-badge trend-up">↑ 4 new</span>
             <span class="kpi-subtext">this month</span>
@@ -404,7 +448,7 @@ st.markdown("""
             <div class="kpi-title">Active Mines</div>
             <div class="kpi-icon icon-purple"><span class=\"material-symbols-rounded\">architecture</span></div>
         </div>
-        <div class="kpi-value">{}</div>
+        <div class="kpi-value">{kpi["mines_tracked"]}</div>
         <div class="kpi-footer">
             <span class="trend-badge trend-neutral">→ 0</span>
             <span class="kpi-subtext">no change</span>
@@ -415,19 +459,62 @@ st.markdown("""
             <div class="kpi-title">Avg Shortfall Risk</div>
             <div class="kpi-icon icon-amber"><span class=\"material-symbols-rounded\">warning</span></div>
         </div>
-        <div class="kpi-value">{}%</div>
+        <div class="kpi-value">{kpi["avg_shortfall_risk"]}%</div>
         <div class="kpi-footer">
             <span class="trend-badge trend-down">↓ 2.1%</span>
             <span class="kpi-subtext">improved</span>
         </div>
     </div>
 </div>
-""".format(
-    kpi["total_grid_points"], 
-    kpi["high_prospectivity_zones"], 
-    kpi["mines_tracked"], 
-    kpi["avg_shortfall_risk"]
-), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
+
+# --- JavaScript Injection for Search Navigation ---
+import streamlit.components.v1 as components
+components.html("""
+<script>
+const doc = window.parent.document;
+function setupSearch() {
+    const searchInput = doc.querySelector('.search-input-mock');
+    if (searchInput && !searchInput.hasAttribute('data-bound')) {
+        searchInput.setAttribute('data-bound', 'true');
+        
+        function handleSearch(val) {
+            if (!val) return;
+            val = val.toLowerCase();
+            let searchStr = val;
+            if (val.includes('prospect')) searchStr = 'geoprospect';
+            if (val.includes('product')) searchStr = 'production';
+            if (val.includes('fleet')) searchStr = 'fleet';
+            if (val.includes('simulator') || val.includes('what')) searchStr = 'what-if';
+            if (val.includes('roi') || val.includes('financ')) searchStr = 'financial';
+            if (val.includes('shap') || val.includes('explain')) searchStr = 'explainability';
+            if (val.includes('ai') || val.includes('assistant')) searchStr = 'g-sync ai';
+
+            const links = Array.from(doc.querySelectorAll('[data-testid="stPageLink"]'));
+            const targetLink = links.find(el => el.textContent.toLowerCase().includes(searchStr));
+            if (targetLink) {
+                targetLink.click();
+            }
+        }
+
+        searchInput.addEventListener('change', (e) => { e.stopPropagation(); handleSearch(e.target.value); });
+        searchInput.addEventListener('keydown', (e) => {
+            e.stopPropagation(); // Prevents Streamlit's global shortcut listener from crashing
+            if (e.key === 'Enter') handleSearch(e.target.value);
+        });
+        searchInput.addEventListener('input', (e) => {
+            e.stopPropagation();
+            const options = ["Prospectivity Map", "Production Forecast", "Fleet Optimization", "What-If Simulator", "Financial ROI", "Explainability", "AI Assistant"];
+            if (options.includes(e.target.value)) {
+                handleSearch(e.target.value);
+            }
+        });
+    }
+}
+setInterval(setupSearch, 1000);
+</script>
+""", height=0, width=0)
+# ------------------------------------------------
 
 # 3. Outcomes Section
 st.markdown("""<h3 style="font-size: 1.1rem; color: var(--text-color); margin-bottom: 16px; font-weight: 600;">System Capabilities</h3>""", unsafe_allow_html=True)
