@@ -1,0 +1,11 @@
+mine_id,year,month,scenario,baseline_tpd,predicted_production_tpd,shortfall_risk,rainfall_mm_scenario,weather_penalty,data_type,timestamp
+Chikla,2026,9,live_forecast,753.9,836.2,Low,0.4,1.0,LIVE_API,2026-09-27 15:08:08
+Dongri_Buzurg,2026,9,live_forecast,616.8,686.5,Low,0.4,1.0,LIVE_API,2026-09-27 15:08:10
+Beldongri,2026,9,live_forecast,342.7,344.4,Low,0.0,1.0,LIVE_API,2026-09-27 15:08:11
+Kandri,2026,9,live_forecast,514.0,503.7,Low,0.0,1.0,LIVE_API,2026-09-27 15:08:13
+Munsar,2026,9,live_forecast,479.7,467.9,Low,0.0,1.0,LIVE_API,2026-09-27 15:08:14
+Gumgaon,2026,9,live_forecast,550.0,523.1,Low,0.0,1.0,LIVE_API,2026-09-27 15:08:16
+Balaghat,2026,9,live_forecast,1266.7,1069.5,High,0.4,1.0,LIVE_API,2026-09-27 15:08:18
+Ukwa,2026,9,live_forecast,766.7,697.6,Medium,0.0,1.0,LIVE_API,2026-09-27 15:08:19
+Tirodi,2026,9,live_forecast,445.5,435.1,Low,0.6,1.0,LIVE_API,2026-09-27 15:08:21
+Sitapatore,2026,9,live_forecast,274.1,273.8,Low,6.6,1.0,LIVE_API,2026-09-27 15:08:23
