@@ -430,32 +430,30 @@ if 'mn_probability' in df.columns:
 st.subheader(":material/info: Feature Importance")
 if model is not None:
     try:
-        # New model format: dict with 'models' list and 'features' list
-        if isinstance(model, dict) and 'models' in model and 'features' in model:
-            importances = np.zeros(len(model['features']))
-            for m in model['models']:
-                importances += m.feature_importances_
-            importances /= len(model['models'])
-            feat_df = pd.DataFrame({'Feature': model['features'], 'Importance': importances}).sort_values('Importance', ascending=True)
+        # Handle different model types (list of RFs, single RF, or PUBaggingEnsemble)
+        if isinstance(model, list):
+            base = model[0]
+        elif hasattr(model, 'models') and isinstance(model.models, list):
+            base = model.models[0]  # Get first RF from PUBaggingEnsemble
+        elif isinstance(model, dict) and 'models' in model and 'features' in model:
+            base = model['models'][0]
         else:
-            # Fallback for old model format
-            base = model[0] if isinstance(model, list) else model
-            if hasattr(base, 'feature_importances_'):
-                imp = base.feature_importances_
-                names = ['rock_type_encoded','fault_distance_km','elevation_m','slope_deg',
-                         'rainfall_mm','iron_oxide_index','clay_index','ndvi'][:len(imp)]
-                feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
-            else:
-                feat_df = None
-
-        if feat_df is not None:
+            base = model
+            
+        if hasattr(base, 'feature_importances_'):
+            imp = base.feature_importances_
+            names = ['iron_oxide_index','clay_index','ndvi','rock_type','fault_distance_km',
+                     'shear_zone_proximity_km','elevation_m','slope_deg','rainfall_mm','soil_moisture'][:len(imp)]
+            feat_df = pd.DataFrame({'Feature': names, 'Importance': imp}).sort_values('Importance', ascending=True)
             fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h',
                            color='Importance', color_continuous_scale='RdYlGn_r')
-            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances (All Real Data Sources)")
+            fig_imp.update_layout(height=350, showlegend=False, title="Feature Importances (Real Data Model)")
             st.plotly_chart(fig_imp, use_container_width=True)
-            st.caption("✅ All features derived from real sources: NGDR GSI, Sentinel-2, SRTM, Open-Meteo. No synthetic features.")
+            st.caption("✅ Model features derived from real sources (NGDR GSI, Sentinel-2, SRTM).")
+        else:
+            st.info("Feature importance not available for this model type.")
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error loading feature importance: {e}")
 
 
 # --- Animations ---
