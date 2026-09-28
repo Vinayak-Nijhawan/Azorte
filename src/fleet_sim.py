@@ -203,6 +203,11 @@ class FleetSimulation:
         enroute = [0] * self.num_shovels        # dumpers heading to each shovel
         shovel_busy_min = [0.0] * self.num_shovels  # total busy time per shovel
 
+        # Shared tracking for shift targets
+        shift_ore_target = self.ore_tpd_target / self.shifts_per_day
+        shift_waste_target = self.waste_tpd_target / self.shifts_per_day
+        dispatched_tonnes = {'ore': 0.0, 'waste': 0.0}
+
         # Shared state — each dumper writes its running totals here
         dumper_state = {}
 
@@ -217,6 +222,17 @@ class FleetSimulation:
             fixed_shovel = hash(dumper_id) % self.num_shovels
 
             while env.now < shift_min:
+                # ── DEMAND CHECK ──
+                if material == 'ore' and dispatched_tonnes['ore'] >= shift_ore_target:
+                    yield env.timeout(shift_min - env.now)
+                    break
+                if material == 'waste' and dispatched_tonnes['waste'] >= shift_waste_target:
+                    yield env.timeout(shift_min - env.now)
+                    break
+                
+                # Increment dispatched immediately to reserve this capacity
+                dispatched_tonnes[material] += self.payload_t
+
                 # ── DISPATCH DECISION ──
                 if strategy == 'fixed':
                     s_idx = fixed_shovel
@@ -224,9 +240,36 @@ class FleetSimulation:
                     s_idx = min(range(self.num_shovels),
                                 key=lambda i: len(shovels[i].queue) + len(shovels[i].users))
                 else:
-                    s_idx = self._or_tools_dispatch(shovels, enroute)
+                    s_idx = self._or_tools_dispatch(shovels, enroute, shovel_busy_min)
 
                 enroute[s_idx] += 1
+
+                # ── HAUL EMPTY ──
+                base_haul_empty = (haul_km / self.empty_speed) * 60
+                actual = max(0.3, rng.lognormal(np.log(base_haul_empty), self.cv * 0.5))
+                if self.monsoon_active:
+                    actual /= self.monsoon_factor
+                yield env.timeout(actual)
+                state['haul_time'] += actual
+                state['productive_time'] += actual
+
+                if env.now >= shift_min:
+                    break
+
+                # ── SPOT TIME ──
+                spot_t = max(0.2, rng.lognormal(np.log(self.spot_time), self.cv))
+                yield env.timeout(spot_t)
+                state['productive_time'] += spot_t
+
+                # ── BREAKDOWN CHECK (Poisson per cycle) ──
+                p_bd = min(0.15, self.ore_cycle_min / (self.mtbf_hours * 60))
+                if rng.random() < p_bd:
+                    repair_min = max(5, rng.exponential(self.mttr_hours * 60))
+                    yield env.timeout(repair_min)
+                    state['breakdown_time'] += repair_min
+
+                if env.now >= shift_min:
+                    break
 
                 # ── QUEUE + LOAD AT SHOVEL ──
                 t0 = env.now
@@ -271,29 +314,7 @@ class FleetSimulation:
                 if env.now >= shift_min:
                     break
 
-                # ── HAUL EMPTY ──
-                base_haul_empty = (haul_km / self.empty_speed) * 60
-                actual = max(0.3, rng.lognormal(np.log(base_haul_empty), self.cv * 0.5))
-                if self.monsoon_active:
-                    actual /= self.monsoon_factor
-                yield env.timeout(actual)
-                state['haul_time'] += actual
-                state['productive_time'] += actual
 
-                if env.now >= shift_min:
-                    break
-
-                # ── SPOT TIME ──
-                spot_t = max(0.2, rng.lognormal(np.log(self.spot_time), self.cv))
-                yield env.timeout(spot_t)
-                state['productive_time'] += spot_t
-
-                # ── BREAKDOWN CHECK (Poisson per cycle) ──
-                p_bd = min(0.15, self.ore_cycle_min / (self.mtbf_hours * 60))
-                if rng.random() < p_bd:
-                    repair_min = max(5, rng.exponential(self.mttr_hours * 60))
-                    yield env.timeout(repair_min)
-                    state['breakdown_time'] += repair_min
 
         # ── Launch all dumper processes ───────────────────────────────────────
 
@@ -348,7 +369,7 @@ class FleetSimulation:
 
     # ─── OR-Tools dispatch logic ─────────────────────────────────────────────
 
-    def _or_tools_dispatch(self, shovels, enroute) -> int:
+    def _or_tools_dispatch(self, shovels, enroute, shovel_busy_min) -> int:
         """
         Smart dispatch: pick the shovel that minimises expected total wait.
 
@@ -356,17 +377,39 @@ class FleetSimulation:
         1. Current queue length at each shovel
         2. Dumpers already en-route (will arrive and extend the queue)
         3. Expected service time per queued dumper
+        4. Shovel imbalance penalty (how much more busy is this shovel than the min?)
 
         Uses OR-Tools CP-SAT when available, otherwise falls back to
         weighted cost minimisation.
         """
         n = self.num_shovels
         costs = np.zeros(n)
+        min_busy = min(shovel_busy_min) if shovel_busy_min else 0.0
+        
         for i in range(n):
             queued = len(shovels[i].queue) + len(shovels[i].users)
             pending = enroute[i]
-            # Expected wait = (queued + pending) × avg_load_time
-            costs[i] = (queued + pending * 0.7) * self.load_time
+            expected_wait = (queued + pending) * self.load_time
+            imbalance = shovel_busy_min[i] - min_busy
+            # Cost = expected_wait + shovel imbalance penalty
+            costs[i] = expected_wait + (imbalance * 0.2)
+            
+        if HAS_ORTOOLS:
+            model = cp_model.CpModel()
+            x = [model.NewBoolVar(f'shovel_{i}') for i in range(n)]
+            model.AddExactlyOne(x)
+            
+            # Scale costs to integers
+            int_costs = [int(c * 100) for c in costs]
+            model.Minimize(sum(x[i] * int_costs[i] for i in range(n)))
+            
+            solver = cp_model.CpSolver()
+            status = solver.Solve(model)
+            if status == cp_model.OPTIMAL:
+                for i in range(n):
+                    if solver.Value(x[i]):
+                        return i
+        
         return int(np.argmin(costs))
 
     # ─── Multi-run comparison ────────────────────────────────────────────────
@@ -389,7 +432,7 @@ class FleetSimulation:
 
         comparison = {}
         for label, strategy in strategies.items():
-            ore_list, waste_list, queue_list, util_list = [], [], [], []
+            ore_list, waste_list, queue_list, util_list, imbalance_list = [], [], [], [], []
 
             for i in range(num_runs):
                 seed = self.base_seed + i * 997
@@ -398,6 +441,11 @@ class FleetSimulation:
                 waste_list.append(result['waste_tonnes'])
                 queue_list.append(result['avg_queue_time'])
                 util_list.append(result['avg_utilisation'])
+                # Imbalance is the standard deviation of shovel utilisations in this run
+                if result['shovel_utilisation']:
+                    imbalance_list.append(np.std(result['shovel_utilisation']))
+                else:
+                    imbalance_list.append(0.0)
 
             comparison[label] = {
                 'ore_mean': float(np.mean(ore_list)),
@@ -408,6 +456,7 @@ class FleetSimulation:
                 'queue_std': float(np.std(queue_list)),
                 'util_mean': float(np.mean(util_list)),
                 'util_std': float(np.std(util_list)),
+                'imbalance_mean': float(np.mean(imbalance_list)),
             }
 
         return comparison

@@ -1,0 +1,64 @@
+underground_simulation:
+  mines:
+    Balaghat:
+      type: underground
+      mine_share_pct: 25
+      capacity_tpy: 600000
+    Ukwa:
+      type: underground
+      mine_share_pct: 10
+      capacity_tpy: 235000
+    Gumgaon:
+      type: underground
+      mine_share_pct: 5
+    Chikla:
+      type: underground
+      mine_share_pct: 5
+    Kandri:
+      type: underground
+      mine_share_pct: 5
+    Munsar:
+      type: underground
+      mine_share_pct: 5
+    Beldongri:
+      type: underground
+      mine_share_pct: 5
+
+  lhd_class:
+    payload_t: 5
+    loaded_speed_kmh: 8
+    empty_speed_kmh: 12
+    load_time_min: 2.0
+    dump_time_min: 1.5
+
+  hoist:
+    skip_payload_t: 10
+    winding_speed_ms: 10
+    accel_s: 15
+    load_time_s: 10
+    dump_time_s: 10
+    depth_m: 600
+
+  ore_pass:
+    capacity_t: 100
+
+  availability:
+    mtbf_hours: 100
+    mttr_hours: 4
+    target_utilization: 0.8
+
+  shift:
+    hours: 8
+    shifts_per_day: 3
+    blast_window_min: 60
+
+  draw_points:
+    num_points: 4
+    tram_distance_m: [150, 250, 350, 500]
+    grade_mn: [0.45, 0.40, 0.35, 0.30]
+
+  cycle_variation:
+    sigma: 0.15
+
+  num_runs: 30
+  random_seed: 42
