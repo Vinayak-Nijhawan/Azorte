@@ -4,6 +4,12 @@ import plotly.graph_objects as go
 import plotly.express as px
 import json
 import os
+import sys
+
+# Load global CSS (fd-header styling, Material Symbols font)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css
+load_css()
 
 st.markdown("""
 <div class="fd-header">

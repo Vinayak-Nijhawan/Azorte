@@ -64,7 +64,7 @@ with st.sidebar:
     
     # 3. FOOTER (STATUS & PROFILE AT THE VERY BOTTOM)
     st.divider()
-    st.markdown("<span class=\"material-symbols-rounded\">circle</span> **All systems operational**", unsafe_allow_html=True)
+    st.markdown("🟢 **All systems operational**")
     st.caption("Last sync 2 min ago")
     st.markdown("**Vinayak Nijhawan** · *Project Lead*")
 
