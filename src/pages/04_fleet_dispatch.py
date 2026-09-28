@@ -157,64 +157,50 @@ if 'fleet_selected_mine' not in st.session_state:
 # Build the header using native Streamlit columns so we can embed a selectbox
 monsoon_tag_html = '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:3px 12px;font-size:0.75rem;color:#374151;white-space:nowrap;"><span class="material-symbols-rounded" style="font-size:15px;">water_drop</span> Monsoon Derate</span>' if monsoon_override else ''
 
-# Header container with CSS styling
+# CSS to style the st.container to look like our fd-header
 st.markdown("""<style>
-.fleet-header-container {
-    background: #EBF2FA;
-    border: 1px solid rgba(59,130,246,0.18);
-    border-radius: 14px;
-    padding: 18px 22px;
-    margin-bottom: 18px;
-    border-left: 4px solid #FF9933;
-    position: relative;
-    overflow: hidden;
+/* Style the first container (header) with orange left border */
+div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"]:first-child {
+    background: #EBF2FA !important;
+    border: 1px solid rgba(59,130,246,0.18) !important;
+    border-left: 4px solid #FF9933 !important;
+    border-radius: 14px !important;
 }
-.fleet-header-container::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
+div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"]:first-child > div {
+    background: transparent !important;
 }
-.fleet-title { font-size: 1.35rem; font-weight: 700; color: #111827; margin: 0; display: flex; align-items: center; gap: 8px; }
-.fleet-subtitle { font-size: 0.78rem; color: #4B5563; margin-top: 3px; }
-.fleet-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fleet-title { font-size: 1.35rem !important; font-weight: 700 !important; color: #111827 !important; margin: 0 !important; }
+.fleet-subtitle { font-size: 0.78rem !important; color: #4B5563 !important; margin-top: 2px !important; }
+.fleet-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .fleet-tag-pill { display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #374151; white-space: nowrap; }
 .fleet-op-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); border-radius: 20px; padding: 3px 12px; font-size: 0.7rem; color: #059669; font-weight: 700; white-space: nowrap; }
 .fleet-op-dot { width: 6px; height: 6px; border-radius: 50%; background: #059669; }
-/* Hide label and reduce padding on the inline mine selector */
-div[data-testid="stSelectbox"].mine-header-select label { display: none !important; }
-div[data-testid="stSelectbox"].mine-header-select { margin-top: -10px; margin-bottom: -10px; }
 </style>""", unsafe_allow_html=True)
 
-# Start the styled container
-st.markdown('<div class="fleet-header-container">', unsafe_allow_html=True)
+# Use native st.container for the header box
+with st.container(border=True):
+    hdr_left, hdr_right = st.columns([3, 2])
 
-hdr_left, hdr_right = st.columns([3, 2])
+    with hdr_left:
+        st.markdown('<div class="fleet-title">🚛 Intelligent Fleet Dispatch</div>', unsafe_allow_html=True)
+        st.markdown('<div class="fleet-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>', unsafe_allow_html=True)
 
-with hdr_left:
-    st.markdown('<div class="fleet-title"><span class="material-symbols-rounded" style="font-size:22px;">local_shipping</span> Intelligent Fleet Dispatch</div>', unsafe_allow_html=True)
-    st.markdown('<div class="fleet-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>', unsafe_allow_html=True)
-
-with hdr_right:
-    # Sub-columns for mine selector + tags
-    rc1, rc2 = st.columns([1, 1])
-    with rc1:
-        selected_mine = st.selectbox(
-            "Mine", opencast_mines,
-            index=opencast_mines.index(st.session_state.fleet_selected_mine) if st.session_state.fleet_selected_mine in opencast_mines else 0,
-            key="fleet_mine_header",
-            label_visibility="collapsed"
-        )
-        st.session_state.fleet_selected_mine = selected_mine
-    with rc2:
-        st.markdown(f"""<div class="fleet-tags">
-            <span class="fleet-tag-pill"><span class="material-symbols-rounded" style="font-size:15px;">calendar_month</span> {latest_label}</span>
-            {monsoon_tag_html}
-            <span class="fleet-op-badge"><span class="fleet-op-dot"></span> OPERATIONAL</span>
-        </div>""", unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
+    with hdr_right:
+        rc1, rc2 = st.columns([1, 1])
+        with rc1:
+            selected_mine = st.selectbox(
+                "Mine", opencast_mines,
+                index=opencast_mines.index(st.session_state.fleet_selected_mine) if st.session_state.fleet_selected_mine in opencast_mines else 0,
+                key="fleet_mine_header",
+                label_visibility="collapsed"
+            )
+            st.session_state.fleet_selected_mine = selected_mine
+        with rc2:
+            st.markdown(f"""<div class="fleet-tags">
+                <span class="fleet-tag-pill"><span class="material-symbols-rounded" style="font-size:15px;">calendar_month</span> {latest_label}</span>
+                {monsoon_tag_html}
+                <span class="fleet-op-badge"><span class="fleet-op-dot"></span> OPERATIONAL</span>
+            </div>""", unsafe_allow_html=True)
 
 mine_display = selected_mine.replace('_', ' ')
 
