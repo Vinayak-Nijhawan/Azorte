@@ -28,30 +28,12 @@ CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "fleet_config.yaml")
 sys.path.insert(0, PROJECT_ROOT)
 from src.fleet_sim import load_config, get_opencast_mines, FleetSimulation, derive_cycle_time
 
-# ─── Page config ───
-st.set_page_config(page_title="Fleet Dispatch · MineFlow", page_icon="🚛", layout="wide")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CSS
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""<style>
-    .fd-header {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        border-radius: 12px; padding: 24px 30px;
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 20px;
-    }
-    .fd-header h1 { font-size: 1.8rem !important; font-weight: 700 !important;
-        color: #ffffff !important; margin: 0 !important; }
-    .fd-header .fd-subtitle { font-size: 0.85rem !important; color: #cbd5e1 !important; margin-top: 2px !important; }
-    .fd-header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .fd-tag { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 20px; padding: 4px 14px; font-size: 0.75rem; color: #e2e8f0;
-        white-space: nowrap; }
-    .fd-sim-badge { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3);
-        border-radius: 20px; padding: 4px 14px; font-size: 0.75rem; color: #fbbf24;
-        font-weight: 700; white-space: nowrap; }
-
     /* Badges */
     .badge-real { display: inline-block; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25);
         color: #16a34a !important; font-size: 0.55rem !important; font-weight: 700;
@@ -222,18 +204,19 @@ comparison = run_cached_comparison(
 # HEADER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-monsoon_tag = '<div class="fd-tag">🌧️ Monsoon Derate Active</div>' if monsoon_override else ''
+monsoon_tag = '<div class="fd-tag"><span class="material-symbols-rounded">water_drop</span> Monsoon Derate Active</div>' if monsoon_override else ''
+sim_badge = '<div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>'
 st.markdown(f"""
 <div class="fd-header">
-    <div>
-        <h1>🚛 Intelligent Fleet Dispatch</h1>
+    <div class="fd-header-left">
+        <h1><span class="material-symbols-rounded">local_shipping</span> Intelligent Fleet Dispatch</h1>
         <div class="fd-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">⛏️ {mine_display}</div>
-        <div class="fd-tag">📅 Last updated: {latest_label}</div>
+        <div class="fd-tag"><span class="material-symbols-rounded">architecture</span> {mine_display}</div>
+        <div class="fd-tag"><span class="material-symbols-rounded">calendar_month</span> {latest_label}</div>
         {monsoon_tag}
-        <div class="fd-sim-badge">🧪 Simulation Mode</div>
+        {sim_badge}
     </div>
 </div>
 """, unsafe_allow_html=True)
