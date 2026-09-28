@@ -508,15 +508,41 @@ else:
     company_tpd = float(fy25_row['tpd'].iloc[0]) if not fy25_row.empty else 4940.0
     latest_label = "FY25"
 
+# ─── Load live forecast for mine list ───
+LIVE_FORECAST_PATH = os.path.join(DATA_DIR, "production_forecast_live.csv")
+live_forecast_df = pd.DataFrame()
+all_mines = ['Dongri_Buzurg']
+if os.path.exists(LIVE_FORECAST_PATH):
+    live_forecast_df = pd.read_csv(LIVE_FORECAST_PATH)
+    if 'mine_id' in live_forecast_df.columns:
+        all_mines = sorted(live_forecast_df['mine_id'].unique().tolist())
+
 # ─── SIDEBAR ───
 st.sidebar.header("⚙️ Configuration")
 
+selected_mine = st.sidebar.selectbox(
+    "Select Mine",
+    all_mines,
+    index=all_mines.index('Dongri_Buzurg') if 'Dongri_Buzurg' in all_mines else 0,
+)
+
+mine_display = selected_mine.replace('_', ' ')
+
+# Mine share defaults per mine (approximate based on MOIL mine sizes)
+DEFAULT_SHARES = {
+    'Dongri_Buzurg': 12, 'Balaghat': 18, 'Chikla': 8, 'Kandri': 8,
+    'Munsar': 7, 'Gumgaon': 10, 'Beldongri': 5, 'Ukwa': 4,
+    'Tirodi': 7, 'Sitapatore': 5,
+}
+
 mine_share = st.sidebar.slider(
-    "Mine Share of Company Production",
-    min_value=1, max_value=30, value=8, step=1,
-    help="⚠️ ASSUMPTION — not MOIL data. "
-         "Dongri Buzurg's share of total MOIL production. "
-         "Formula: Mine TPD = Company TPD × (mine_share / 100)"
+    f"Mine Share — {mine_display}",
+    min_value=1, max_value=30,
+    value=DEFAULT_SHARES.get(selected_mine, 8),
+    step=1,
+    help=f"⚠️ ASSUMPTION — not MOIL data. "
+         f"{mine_display}'s estimated share of total MOIL production. "
+         f"Formula: Mine TPD = Company TPD × (mine_share / 100)"
 )
 st.sidebar.caption(
     f"⚠️ **ASSUMPTION — not MOIL data.**\n\n"
@@ -527,12 +553,20 @@ st.sidebar.caption(
 # Derived mine TPD
 mine_tpd = company_tpd * (mine_share / 100)  # DERIVED
 
+# If we have live forecast data for this mine, also show its predicted TPD
+live_mine_row = None
+if not live_forecast_df.empty:
+    live_mine = live_forecast_df[live_forecast_df['mine_id'] == selected_mine]
+    if not live_mine.empty:
+        live_mine_row = live_mine.iloc[0]
+
 # ─── Validation ───
 val_errors = validate_data(moil_df, mine_tpd, company_tpd, planned_tpd, fy_target_tonnes)
 
 # ─── Generate fleet data (SIMULATED) ───
-# Use a seed based on mine_share so fleet changes when the user adjusts the slider
-fleet = generate_fleet_for_mine_tpd(mine_tpd, seed=42 + mine_share)
+# Use a seed based on mine name + share so each mine gets a unique fleet
+mine_seed = sum(ord(c) for c in selected_mine) + mine_share
+fleet = generate_fleet_for_mine_tpd(mine_tpd, seed=mine_seed)
 df_fleet = fleet['assignments']
 shovel_stats = fleet['shovel_stats']
 
@@ -554,7 +588,7 @@ st.markdown(f"""
         <div class="fd-subtitle">MineFlow OR-Optimizer · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">⛏️ Dongri Buzurg</div>
+        <div class="fd-tag">⛏️ {mine_display}</div>
         <div class="fd-tag">📅 Last updated: {latest_label}</div>
         <div class="fd-sim-badge">🧪 Simulation Mode</div>
     </div>
@@ -603,7 +637,7 @@ st.markdown(f"""
         <div class="kpi-delta {achieve_class}">{delta_icon} {abs(delta_tpd):,.0f} TPD vs plan</div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-label">Mine TPD (Dongri Buzurg) <span class="badge-derived">DERIVED</span></div>
+        <div class="kpi-label">Mine TPD ({mine_display}) <span class="badge-derived">DERIVED</span></div>
         <div class="kpi-value">{mine_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
         <div class="kpi-delta neutral">= {company_tpd:,.0f} × {mine_share}%</div>
     </div>
@@ -998,6 +1032,55 @@ Every metric on this dashboard has a provenance badge. Here's the full breakdown
         use_container_width=True,
         hide_index=True,
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ALL MINES — LIVE RISK DASHBOARD
+# ══════════════════════════════════════════════════════════════════════════════
+
+if not live_forecast_df.empty:
+    st.markdown("---")
+    st.markdown('<div class="section-title">🌐 All Mines — Live Risk Dashboard <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
+
+    # Show timestamp
+    if 'timestamp' in live_forecast_df.columns:
+        ts = live_forecast_df['timestamp'].iloc[0]
+        st.caption(f"🕐 **Last Updated:** {ts} | **Source:** Open-Meteo Live 14-Day Weather API → ML Model")
+
+    live_display = live_forecast_df[['mine_id', 'baseline_tpd', 'predicted_production_tpd',
+                                      'rainfall_mm_scenario', 'weather_penalty', 'shortfall_risk']].copy()
+    live_display.columns = ['Mine', 'Baseline (TPD)', 'Predicted (TPD)', 'Rainfall (mm)', 'Weather Penalty', 'Risk']
+    live_display['Mine'] = live_display['Mine'].str.replace('_', ' ')
+    live_display['Efficiency'] = (live_display['Predicted (TPD)'] / live_display['Baseline (TPD)'] * 100).round(1)
+    live_display = live_display.sort_values('Efficiency')
+
+    def color_risk(val):
+        if val == 'High':
+            return 'background-color: rgba(220,38,38,0.15); color: #dc2626;'
+        elif val == 'Medium':
+            return 'background-color: rgba(217,119,6,0.15); color: #d97706;'
+        return 'background-color: rgba(22,163,74,0.1); color: #16a34a;'
+
+    styled_live = live_display.style.map(color_risk, subset=['Risk']).format({
+        'Baseline (TPD)': '{:.0f}',
+        'Predicted (TPD)': '{:.0f}',
+        'Rainfall (mm)': '{:.0f}',
+        'Weather Penalty': '{:.2f}',
+        'Efficiency': '{:.1f}%'
+    })
+    st.dataframe(styled_live, use_container_width=True, hide_index=True)
+
+    # Summary stats
+    high_count = (live_forecast_df['shortfall_risk'] == 'High').sum()
+    med_count = (live_forecast_df['shortfall_risk'] == 'Medium').sum()
+    low_count = (live_forecast_df['shortfall_risk'] == 'Low').sum()
+
+    sc1, sc2, sc3 = st.columns(3)
+    sc1.metric("🔴 High Risk Mines", high_count)
+    sc2.metric("🟡 Medium Risk Mines", med_count)
+    sc3.metric("🟢 Low Risk Mines", low_count)
+
+    st.caption("📡 This uses **LIVE weather data** from Open-Meteo API → trained ML model. Run `python src/generate_live_forecast.py` to refresh.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
