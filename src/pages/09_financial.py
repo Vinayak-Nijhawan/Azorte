@@ -253,9 +253,9 @@ with main_col:
             go.Bar(name='AI-Optimized Campaign', x=['Exploration Capex'], y=[ai_cost], marker_color='#00C851', text=[format_inr(ai_cost)], textposition='auto')
         ])
         fig1.update_layout(
-            template="plotly_dark",
+            template="plotly_white",
             barmode='group',
-            yaxis_title="Capital Expenditure (?)",
+            yaxis_title="Capital Expenditure (₹)",
             margin=dict(l=0, r=0, t=30, b=0),
             height=350,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
@@ -310,7 +310,7 @@ with main_col:
         ])
         fig2.update_layout(
             title="Monsoon Shortfall Recovery",
-            template="plotly_dark",
+            template="plotly_white",
             margin=dict(l=0, r=0, t=40, b=0),
             height=350
         )
@@ -388,7 +388,7 @@ with main_col:
         st.subheader("5. Executive Summary & Payback Period")
         
         total_annual_value = capex_saved + revenue_protected + annual_fleet_savings
-        implementation_capex = 5000000 # ?50.00 Lakh
+        implementation_capex = 5000000 # ₹50.00 Lakh
         
         payback_months = max(0.1, round((implementation_capex / total_annual_value) * 12, 1))
         

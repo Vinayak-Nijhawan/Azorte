@@ -489,18 +489,18 @@ with main_col:
     st.markdown(f"""
     <div class="geo-kpi-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Daily Loss</div><div class="geo-kpi-icon geo-icon-red">?</div></div>
-            <div class="geo-kpi-value">?{daily_loss_rs/100000:.1f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Lakh</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Daily Loss</div><div class="geo-kpi-icon geo-icon-red">₹</div></div>
+            <div class="geo-kpi-value">₹{daily_loss_rs/100000:.1f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Lakh</span></div>
             <div class="geo-kpi-footer"><span class="geo-trend-down">Per Day</span></div>
         </div>
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Monthly Loss</div><div class="geo-kpi-icon geo-icon-red">?</div></div>
-            <div class="geo-kpi-value">?{daily_loss_rs * 25 / 10000000:.2f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Cr</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Monthly Loss</div><div class="geo-kpi-icon geo-icon-red">₹</div></div>
+            <div class="geo-kpi-value">₹{daily_loss_rs * 25 / 10000000:.2f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Cr</span></div>
             <div class="geo-kpi-footer"><span class="geo-trend-down">Per Month (25 days)</span></div>
         </div>
         <div class="geo-kpi-card">
-            <div class="geo-kpi-header"><div class="geo-kpi-title">Annual Loss</div><div class="geo-kpi-icon geo-icon-red">?</div></div>
-            <div class="geo-kpi-value">?{daily_loss_rs * 300 / 10000000:.1f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Cr</span></div>
+            <div class="geo-kpi-header"><div class="geo-kpi-title">Annual Loss</div><div class="geo-kpi-icon geo-icon-red">₹</div></div>
+            <div class="geo-kpi-value">₹{daily_loss_rs * 300 / 10000000:.1f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">Cr</span></div>
             <div class="geo-kpi-footer"><span class="geo-trend-down">Per Year (300 days)</span></div>
         </div>
     </div>

@@ -23,6 +23,7 @@ pages = {
     "GeoProspect AI": st.Page("src/pages/02_prospectivity.py", title="GeoProspect AI", icon=":material/explore:"),
     "Production Forecast": st.Page("src/pages/03_production.py", title="Production Forecast", icon=":material/monitoring:"),
     "Fleet Dispatch": st.Page("src/pages/04_fleet_dispatch.py", title="Fleet Dispatch", icon=":material/local_shipping:"),
+    "Underground Dispatch": st.Page("src/pages/05_underground_dispatch.py", title="Underground Dispatch", icon=":material/elevator:"),
     "What-If Simulator": st.Page("src/pages/06_what_if.py", title="What-If Simulator", icon=":material/tune:"),
     "AI Explainability": st.Page("src/pages/07_explainability.py", title="AI Explainability", icon=":material/science:"),
     "G-Sync AI": st.Page("src/pages/08_ai_assistant.py", title="G-Sync AI", icon=":material/smart_toy:"),
@@ -53,6 +54,7 @@ with st.sidebar:
     st.page_link(pages["GeoProspect AI"], label="GeoProspect AI", icon=":material/explore:")
     st.page_link(pages["Production Forecast"], label="Production Forecast", icon=":material/monitoring:")
     st.page_link(pages["Fleet Dispatch"], label="Fleet Dispatch", icon=":material/local_shipping:")
+    st.page_link(pages["Underground Dispatch"], label="Underground Dispatch", icon=":material/elevator:")
     st.page_link(pages["What-If Simulator"], label="What-If Simulator", icon=":material/tune:")
     
     st.write("") # Spacer

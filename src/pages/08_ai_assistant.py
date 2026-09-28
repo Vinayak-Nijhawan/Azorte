@@ -224,7 +224,7 @@ INSTRUCTIONS:
             
             chat_completion = client.chat.completions.create(
                 messages=messages,
-                model="openai/gpt-oss-20b",
+                model="llama-3.3-70b-versatile",
             )
             response = chat_completion.choices[0].message.content
             # Clean any HTML tags that the LLM might generate
@@ -253,7 +253,7 @@ INSTRUCTIONS:
     # 2. Fleet/Dumper/Shovel
     elif any(k in query for k in ['fleet', 'dumper', 'shovel', 'dispatch', 'assign']):
         if df_dispatch is not None:
-            mine_filter = next((m for m in ['Mine_A', 'Mine_B', 'Mine_C'] if m.lower() in query), None)
+            mine_filter = next((m for m in ['Balaghat', 'Dongri_Buzurg', 'Chikla', 'Kandri', 'Munsar', 'Beldongri', 'Gumgaon', 'Tirodi', 'Ukwa', 'Sitapatore'] if m.lower() in query), None)
             df_show = df_dispatch[df_dispatch['mine_id'] == mine_filter] if mine_filter else df_dispatch
             
             t_dumpers = df_show['assigned_dumpers'].sum() if 'assigned_dumpers' in df_show.columns else "N/A"
@@ -270,7 +270,7 @@ INSTRUCTIONS:
     # 3. Alert/Warning
     elif any(k in query for k in ['alert', 'warning', 'critical']):
         if df_alerts is not None:
-            mine_filter = next((m for m in ['Mine_A', 'Mine_B', 'Mine_C'] if m.lower() in query), None)
+            mine_filter = next((m for m in ['Balaghat', 'Dongri_Buzurg', 'Chikla', 'Kandri', 'Munsar', 'Beldongri', 'Gumgaon', 'Tirodi', 'Ukwa', 'Sitapatore'] if m.lower() in query), None)
             df_show = df_alerts[df_alerts['mine_id'] == mine_filter] if mine_filter else df_alerts
             if not df_show.empty:
                 return f"Here are the latest fleet alerts{' for ' + mine_filter if mine_filter else ''}:", df_show
@@ -305,7 +305,7 @@ INSTRUCTIONS:
     # 7. Weather/Rain/Monsoon
     elif any(k in query for k in ['weather', 'rain', 'monsoon']):
         if df_prod is not None:
-            mine_filter = next((m for m in ['Mine_A', 'Mine_B', 'Mine_C'] if m.lower() in query), None)
+            mine_filter = next((m for m in ['Balaghat', 'Dongri_Buzurg', 'Chikla', 'Kandri', 'Munsar', 'Beldongri', 'Gumgaon', 'Tirodi', 'Ukwa', 'Sitapatore'] if m.lower() in query), None)
             df_show = df_prod[df_prod['mine_id'] == mine_filter] if mine_filter else df_prod
             heavy_rain = df_show[df_show['rainfall_mm__REAL'] > df_show['rainfall_mm__REAL'].mean()]
             return f"Weather impact analysis{' for ' + mine_filter if mine_filter else ''}: Heavy rainfall months show notable dips in equipment availability and production.", heavy_rain[['mine_id', 'month', 'rainfall_mm__REAL', 'derived_actual_production_tpd__DERIVED']]

@@ -22,30 +22,15 @@ UG_CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "underground_config.yaml")
 sys.path.insert(0, PROJECT_ROOT)
 from src.underground_sim import load_config, get_underground_mines, UndergroundSimulation
 
-# ─── Page config ───
-st.set_page_config(page_title="UG Dispatch · MineFlow", page_icon="🚇", layout="wide")
+# Load global CSS
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css
+load_css()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CSS
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""<style>
-    .fd-header {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        border-radius: 12px; padding: 24px 30px;
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 20px;
-    }
-    .fd-header h1 { font-size: 1.8rem !important; font-weight: 700 !important;
-        color: #ffffff !important; margin: 0 !important; }
-    .fd-header .fd-subtitle { font-size: 0.85rem !important; color: #cbd5e1 !important; margin-top: 2px !important; }
-    .fd-header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .fd-tag { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 20px; padding: 4px 14px; font-size: 0.75rem; color: #e2e8f0;
-        white-space: nowrap; }
-    .fd-sim-badge { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3);
-        border-radius: 20px; padding: 4px 14px; font-size: 0.75rem; color: #fbbf24;
-        font-weight: 700; white-space: nowrap; }
-
     /* Badges */
     .badge-real { display: inline-block; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25);
         color: #16a34a !important; font-size: 0.55rem !important; font-weight: 700;
