@@ -224,7 +224,7 @@ INSTRUCTIONS:
             
             chat_completion = client.chat.completions.create(
                 messages=messages,
-                model="llama-3.3-70b-versatile",
+                model="llama3-8b-8192",
             )
             response = chat_completion.choices[0].message.content
             # Clean any HTML tags that the LLM might generate
