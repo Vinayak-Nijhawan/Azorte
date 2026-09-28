@@ -1,0 +1,105 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# MineFlow Fleet Simulation Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+# EVERY value in this file is an ASSUMPTION.
+# No value comes from MOIL's internal data.
+# Sources: Indian opencast manganese mining industry standards.
+# All values are exposed in the dashboard's "Assumptions" panel.
+
+fleet_simulation:
+  random_seed: 42
+  num_runs: 30            # Seeded replications for statistical comparison
+
+  # ── Shift schedule ──
+  shift:
+    hours: 8              # Single shift duration (hours)
+    shifts_per_day: 2     # Number of shifts per calendar day
+
+  # ── Equipment availability ──
+  availability:
+    target_utilization: 0.80   # Mechanical availability target (fraction)
+    mtbf_hours: 120            # Mean Time Between Failures (operating hours)
+    mttr_hours: 2.0            # Mean Time To Repair (hours)
+
+  # ── Monsoon derate (Jun-Sep) ──
+  monsoon:
+    months: [6, 7, 8, 9]
+    derate_factor: 0.85        # 15% productivity reduction (wet haul roads)
+
+  # ── Cycle-time stochastic variation ──
+  cycle_variation:
+    distribution: lognormal
+    sigma: 0.15                # CV for load/dump/spot times
+
+  # ── Dumper classes (typical Indian OC manganese) ──
+  dumper_classes:
+    heavy:
+      payload_t: 25            # 25-tonne rigid-body dumper (BEML BH50/Cat 730)
+      loaded_speed_kmh: 12     # Loaded speed on haul road (km/h)
+      empty_speed_kmh: 20      # Empty return speed (km/h)
+    medium:
+      payload_t: 16            # 16-tonne tipper (Tata/Ashok Leyland)
+      loaded_speed_kmh: 15
+      empty_speed_kmh: 22
+
+  # ── Shovel / excavator classes ──
+  shovel_classes:
+    large:
+      capacity_tph: 250        # Komatsu PC450-class hydraulic excavator
+      load_time_min: 3.5       # Time to fill one dumper (~4 passes)
+    medium:
+      capacity_tph: 150        # Smaller excavator (Tata Hitachi EX200)
+      load_time_min: 4.5       # Time to fill one dumper (~5 passes)
+
+  # ── Fixed timing elements ──
+  timing:
+    dump_time_min: 2.0         # Dumping at crusher/waste dump
+    spot_time_min: 1.5         # Positioning before loading
+
+  # ── Crusher / dump point ──
+  crusher:
+    dump_points: 2             # Simultaneous dump positions at crusher
+
+  # ── Stripping ratio ──
+  stripping_ratio: 4.0        # Waste : Ore ratio (tonnes waste per tonne ore)
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # MINE DEFINITIONS — only OPENCAST mines have fleet dispatch
+  # Underground mines (Balaghat, Gumgaon, etc.) use shaft haulage, not trucks
+  # ═══════════════════════════════════════════════════════════════════════════
+  mines:
+    Dongri_Buzurg:
+      type: opencast
+      mine_share_pct: 17
+      haul_distance_km:
+        ore: 2.5               # Pit to crusher (km)
+        waste: 1.8             # Pit to waste dump (km)
+      dumper_class: heavy
+      shovel_class: large
+
+    Tirodi:
+      type: opencast
+      mine_share_pct: 6
+      haul_distance_km:
+        ore: 3.0
+        waste: 2.2
+      dumper_class: heavy
+      shovel_class: medium
+
+    Parsoda:
+      type: opencast
+      mine_share_pct: 4
+      haul_distance_km:
+        ore: 2.2
+        waste: 1.6
+      dumper_class: medium
+      shovel_class: medium
+
+    Sitapatore:
+      type: opencast
+      mine_share_pct: 3
+      haul_distance_km:
+        ore: 2.0
+        waste: 1.5
+      dumper_class: medium
+      shovel_class: medium
