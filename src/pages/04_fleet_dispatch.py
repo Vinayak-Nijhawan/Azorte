@@ -18,6 +18,11 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 
+# Load global CSS + Material Symbols font
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from utils import load_css
+load_css()
+
 # ─── Paths ───
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
