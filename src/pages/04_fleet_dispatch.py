@@ -57,13 +57,13 @@ st.markdown("""
     .fd-header-left h1 {
         font-size: 1.8rem !important;
         font-weight: 700 !important;
-        color: #e2e8f0 !important;
+        color: #ffffff !important;
         margin: 0 !important;
         letter-spacing: 0.5px;
     }
     .fd-header-left .fd-subtitle {
         font-size: 0.85rem !important;
-        color: #64748b !important;
+        color: #cbd5e1 !important;
         margin-top: 2px !important;
     }
     .fd-header-right {
@@ -145,28 +145,28 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .kpi-card {
-        background: rgba(255,255,255,0.025);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: rgba(241,245,249,0.6);
+        border: 1px solid rgba(100,116,139,0.2);
         border-radius: 10px;
         padding: 16px 18px;
         transition: border-color 0.2s;
     }
     .kpi-card:hover {
-        border-color: rgba(99,102,241,0.3);
+        border-color: rgba(99,102,241,0.5);
     }
     .kpi-card-simulated {
-        background: rgba(255,255,255,0.025);
-        border: 1px solid rgba(245,158,11,0.15);
+        background: rgba(255,251,235,0.6);
+        border: 1px solid rgba(245,158,11,0.3);
         border-radius: 10px;
         padding: 16px 18px;
         transition: border-color 0.2s;
     }
     .kpi-card-simulated:hover {
-        border-color: rgba(245,158,11,0.4);
+        border-color: rgba(245,158,11,0.6);
     }
     .kpi-label {
         font-size: 0.68rem !important;
-        color: #64748b !important;
+        color: #475569 !important;
         text-transform: uppercase;
         letter-spacing: 0.8px;
         font-weight: 600 !important;
@@ -175,12 +175,12 @@ st.markdown("""
     .kpi-value {
         font-size: 1.7rem !important;
         font-weight: 700 !important;
-        color: #f1f5f9 !important;
+        color: #1e293b !important;
         line-height: 1.1 !important;
     }
     .kpi-unit {
         font-size: 0.75rem !important;
-        color: #64748b !important;
+        color: #475569 !important;
         font-weight: 400 !important;
         margin-left: 3px;
     }
@@ -188,10 +188,10 @@ st.markdown("""
         font-size: 0.75rem !important;
         margin-top: 4px !important;
     }
-    .kpi-delta.positive { color: #22c55e !important; }
-    .kpi-delta.negative { color: #ef4444 !important; }
-    .kpi-delta.neutral  { color: #64748b !important; }
-    .kpi-delta.warning  { color: #f59e0b !important; }
+    .kpi-delta.positive { color: #16a34a !important; }
+    .kpi-delta.negative { color: #dc2626 !important; }
+    .kpi-delta.neutral  { color: #475569 !important; }
+    .kpi-delta.warning  { color: #d97706 !important; }
 
     /* ── Section headers ── */
     .section-title {
@@ -202,7 +202,7 @@ st.markdown("""
         font-weight: 700 !important;
         margin-bottom: 12px !important;
         padding-bottom: 8px;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid rgba(0,0,0,0.08);
     }
 
     /* ── Cards / Panels ── */
@@ -216,14 +216,14 @@ st.markdown("""
     .panel-header {
         font-size: 0.95rem !important;
         font-weight: 600 !important;
-        color: #e2e8f0 !important;
+        color: #1e293b !important;
         margin-bottom: 14px !important;
     }
 
     /* ── AI Recommendation ── */
     .ai-card {
-        background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(15,23,42,0.5) 100%);
-        border: 1px solid rgba(99,102,241,0.2);
+        background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(241,245,249,0.8) 100%);
+        border: 1px solid rgba(99,102,241,0.25);
         border-radius: 10px;
         padding: 20px;
     }
@@ -233,7 +233,7 @@ st.markdown("""
         gap: 8px;
         font-size: 0.95rem !important;
         font-weight: 700 !important;
-        color: #a5b4fc !important;
+        color: #4f46e5 !important;
         margin-bottom: 16px !important;
     }
     .ai-badge {
@@ -242,7 +242,7 @@ st.markdown("""
         border-radius: 4px;
         padding: 2px 8px;
         font-size: 0.6rem !important;
-        color: #818cf8 !important;
+        color: #6366f1 !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-weight: 700;
@@ -258,7 +258,7 @@ st.markdown("""
     }
     .ai-value {
         font-size: 0.95rem !important;
-        color: #e2e8f0 !important;
+        color: #1e293b !important;
     }
     .ai-impact-item {
         display: flex;
@@ -267,8 +267,8 @@ st.markdown("""
         font-size: 0.85rem !important;
         padding: 3px 0;
     }
-    .impact-positive { color: #4ade80 !important; }
-    .impact-negative { color: #f87171 !important; }
+    .impact-positive { color: #16a34a !important; }
+    .impact-negative { color: #dc2626 !important; }
 
     /* ── Bottleneck cards ── */
     .bottleneck-card {
@@ -287,12 +287,12 @@ st.markdown("""
         font-weight: 700 !important;
         margin-bottom: 4px !important;
     }
-    .bn-critical .bn-label { color: #f87171 !important; }
-    .bn-warning  .bn-label { color: #fbbf24 !important; }
-    .bn-info     .bn-label { color: #60a5fa !important; }
+    .bn-critical .bn-label { color: #dc2626 !important; }
+    .bn-warning  .bn-label { color: #d97706 !important; }
+    .bn-info     .bn-label { color: #2563eb !important; }
     .bn-message {
         font-size: 0.85rem !important;
-        color: #cbd5e1 !important;
+        color: #334155 !important;
     }
 
     /* ── Fleet status items ── */
@@ -301,8 +301,8 @@ st.markdown("""
         align-items: center;
         gap: 10px;
         padding: 8px 12px;
-        background: rgba(255,255,255,0.02);
-        border: 1px solid rgba(255,255,255,0.04);
+        background: rgba(241,245,249,0.5);
+        border: 1px solid rgba(100,116,139,0.15);
         border-radius: 6px;
         margin-bottom: 6px;
         font-size: 0.85rem !important;
@@ -317,15 +317,15 @@ st.markdown("""
     .dot-maint    { background: #ef4444; }
     .fleet-id {
         font-weight: 700 !important;
-        color: #e2e8f0 !important;
+        color: #1e293b !important;
         min-width: 30px;
     }
     .fleet-status {
-        color: #94a3b8 !important;
+        color: #475569 !important;
         flex: 1;
     }
     .fleet-cap {
-        color: #64748b !important;
+        color: #475569 !important;
         font-size: 0.78rem !important;
     }
 
