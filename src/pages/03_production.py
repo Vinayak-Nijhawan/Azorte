@@ -1,47 +1,18 @@
 import streamlit as st
-
-import sys
-import os
-# Add the project root to sys.path so we can import utils
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from utils import load_css, inject_kpi_animations, inject_volcano_animations
-load_css()
-
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+import json
 import os
 
 st.markdown("""
-<style>
-.geo-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
-.geo-kpi-card { background: var(--secondary-background-color) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; border: 1px solid rgba(128, 128, 128, 0.2) !important; backdrop-filter: blur(12px); border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent); border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transition: all 0.2s ease; }
-.geo-kpi-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-2px); }
-.geo-kpi-header { display: flex; justify-content: space-between; align-items: center; }
-.geo-kpi-title { color: color-mix(in srgb, var(--text-color) 60%, transparent); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.geo-kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-.geo-icon-blue   { background: rgba(59,130,246,0.1); color: #3B82F6; }
-.geo-icon-green  { background: rgba(16,185,129,0.1); color: #10B981; }
-.geo-icon-purple { background: rgba(139,92,246,0.1); color: #8B5CF6; }
-.geo-icon-amber  { background: rgba(245,158,11,0.1); color: #F59E0B; }
-.geo-icon-red    { background: rgba(239,68,68,0.1);  color: #EF4444; }
-.geo-kpi-value { font-size: 2.2rem; font-weight: 700; color: var(--text-color); line-height: 1.2; }
-.geo-kpi-footer { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
-.geo-kpi-subtext { font-size: 0.8rem; color: color-mix(in srgb, var(--text-color) 50%, transparent); }
-.geo-trend-up     { background: rgba(16,185,129,0.15); color: #34D399; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-.geo-trend-down   { background: rgba(244,63,94,0.15);  color: #FB7185; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-.geo-trend-neutral{ background: rgba(148,163,184,0.15);color: color-mix(in srgb, var(--text-color) 60%, transparent); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-.geo-trend-amber  { background: rgba(245,158,11,0.15); color: #FCD34D; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-
-    
-</style>
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1><span class=\"material-symbols-rounded\">monitoring</span> MineFlow Optimizer - Production Forecast</h1>
-        <div class="fd-subtitle">Predictive Output &amp; Risk Mitigation · MOIL Manganese Operations</div>
+        <h1>📈 MineFlow Optimizer - Production Forecast</h1>
+        <div class="fd-subtitle">Predictive Output & Risk Mitigation · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag"><span class=\"material-symbols-rounded\">architecture</span> Production</div>
+        <div class="fd-tag">⛏️ Production</div>
         <div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>
     </div>
 </div>
@@ -49,37 +20,89 @@ st.markdown("""
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
+MODEL_DIR = os.path.join(PROJECT_ROOT, 'models')
 
+@st.cache_data
 def load_production_data():
-    prod_path = os.path.join(DATA_DIR, 'production_dataset_real.csv')
+    # Try real data first, fall back to old synthetic
+    real_path = os.path.join(DATA_DIR, 'production_dataset_real.csv')
+    old_path = os.path.join(DATA_DIR, 'production_dataset.csv')
+    
+    if os.path.exists(real_path):
+        df = pd.read_csv(real_path, comment='#')
+        data_source = "REAL + DERIVED"
+    elif os.path.exists(old_path):
+        df = pd.read_csv(old_path)
+        data_source = "SYNTHETIC"
+    else:
+        return pd.DataFrame(), pd.DataFrame(), None, "NONE"
+    
+    # Load forecast
     forecast_path = os.path.join(DATA_DIR, 'production_forecast_real.csv')
+    old_forecast = os.path.join(DATA_DIR, 'production_forecast.csv')
     
-    df_prod = pd.read_csv(prod_path, comment='#') if os.path.exists(prod_path) else pd.DataFrame()
-    df_forecast = pd.read_csv(forecast_path, comment='#') if os.path.exists(forecast_path) else pd.DataFrame()
+    if os.path.exists(forecast_path):
+        df_fc = pd.read_csv(forecast_path, comment='#')
+    elif os.path.exists(old_forecast):
+        df_fc = pd.read_csv(old_forecast)
+    else:
+        df_fc = pd.DataFrame()
     
-    return df_prod, df_forecast
+    # Load model metrics
+    metrics = None
+    metrics_path = os.path.join(DATA_DIR, 'model_metrics.json')
+    if os.path.exists(metrics_path):
+        with open(metrics_path, 'r') as f:
+            metrics = json.load(f)
+    
+    return df, df_fc, metrics, data_source
 
-df_prod, df_forecast = load_production_data()
+df_prod, df_forecast, model_metrics, data_source = load_production_data()
 
 if df_prod.empty:
-    st.warning("Production dataset not found. Run generate_data.py first.")
+    st.warning("Production dataset not found. Run generate_real_production.py first.")
     st.stop()
 
+# ================= DATA SOURCE BADGE =================
+if data_source == "REAL + DERIVED":
+    st.caption("📊 **Data Source:** REAL annual production (MOIL) + REAL weather (Open-Meteo) + DERIVED monthly estimates. See column suffixes for provenance.")
+else:
+    st.caption(f"⚠️ **Data Source:** {data_source}")
+
+# ================= DETECT COLUMN NAMES =================
+# Support both new (suffixed) and old (unsuffixed) column formats
+def col(name):
+    """Find the right column name whether suffixed or not."""
+    if name in df_prod.columns:
+        return name
+    # Try suffixed versions
+    for suffix in ['__REAL', '__DERIVED', '__ASSUMED']:
+        if f"{name}{suffix}" in df_prod.columns:
+            return f"{name}{suffix}"
+    return name  # Return as-is, will error naturally if missing
+
+COL_PLANNED = col('planned_production_tpd')
+COL_ACTUAL = col('derived_actual_production_tpd') if 'derived_actual_production_tpd__DERIVED' in df_prod.columns else col('actual_production_tpd')
+COL_BASELINE = col('baseline_tpd')
+COL_RAINFALL = col('rainfall_mm')
+COL_EQUIP = col('equipment_availability_pct')
+COL_RISK = col('shortfall_risk')
+
 # ================= SIDEBAR =================
-mines = df_prod['mine_id'].unique().tolist()
+mines = sorted(df_prod['mine_id'].unique().tolist())
 selected_mine = st.sidebar.selectbox("Select Mine", mines)
 
-mine_data = df_prod[df_prod['mine_id'] == selected_mine].copy()
-mine_data['date'] = pd.to_datetime(mine_data['year'].astype(str) + '-' + mine_data['month'].astype(str) + '-01')
-mine_data = mine_data.sort_values('date')
-
-# Scenario selector
+# Scenario selector (if forecast has scenarios)
 scenario = "normal_weather"
 if not df_forecast.empty and 'scenario' in df_forecast.columns:
     scenarios = df_forecast['scenario'].unique().tolist()
     scenario = st.sidebar.selectbox("Forecast Scenario", scenarios, index=0)
 
-# Forecast data for selected mine
+mine_data = df_prod[df_prod['mine_id'] == selected_mine].copy()
+mine_data['date'] = pd.to_datetime(mine_data['year'].astype(str) + '-' + mine_data['month'].astype(str).str.zfill(2) + '-01')
+mine_data = mine_data.sort_values('date')
+
+# Forecast data
 forecast_data = pd.DataFrame()
 if not df_forecast.empty:
     fc_filter = df_forecast['mine_id'] == selected_mine
@@ -87,82 +110,86 @@ if not df_forecast.empty:
         fc_filter = fc_filter & (df_forecast['scenario'] == scenario)
     forecast_data = df_forecast[fc_filter].copy()
     if not forecast_data.empty:
-        forecast_data['date'] = pd.to_datetime(forecast_data['year'].astype(str) + '-' + forecast_data['month'].astype(str) + '-01')
+        forecast_data['date'] = pd.to_datetime(forecast_data['year'].astype(str) + '-' + forecast_data['month'].astype(str).str.zfill(2) + '-01')
         forecast_data = forecast_data.sort_values('date')
 
 # ================= KPI METRICS =================
-avg_planned = mine_data['planned_production_tpd__DERIVED'].mean()
-avg_actual = mine_data['derived_actual_production_tpd__DERIVED'].mean()
-efficiency = (avg_actual / avg_planned * 100) if avg_planned > 0 else 0
-high_risk_months = (mine_data['shortfall_risk__DERIVED'] == 'High').sum()
+st.subheader("Key Metrics")
+c1, c2, c3, c4 = st.columns(4)
 
-st.markdown(f"""
-<div class="geo-kpi-grid" style="grid-template-columns: repeat(4,1fr);">
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">Avg Planned</div><div class="geo-kpi-icon geo-icon-blue"><span class=\"material-symbols-rounded\">content_paste</span></div></div>
-        <div class="geo-kpi-value">{avg_planned:.0f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
-        <div class="geo-kpi-footer"><span class="geo-trend-neutral">Target Output</span></div>
-    </div>
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">Avg Actual</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">architecture</span></div></div>
-        <div class="geo-kpi-value">{avg_actual:.0f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
-        <div class="geo-kpi-footer"><span class="{'geo-trend-up' if avg_actual >= avg_planned else 'geo-trend-down'}">{'↑ On Target' if avg_actual >= avg_planned else '↓ Below Plan'}</span></div>
-    </div>
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">Efficiency</div><div class="geo-kpi-icon geo-icon-purple"><span class=\"material-symbols-rounded\">bar_chart</span></div></div>
-        <div class="geo-kpi-value">{efficiency:.1f}<span style="font-size:1.5rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">%</span></div>
-        <div class="geo-kpi-footer"><span class="{'geo-trend-up' if efficiency >= 90 else 'geo-trend-amber' if efficiency >= 75 else 'geo-trend-down'}">{'Optimal' if efficiency >= 90 else 'Moderate' if efficiency >= 75 else 'Low'}</span></div>
-    </div>
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">High Risk Months</div><div class="geo-kpi-icon geo-icon-amber"><span class=\"material-symbols-rounded\">warning</span></div></div>
-        <div class="geo-kpi-value">{high_risk_months} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">/ {len(mine_data)}</span></div>
-        <div class="geo-kpi-footer"><span class="{'geo-trend-down' if high_risk_months > 3 else 'geo-trend-amber' if high_risk_months > 0 else 'geo-trend-up'}">{'Critical' if high_risk_months > 3 else 'Moderate Risk' if high_risk_months > 0 else 'All Clear'}</span></div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+avg_baseline = mine_data[COL_BASELINE].mean() if COL_BASELINE in mine_data.columns else mine_data[COL_PLANNED].mean()
+avg_actual = mine_data[COL_ACTUAL].mean()
+efficiency = (avg_actual / avg_baseline * 100) if avg_baseline > 0 else 0
+high_risk_months = (mine_data[COL_RISK] == 'High').sum() if COL_RISK in mine_data.columns else 0
+
+c1.metric("Avg Baseline (TPD)", f"{avg_baseline:.0f}", help="REAL: From MOIL annual reports")
+c2.metric("Avg Derived (TPD)", f"{avg_actual:.0f}", help="DERIVED: Baseline adjusted by weather penalty")
+c3.metric("Efficiency", f"{efficiency:.1f}%")
+c4.metric("High Risk Months", f"{high_risk_months} / {len(mine_data)}")
+
+# ================= MODEL METRICS (if available) =================
+if model_metrics:
+    with st.expander("🔬 ML Model Performance (vs Baseline)", expanded=False):
+        test_m = model_metrics.get("metrics", {}).get("test", {})
+        val_m = model_metrics.get("metrics", {}).get("validation", {})
+        
+        mc1, mc2, mc3 = st.columns(3)
+        mc1.metric("Test MAE", f"{test_m.get('ml_mae', 'N/A')}", 
+                   delta=f"{test_m.get('improvement_mae_pct', 0):+.1f}% vs baseline",
+                   delta_color="normal")
+        mc2.metric("Test R²", f"{test_m.get('ml_r2', 'N/A')}")
+        mc3.metric("Splitting", "Chronological", help="Train<=2022, Val=2023, Test=2024+")
+        
+        st.caption("⚠️ Target variable is DERIVED (not observed MOIL monthly production). Model learns weather-production relationship from derived data.")
 
 # ================= PRODUCTION TIMELINE =================
 st.subheader(f"Production Timeline — {selected_mine}")
 
 fig = go.Figure()
 
-# Historical: Planned (dashed blue)
+# Historical: Baseline / Planned (dashed blue) — REAL
 fig.add_trace(go.Scatter(
-    x=mine_data['date'], y=mine_data['planned_production_tpd__DERIVED'],
-    name='Planned', line=dict(color='#3498db', dash='dash', width=2),
-    hovertemplate='%{x|%b %Y}<br>Planned: %{y:.0f} TPD<extra></extra>'
+    x=mine_data['date'], y=mine_data[COL_BASELINE] if COL_BASELINE in mine_data.columns else mine_data[COL_PLANNED],
+    name='Baseline (REAL)', line=dict(color='#3498db', dash='dash', width=2),
+    hovertemplate='%{x|%b %Y}<br>Baseline: %{y:.0f} TPD<extra></extra>'
 ))
 
-# Historical: Actual (solid blue)
+# Historical: Derived Actual (solid green) — DERIVED
 fig.add_trace(go.Scatter(
-    x=mine_data['date'], y=mine_data['derived_actual_production_tpd__DERIVED'],
-    name='Actual', line=dict(color='#2ecc71', width=2.5),
+    x=mine_data['date'], y=mine_data[COL_ACTUAL],
+    name='Derived Actual', line=dict(color='#2ecc71', width=2.5),
     fill='tonexty', fillcolor='rgba(46,204,113,0.1)',
-    hovertemplate='%{x|%b %Y}<br>Actual: %{y:.0f} TPD<extra></extra>'
+    hovertemplate='%{x|%b %Y}<br>Derived: %{y:.0f} TPD<extra></extra>'
 ))
 
-# Forecast: Predicted (dashed orange)
+# Forecast: ML Predicted (dashed orange) — PREDICTION
 if not forecast_data.empty and 'predicted_production_tpd' in forecast_data.columns:
+    # Connect forecast to historical with a bridge point
+    last_hist_date = mine_data['date'].iloc[-1]
+    last_hist_val = mine_data[COL_ACTUAL].iloc[-1]
+    
+    bridge_dates = pd.concat([pd.Series([last_hist_date]), forecast_data['date']])
+    bridge_vals = pd.concat([pd.Series([last_hist_val]), forecast_data['predicted_production_tpd']])
+    
+    # Forecast baseline
+    if 'baseline_tpd' in forecast_data.columns:
+        bridge_base = pd.concat([pd.Series([mine_data[COL_BASELINE].iloc[-1] if COL_BASELINE in mine_data.columns else mine_data[COL_PLANNED].iloc[-1]]), 
+                                forecast_data['baseline_tpd']])
+        fig.add_trace(go.Scatter(
+            x=bridge_dates, y=bridge_base,
+            name='Baseline (2026)', line=dict(color='#3498db', dash='dot', width=1.5),
+            hovertemplate='%{x|%b %Y}<br>Baseline: %{y:.0f} TPD<extra></extra>'
+        ))
+    
     fig.add_trace(go.Scatter(
-        x=forecast_data['date'], y=forecast_data['baseline_tpd'],
-        name='Planned (2026)', line=dict(color='#3498db', dash='dot', width=1.5),
-        hovertemplate='%{x|%b %Y}<br>Planned: %{y:.0f} TPD<extra></extra>'
-    ))
-    fig.add_trace(go.Scatter(
-        x=forecast_data['date'], y=forecast_data['predicted_production_tpd'],
-        name='ML Predicted', line=dict(color='#e67e22', width=2.5, dash='dash'),
+        x=bridge_dates, y=bridge_vals,
+        name='ML Predicted (2026)', line=dict(color='#e67e22', width=2.5, dash='dash'),
         hovertemplate='%{x|%b %Y}<br>Predicted: %{y:.0f} TPD<extra></extra>'
     ))
     
     # Add vertical line at forecast boundary
-    last_hist_date = mine_data['date'].iloc[-1]
-    fig.add_vline(x=last_hist_date, line_dash="dot", line_color="rgba(255,255,255,0.3)")
-    fig.add_annotation(
-        x=last_hist_date, y=1, yref="paper",
-        text="← Historical | Forecast →",
-        showarrow=False, font=dict(size=11, color="rgba(255,255,255,0.6)"),
-        yshift=10
-    )
+    fig.add_vline(x=last_hist_date.timestamp() * 1000, line_dash="dot", line_color="rgba(255,255,255,0.3)",
+                  annotation_text="← Historical | Forecast →", annotation_position="top")
 
 fig.update_layout(
     xaxis_title="Date", yaxis_title="Production (TPD)",
@@ -172,106 +199,49 @@ fig.update_layout(
 )
 st.plotly_chart(fig, use_container_width=True)
 
-# ================= MONTHLY COMPARISON BAR CHART =================
-st.subheader("Actual vs Planned — Monthly Breakdown")
-
-bar_df = mine_data[['date', 'planned_production_tpd__DERIVED', 'derived_actual_production_tpd__DERIVED']].copy()
-bar_df['shortfall'] = bar_df['planned_production_tpd__DERIVED'] - bar_df['derived_actual_production_tpd__DERIVED']
-bar_df['month_label'] = bar_df['date'].dt.strftime('%b %Y')
-
-fig_bar = go.Figure()
-fig_bar.add_trace(go.Bar(
-    x=bar_df['date'], y=bar_df['planned_production_tpd__DERIVED'],
-    name='Planned', marker_color='rgba(52,152,219,0.6)',
-))
-fig_bar.add_trace(go.Bar(
-    x=bar_df['date'], y=bar_df['derived_actual_production_tpd__DERIVED'],
-    name='Actual', marker_color='rgba(46,204,113,0.8)',
-))
-fig_bar.update_layout(
-    barmode='group', height=350,
-    xaxis_title="Date", yaxis_title="Production (TPD)",
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-)
-st.plotly_chart(fig_bar, use_container_width=True)
-
-# ================= RISK INDICATORS =================
-st.subheader("Risk Indicators (Historical Snapshot)")
-
-# Let user pick which month to view
-available_months = mine_data['date'].dt.strftime('%b %Y').unique().tolist()
-# Default to the most recent month
-selected_month_str = st.selectbox("Select Historical Month to Analyze", available_months, index=len(available_months)-1)
-
-# Filter data to the selected month
-snapshot_data = mine_data[mine_data['date'].dt.strftime('%b %Y') == selected_month_str]
-
-if not snapshot_data.empty:
-    latest = snapshot_data.iloc[-1]
-else:
-    latest = pd.Series()
-
-risk = str(latest.get('shortfall_risk__DERIVED', 'N/A'))
-planned = latest.get('planned_production_tpd__DERIVED', 0)
-actual = latest.get('derived_actual_production_tpd__DERIVED', 0)
-shortfall = max(0, planned - actual) if pd.notnull(planned) and pd.notnull(actual) else 0
-eff = (actual / planned * 100) if pd.notnull(planned) and planned > 0 else 0
-
-r1, r2, r3 = st.columns(3)
-color = "<span class=\"material-symbols-rounded\">circle</span>" if risk == "High" else ("<span class=\"material-symbols-rounded\">circle</span>" if risk == "Medium" else "<span class=\"material-symbols-rounded\">circle</span>")
-risk_icon_cls = "geo-icon-red" if risk == "High" else ("geo-icon-amber" if risk == "Medium" else "geo-icon-green")
-risk_trend_cls = "geo-trend-down" if risk == "High" else ("geo-trend-amber" if risk == "Medium" else "geo-trend-up")
-eff_trend_cls = "geo-trend-up" if eff >= 90 else ("geo-trend-amber" if eff >= 75 else "geo-trend-down")
-
-st.markdown(f"""
-<div class="geo-kpi-grid" style="grid-template-columns: repeat(3,1fr);">
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">Risk Level</div><div class="geo-kpi-icon {risk_icon_cls}">{color}</div></div>
-        <div class="geo-kpi-value">{risk}</div>
-        <div class="geo-kpi-footer"><span class="{risk_trend_cls}">Latest Month</span></div>
-    </div>
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">Latest Shortfall</div><div class="geo-kpi-icon geo-icon-amber"><span class=\"material-symbols-rounded\">trending_down</span></div></div>
-        <div class="geo-kpi-value">{shortfall:.0f} <span style="font-size:1.1rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">TPD</span></div>
-        <div class="geo-kpi-footer"><span class="{'geo-trend-up' if shortfall == 0 else 'geo-trend-down'}">{'No Shortfall' if shortfall == 0 else 'Below Plan'}</span></div>
-    </div>
-    <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">Latest Efficiency</div><div class="geo-kpi-icon geo-icon-green">⚡</div></div>
-        <div class="geo-kpi-value">{eff:.1f}<span style="font-size:1.5rem;color:color-mix(in srgb, var(--text-color) 60%, transparent);">%</span></div>
-        <div class="geo-kpi-footer"><span class="{eff_trend_cls}">{'Optimal' if eff >= 90 else 'Moderate' if eff >= 75 else 'Low'}</span></div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
 # ================= EQUIPMENT & WEATHER IMPACT =================
 st.subheader("Equipment & Weather Impact")
 
 col_eq, col_rain = st.columns(2)
 
 with col_eq:
-    fig_eq = px.line(mine_data, x='date', y='equipment_availability_pct__DERIVED',
-                     title='Equipment Availability Over Time')
-    fig_eq.update_traces(line_color='#e74c3c')
-    fig_eq.update_layout(height=300, yaxis_title='Availability (%)', xaxis_title='',
-                         yaxis=dict(range=[0.5, 1.05]))
-    st.plotly_chart(fig_eq, use_container_width=True)
+    if COL_EQUIP in mine_data.columns:
+        fig_eq = px.line(mine_data, x='date', y=COL_EQUIP,
+                         title='Equipment Availability Over Time')
+        fig_eq.update_traces(line_color='#e74c3c')
+        fig_eq.update_layout(height=300, yaxis_title='Availability', xaxis_title='',
+                             yaxis=dict(range=[0.5, 1.05]))
+        st.plotly_chart(fig_eq, use_container_width=True)
 
 with col_rain:
-    fig_rain = px.bar(mine_data, x='date', y='rainfall_mm__REAL',
-                      title='Monthly Rainfall')
-    fig_rain.update_traces(marker_color='#3498db')
-    fig_rain.update_layout(height=300, yaxis_title='Rainfall (mm)', xaxis_title='')
-    st.plotly_chart(fig_rain, use_container_width=True)
+    if COL_RAINFALL in mine_data.columns:
+        fig_rain = px.bar(mine_data, x='date', y=COL_RAINFALL,
+                          title='Monthly Rainfall (REAL — Open-Meteo)')
+        fig_rain.update_traces(marker_color='#3498db')
+        fig_rain.update_layout(height=300, yaxis_title='Rainfall (mm)', xaxis_title='')
+        st.plotly_chart(fig_rain, use_container_width=True)
 
 # ================= SHORTFALL SUMMARY TABLE =================
 st.subheader("Shortfall Summary (Last 12 Months)")
 
-table_df = mine_data.tail(12)[['date', 'planned_production_tpd__DERIVED', 'derived_actual_production_tpd__DERIVED', 
-                                 'equipment_availability_pct__DERIVED', 'rainfall_mm__REAL', 'shortfall_risk__DERIVED']].copy()
-table_df['date'] = table_df['date'].dt.strftime('%b %Y')
-table_df.columns = ['Month', 'Planned (TPD)', 'Actual (TPD)', 'Equip Avail (%)', 'Rainfall (mm)', 'Risk']
+display_cols = ['date']
+rename_map = {'date': 'Month'}
 
-# Color code risk
+for orig, label in [
+    (COL_PLANNED if COL_PLANNED in mine_data.columns else COL_BASELINE, 'Baseline (TPD)'),
+    (COL_ACTUAL, 'Derived Actual (TPD)'),
+    (COL_EQUIP, 'Equip Avail'),
+    (COL_RAINFALL, 'Rainfall (mm)'),
+    (COL_RISK, 'Risk'),
+]:
+    if orig in mine_data.columns:
+        display_cols.append(orig)
+        rename_map[orig] = label
+
+table_df = mine_data.tail(12)[display_cols].copy()
+table_df['date'] = table_df['date'].dt.strftime('%b %Y')
+table_df = table_df.rename(columns=rename_map)
+
 def color_risk(val):
     if val == 'High':
         return 'background-color: rgba(231,76,60,0.3)'
@@ -279,14 +249,26 @@ def color_risk(val):
         return 'background-color: rgba(241,196,15,0.3)'
     return 'background-color: rgba(46,204,113,0.2)'
 
-styled = table_df.style.map(color_risk, subset=['Risk']).format({
-    'Planned (TPD)': '{:.0f}',
-    'Actual (TPD)': '{:.0f}',
-    'Equip Avail (%)': '{:.1%}',
-    'Rainfall (mm)': '{:.0f}',
-})
+if 'Risk' in table_df.columns:
+    styled = table_df.style.map(color_risk, subset=['Risk'])
+    st.dataframe(styled, use_container_width=True, hide_index=True)
+else:
+    st.dataframe(table_df, use_container_width=True, hide_index=True)
 
-st.dataframe(styled, use_container_width=True, hide_index=True)
+# ================= FORECAST RISK TABLE =================
+if not forecast_data.empty:
+    st.subheader(f"2026 Forecast Risk ({scenario.replace('_', ' ').title()})")
+    
+    fc_display = forecast_data[['month', 'baseline_tpd', 'predicted_production_tpd', 'shortfall_risk']].copy()
+    fc_display.columns = ['Month', 'Baseline (TPD)', 'ML Predicted (TPD)', 'Risk']
+    fc_display['Month'] = fc_display['Month'].apply(lambda m: pd.Timestamp(2026, m, 1).strftime('%b'))
+    fc_display['Gap'] = fc_display['ML Predicted (TPD)'] - fc_display['Baseline (TPD)']
+    
+    styled_fc = fc_display.style.map(color_risk, subset=['Risk']).format({
+        'Baseline (TPD)': '{:.0f}', 'ML Predicted (TPD)': '{:.0f}', 'Gap': '{:+.0f}'
+    })
+    st.dataframe(styled_fc, use_container_width=True, hide_index=True)
+    st.caption("⚠️ These are scenario-based ML predictions, NOT actual MOIL production forecasts.")
 
 # ================= LIVE REAL-TIME FORECAST =================
 live_path = os.path.join(DATA_DIR, 'production_forecast_live.csv')
@@ -360,8 +342,4 @@ if os.path.exists(live_path):
         
         st.caption("📡 This forecast uses **LIVE weather data** from the Open-Meteo API, fed into the trained ML model. Run `python src/generate_live_forecast.py` to refresh.")
 
-st.info(":material/lightbulb: **Business Impact:** Proactive identification of high-risk months enables MOIL to pre-position equipment and adjust blasting schedules, potentially recovering 5-10% of shortfall tonnage.")
-
-# --- Animations ---
-inject_kpi_animations()
-inject_volcano_animations()
+st.info("💡 **Business Impact:** Proactive identification of high-risk months enables MOIL to pre-position equipment and adjust blasting schedules, potentially recovering 5-10% of shortfall tonnage.")
