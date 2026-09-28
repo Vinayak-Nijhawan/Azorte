@@ -207,7 +207,7 @@ with col_map:
             marker=dict(size=14, color=m_colors),
             text=m_names, textposition='top center',
             textfont=dict(size=11),
-            name='<span class=\"material-symbols-rounded\">architecture</span> Known Mines',
+            name='Known Mines',
             hovertemplate='%{text}<br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>',
         ))
 
@@ -222,7 +222,7 @@ with col_map:
                 color='#FF00FF',  # Neon Purple/Magenta
                 opacity=1.0
             ),
-            name='<span class=\"material-symbols-rounded\">my_location</span> Drill Priority',
+            name='Drill Priority',
             hovertemplate='Prob: %{customdata:.3f}<extra>Drill Target</extra>',
             customdata=top_drill['mn_probability'],
         ))
