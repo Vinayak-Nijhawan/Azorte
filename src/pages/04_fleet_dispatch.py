@@ -410,7 +410,9 @@ def generate_fleet_for_mine_tpd(mine_tpd, seed=42):
     Generate SIMULATED fleet data such that
     sum(dumper_effective_tph) × operating_hours ≈ mine_tpd.
 
-    This ensures the fleet view and the production KPI agree.
+    Fleet is sized proportionally: larger mines get more dumpers/shovels.
+    Dumper capacities are realistic (30-45 TPH range) and scaled so the
+    fleet total matches the derived mine TPD.
     """
     rng = np.random.RandomState(seed)
     operating_hours = 16  # 2 shifts × 8 hours
@@ -418,8 +420,8 @@ def generate_fleet_for_mine_tpd(mine_tpd, seed=42):
     # Work backwards from mine_tpd to determine fleet size
     avg_dumper_tph = 37.5  # midpoint of 30-45 range
     required_dumpers_float = mine_tpd / (avg_dumper_tph * operating_hours)
-    num_dumpers = max(3, int(np.ceil(required_dumpers_float)))
-    num_shovels = max(1, num_dumpers // 3)
+    num_dumpers = max(1, int(np.ceil(required_dumpers_float)))
+    num_shovels = max(1, int(np.ceil(num_dumpers / 3)))
 
     # Generate dumper capacities that sum to the correct total
     target_total_tph = mine_tpd / operating_hours
@@ -427,19 +429,19 @@ def generate_fleet_for_mine_tpd(mine_tpd, seed=42):
     # Scale so they sum correctly
     scale_factor = target_total_tph / raw_caps.sum()
     dumper_caps = raw_caps * scale_factor
-    # Clip to reasonable range
-    dumper_caps = np.clip(dumper_caps, 25, 55)
 
     # Assign dumpers to shovels round-robin
     assignments = []
     shovel_caps = rng.uniform(150, 280, num_shovels)
     for d in range(num_dumpers):
         s = d % num_shovels
+        base_cap = round(float(raw_caps[d]), 1)   # original unscaled capacity
+        eff_cap = round(float(dumper_caps[d]), 1)  # scaled effective capacity
         assignments.append({
             'dumper_id': f'D{d+1:02d}',
             'assigned_shovel': f'S{s+1}',
-            'dumper_capacity_tph': round(float(dumper_caps[d]), 1),
-            'effective_capacity_tph': round(float(dumper_caps[d]), 1),
+            'dumper_capacity_tph': base_cap,
+            'effective_capacity_tph': eff_cap,
             'available': True,
         })
 
@@ -530,9 +532,9 @@ mine_display = selected_mine.replace('_', ' ')
 
 # Mine share defaults per mine (approximate based on MOIL mine sizes)
 DEFAULT_SHARES = {
-    'Dongri_Buzurg': 12, 'Balaghat': 18, 'Chikla': 8, 'Kandri': 8,
-    'Munsar': 7, 'Gumgaon': 10, 'Beldongri': 5, 'Ukwa': 4,
-    'Tirodi': 7, 'Sitapatore': 5,
+    'Balaghat': 22, 'Dongri_Buzurg': 17, 'Gumgaon': 12, 'Chikla': 10,
+    'Kandri': 8, 'Munsar': 6, 'Tirodi': 6, 'Beldongri': 5,
+    'Ukwa': 4, 'Sitapatore': 3,
 }
 
 mine_share = st.sidebar.slider(
