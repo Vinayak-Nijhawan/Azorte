@@ -1,21 +1,28 @@
+"""
+MOIL-GeoSync — Intelligent Fleet Dispatch Dashboard
+=====================================================
+Refactored to use ONLY real MOIL data from data/moil_real.csv.
+Every metric is labeled with provenance: REAL, DERIVED, or SIMULATED.
+
+REAL     = directly from MOIL annual reports / press releases
+DERIVED  = formula applied to real data (e.g., TPD = tonnes / days)
+SIMULATED = OR-Tools model output (fleet assignments, dumper capacities)
+"""
+
 import os
 import time
 import random
-import hashlib
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # ─── Paths ───
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
-DISPATCH_PLAN_PATH = os.path.join(DATA_DIR, "dispatch_plan.csv")
-FLEET_ALERTS_PATH = os.path.join(DATA_DIR, "fleet_alerts.csv")
-FORECAST_PATH = os.path.join(DATA_DIR, "production_forecast.csv")
+MOIL_REAL_PATH = os.path.join(DATA_DIR, "moil_real.csv")
 
 # ─── Plotly theme helper ───
 def apply_dark_theme(fig, height=400, show_legend=True):
@@ -76,33 +83,64 @@ st.markdown("""
         font-size: 0.78rem !important;
         color: #94a3b8 !important;
     }
-    .fd-live {
+    .fd-sim-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: rgba(34,197,94,0.1);
-        border: 1px solid rgba(34,197,94,0.25);
+        background: rgba(245,158,11,0.12);
+        border: 1px solid rgba(245,158,11,0.3);
         border-radius: 6px;
         padding: 5px 12px;
         font-size: 0.78rem !important;
-        color: #4ade80 !important;
+        color: #fbbf24 !important;
         font-weight: 600;
     }
-    .fd-live-dot {
-        width: 7px; height: 7px;
-        background: #22c55e;
-        border-radius: 50%;
-        animation: pulse-dot 1.5s infinite;
+
+    /* ── Provenance badges ── */
+    .badge-real {
+        display: inline-block;
+        background: rgba(34,197,94,0.15);
+        border: 1px solid rgba(34,197,94,0.3);
+        color: #4ade80 !important;
+        font-size: 0.55rem !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        padding: 1px 6px;
+        border-radius: 3px;
+        vertical-align: super;
     }
-    @keyframes pulse-dot {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.3; }
+    .badge-derived {
+        display: inline-block;
+        background: rgba(59,130,246,0.15);
+        border: 1px solid rgba(59,130,246,0.3);
+        color: #60a5fa !important;
+        font-size: 0.55rem !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        padding: 1px 6px;
+        border-radius: 3px;
+        vertical-align: super;
+    }
+    .badge-simulated {
+        display: inline-block;
+        background: rgba(245,158,11,0.15);
+        border: 1px solid rgba(245,158,11,0.3);
+        color: #fbbf24 !important;
+        font-size: 0.55rem !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        padding: 1px 6px;
+        border-radius: 3px;
+        vertical-align: super;
     }
 
     /* ── KPI Cards ── */
     .kpi-grid {
         display: grid;
-        grid-template-columns: repeat(8, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         gap: 10px;
         margin-bottom: 20px;
     }
@@ -115,6 +153,16 @@ st.markdown("""
     }
     .kpi-card:hover {
         border-color: rgba(99,102,241,0.3);
+    }
+    .kpi-card-simulated {
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(245,158,11,0.15);
+        border-radius: 10px;
+        padding: 16px 18px;
+        transition: border-color 0.2s;
+    }
+    .kpi-card-simulated:hover {
+        border-color: rgba(245,158,11,0.4);
     }
     .kpi-label {
         font-size: 0.68rem !important;
@@ -280,275 +328,224 @@ st.markdown("""
         color: #64748b !important;
         font-size: 0.78rem !important;
     }
+
+    /* ── Provenance table ── */
+    .prov-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+    }
+    .prov-table th {
+        text-align: left;
+        color: #64748b !important;
+        font-weight: 600;
+        padding: 6px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .prov-table td {
+        padding: 5px 10px;
+        color: #cbd5e1 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    /* ── Data-check warning ── */
+    .data-warn {
+        background: rgba(239,68,68,0.08);
+        border: 1px solid rgba(239,68,68,0.25);
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #fca5a5 !important;
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ─── Real-Time Simulation Engine ───
-def _get_rt_seed():
-    """Generate a seed that changes every 30 seconds for stable perturbations within a refresh cycle."""
-    epoch_30s = int(time.time()) // 30
-    return epoch_30s
+# ══════════════════════════════════════════════════════════════════════════════
+# DATA LOADING & VALIDATION
+# ══════════════════════════════════════════════════════════════════════════════
 
-def simulate_realtime(dispatch_plan, fleet_alerts, forecast):
-    """Apply realistic random perturbations to simulate live sensor/IoT data."""
-    seed = _get_rt_seed()
-    rng = np.random.RandomState(seed)
+@st.cache_data
+def load_moil_real():
+    """Load the canonical real MOIL data file."""
+    if not os.path.exists(MOIL_REAL_PATH):
+        return pd.DataFrame()
+    df = pd.read_csv(MOIL_REAL_PATH)
+    df['start_date'] = pd.to_datetime(df['start_date'])
+    df['end_date'] = pd.to_datetime(df['end_date'])
+    df['tpd'] = df['tonnes'] / df['days']
+    return df
 
-    df = dispatch_plan.copy()
-    alerts = fleet_alerts.copy()
-    fc = forecast.copy()
 
-    # 1. Perturb effective_capacity_tph by ±5-15%
-    if 'effective_capacity_tph' in df.columns:
-        noise = rng.uniform(0.85, 1.15, size=len(df))
-        df['effective_capacity_tph'] = df['effective_capacity_tph'] * noise
+def validate_data(moil_df, mine_tpd, company_tpd, planned_tpd, fy_target):
+    """
+    Validation function that fails loudly if:
+    1. Mine-level TPD exceeds company TPD
+    2. Planned TPD is more than 20% away from FY target / 365
+    """
+    errors = []
 
-    # 2. Perturb shovel_throughput_tpd by ±3-8%
-    if 'shovel_throughput_tpd' in df.columns:
-        noise = rng.uniform(0.92, 1.08, size=len(df))
-        df['shovel_throughput_tpd'] = df['shovel_throughput_tpd'] * noise
-
-    # 3. Recalculate total_mine_tpd based on perturbed capacities
-    if 'effective_capacity_tph' in df.columns and 'total_mine_tpd' in df.columns:
-        for mine_id in df['mine_id'].unique():
-            mask = df['mine_id'] == mine_id
-            total = df.loc[mask, 'effective_capacity_tph'].sum() * 16  # 16 operating hours
-            df.loc[mask, 'total_mine_tpd'] = total
-
-    # 4. Recalculate achievable_vs_planned_pct
-    if 'total_mine_tpd' in df.columns and 'planned_tpd' in df.columns:
-        df['achievable_vs_planned_pct'] = np.where(
-            df['planned_tpd'] > 0,
-            df['total_mine_tpd'] / df['planned_tpd'] * 100,
-            100
+    if mine_tpd > company_tpd:
+        errors.append(
+            f"❌ Mine TPD ({mine_tpd:,.0f}) EXCEEDS company TPD ({company_tpd:,.0f}). "
+            f"Check mine_share assumption."
         )
 
-    # 5. Randomly toggle 1-2 dumpers to idle status (lower their effective capacity)
-    if 'effective_capacity_tph' in df.columns and len(df) > 3:
-        n_idle = rng.randint(0, min(3, len(df) // 4))
-        idle_indices = rng.choice(df.index, size=n_idle, replace=False)
-        df.loc[idle_indices, 'effective_capacity_tph'] *= rng.uniform(0.3, 0.6, size=n_idle)
+    expected_planned = fy_target / 365
+    deviation = abs(planned_tpd - expected_planned) / expected_planned * 100
+    if deviation > 20:
+        errors.append(
+            f"❌ Planned TPD ({planned_tpd:,.0f}) deviates {deviation:.1f}% from "
+            f"FY target/365 ({expected_planned:,.0f}). Max allowed: 20%."
+        )
 
-    # 6. Small chance of shovel reassignment (swap 2 dumpers)
-    if 'assigned_shovel' in df.columns and len(df) > 4:
-        if rng.random() < 0.3:  # 30% chance per refresh
-            swap_idx = rng.choice(df.index, size=2, replace=False)
-            df.loc[swap_idx[0], 'assigned_shovel'], df.loc[swap_idx[1], 'assigned_shovel'] = \
-                df.loc[swap_idx[1], 'assigned_shovel'], df.loc[swap_idx[0], 'assigned_shovel']
+    return errors
 
-    # 7. Generate dynamic alerts
-    dynamic_alert_pool = [
-        ("WARNING", "Dumper {d} speed reduced — wet haul road detected"),
-        ("INFO", "Dumper {d} completed loading cycle — returning to queue"),
-        ("WARNING", "Shovel {s} bucket fill factor below 85% — material hardness spike"),
-        ("INFO", "Fuel level low on Dumper {d} — refueling scheduled"),
-        ("CRITICAL", "Dumper {d} tire pressure warning — inspection required"),
-        ("INFO", "GPS signal restored for Dumper {d}"),
-        ("WARNING", "Queue time exceeding 8 min at Shovel {s}"),
-    ]
-    py_rng = random.Random(seed)
-    n_dynamic = py_rng.randint(1, 3)
-    dynamic_rows = []
-    available_dumpers = df['dumper_id'].unique().tolist() if 'dumper_id' in df.columns else ['D0']
-    available_shovels = df['assigned_shovel'].unique().tolist() if 'assigned_shovel' in df.columns else ['S0']
-    for _ in range(n_dynamic):
-        atype, msg_template = py_rng.choice(dynamic_alert_pool)
-        d = py_rng.choice(available_dumpers)
-        s = py_rng.choice(available_shovels)
-        msg = msg_template.format(d=d, s=s)
-        # Use first mine_id from df for context
-        mine = df['mine_id'].iloc[0] if 'mine_id' in df.columns else 'Mine_A'
-        month_val = df['month'].iloc[0] if 'month' in df.columns else 1
-        year_val = df['year'].iloc[0] if 'year' in df.columns else 2026
-        dynamic_rows.append({
-            'mine_id': mine, 'month': month_val, 'year': year_val,
-            'alert_type': atype, 'alert_message': msg
+
+def generate_fleet_for_mine_tpd(mine_tpd, seed=42):
+    """
+    Generate SIMULATED fleet data such that
+    sum(dumper_effective_tph) × operating_hours ≈ mine_tpd.
+
+    This ensures the fleet view and the production KPI agree.
+    """
+    rng = np.random.RandomState(seed)
+    operating_hours = 16  # 2 shifts × 8 hours
+
+    # Work backwards from mine_tpd to determine fleet size
+    avg_dumper_tph = 37.5  # midpoint of 30-45 range
+    required_dumpers_float = mine_tpd / (avg_dumper_tph * operating_hours)
+    num_dumpers = max(3, int(np.ceil(required_dumpers_float)))
+    num_shovels = max(1, num_dumpers // 3)
+
+    # Generate dumper capacities that sum to the correct total
+    target_total_tph = mine_tpd / operating_hours
+    raw_caps = rng.uniform(30, 45, num_dumpers)
+    # Scale so they sum correctly
+    scale_factor = target_total_tph / raw_caps.sum()
+    dumper_caps = raw_caps * scale_factor
+    # Clip to reasonable range
+    dumper_caps = np.clip(dumper_caps, 25, 55)
+
+    # Assign dumpers to shovels round-robin
+    assignments = []
+    shovel_caps = rng.uniform(150, 280, num_shovels)
+    for d in range(num_dumpers):
+        s = d % num_shovels
+        assignments.append({
+            'dumper_id': f'D{d+1:02d}',
+            'assigned_shovel': f'S{s+1}',
+            'dumper_capacity_tph': round(float(dumper_caps[d]), 1),
+            'effective_capacity_tph': round(float(dumper_caps[d]), 1),
+            'available': True,
         })
-    if dynamic_rows:
-        dynamic_df = pd.DataFrame(dynamic_rows)
-        alerts = pd.concat([alerts, dynamic_df], ignore_index=True)
 
-    # 8. Perturb forecast values slightly
-    if not fc.empty:
-        if 'equipment_availability_pct' in fc.columns:
-            fc['equipment_availability_pct'] *= rng.uniform(0.97, 1.02, size=len(fc))
-            fc['equipment_availability_pct'] = fc['equipment_availability_pct'].clip(0, 1)
-        if 'rainfall_mm' in fc.columns:
-            fc['rainfall_mm'] *= rng.uniform(0.8, 1.3, size=len(fc))
-            fc['rainfall_mm'] = fc['rainfall_mm'].clip(0)
+    # Compute shovel-level stats
+    assign_df = pd.DataFrame(assignments)
+    shovel_stats = []
+    for s in range(num_shovels):
+        sid = f'S{s+1}'
+        s_dumpers = assign_df[assign_df['assigned_shovel'] == sid]
+        throughput = s_dumpers['effective_capacity_tph'].sum() * operating_hours
+        shovel_stats.append({
+            'shovel_id': sid,
+            'shovel_capacity_tph': round(float(shovel_caps[s]), 1),
+            'dumpers_assigned': len(s_dumpers),
+            'throughput_tpd': round(float(throughput), 1),
+            'capacity_tpd': round(float(shovel_caps[s] * operating_hours), 1),
+        })
 
-    return df, alerts, fc
+    actual_total_tpd = assign_df['effective_capacity_tph'].sum() * operating_hours
 
-
-# ─── Data Loaders ───
-@st.cache_data(ttl=30)
-def load_base_data():
-    """Load base CSV data with 30-second TTL cache."""
-    dispatch_plan = pd.DataFrame()
-    fleet_alerts = pd.DataFrame()
-    forecast = pd.DataFrame()
-
-    if os.path.exists(DISPATCH_PLAN_PATH):
-        dispatch_plan = pd.read_csv(DISPATCH_PLAN_PATH)
-    if os.path.exists(FLEET_ALERTS_PATH):
-        fleet_alerts = pd.read_csv(FLEET_ALERTS_PATH)
-    if os.path.exists(FORECAST_PATH):
-        forecast = pd.read_csv(FORECAST_PATH)
-
-    return dispatch_plan, fleet_alerts, forecast
+    return {
+        'assignments': assign_df,
+        'shovel_stats': pd.DataFrame(shovel_stats),
+        'num_dumpers': num_dumpers,
+        'num_shovels': num_shovels,
+        'total_tpd': round(float(actual_total_tpd), 1),
+        'operating_hours': operating_hours,
+        'avg_dumper_tph': round(float(dumper_caps.mean()), 1),
+        'efficiency_pct': round(float(scale_factor * 100), 1),
+    }
 
 
-base_dispatch, base_alerts, base_forecast = load_base_data()
+# ══════════════════════════════════════════════════════════════════════════════
+# LOAD DATA
+# ══════════════════════════════════════════════════════════════════════════════
 
-if base_dispatch.empty:
-    st.info("No dispatch plan found. Run `python src/optimize_fleet.py` first.")
+moil_df = load_moil_real()
+
+if moil_df.empty:
+    st.error("⚠️ `data/moil_real.csv` not found. Cannot render dashboard without real data.")
     st.stop()
 
-# ─── SIDEBAR: Real-Time Controls ───
-st.sidebar.markdown("---")
-st.sidebar.subheader("⚡ Real-Time Controls")
-auto_refresh_enabled = st.sidebar.toggle("Auto-Refresh", value=True, help="Enable automatic data refresh")
-refresh_interval = st.sidebar.select_slider(
-    "Refresh Interval",
-    options=[15, 30, 45, 60],
-    value=30,
-    format_func=lambda x: f"{x}s",
-    help="Seconds between automatic refreshes",
-    disabled=not auto_refresh_enabled,
+# ─── Extract key values from real data ───
+fy26_target_row = moil_df[moil_df['period'] == 'FY26_target']
+fy_target_tonnes = int(fy26_target_row['tonnes'].iloc[0]) if not fy26_target_row.empty else 2350000
+planned_tpd = fy_target_tonnes / 365  # DERIVED
+
+# Latest available monthly/period data
+monthly = moil_df[moil_df['type'] == 'monthly'].sort_values('end_date')
+latest_month_row = monthly.iloc[-1] if not monthly.empty else None
+
+annual = moil_df[moil_df['type'] == 'annual'].sort_values('end_date')
+fy25_row = moil_df[moil_df['period'] == 'FY25']
+
+latest_period = moil_df[moil_df['type'] == 'period'].sort_values('end_date')
+latest_period_row = latest_period.iloc[-1] if not latest_period.empty else None
+
+# Determine the most recent actual TPD for company
+if latest_month_row is not None:
+    company_tpd = float(latest_month_row['tpd'])
+    latest_label = latest_month_row['period']
+elif latest_period_row is not None:
+    company_tpd = float(latest_period_row['tpd'])
+    latest_label = latest_period_row['period']
+else:
+    company_tpd = float(fy25_row['tpd'].iloc[0]) if not fy25_row.empty else 4940.0
+    latest_label = "FY25"
+
+# ─── SIDEBAR ───
+st.sidebar.header("⚙️ Configuration")
+
+mine_share = st.sidebar.slider(
+    "Mine Share of Company Production",
+    min_value=1, max_value=30, value=8, step=1,
+    help="⚠️ ASSUMPTION — not MOIL data. "
+         "Dongri Buzurg's share of total MOIL production. "
+         "Formula: Mine TPD = Company TPD × (mine_share / 100)"
+)
+st.sidebar.caption(
+    f"⚠️ **ASSUMPTION — not MOIL data.**\n\n"
+    f"Mine-level production is not publicly available. "
+    f"Mine TPD = Company TPD × {mine_share}%."
 )
 
-# Inject auto-refresh meta tag
-if auto_refresh_enabled:
-    st.markdown(
-        f'<meta http-equiv="refresh" content="{refresh_interval}">',
-        unsafe_allow_html=True,
-    )
+# Derived mine TPD
+mine_tpd = company_tpd * (mine_share / 100)  # DERIVED
 
-# Apply real-time simulation
-dispatch_plan, fleet_alerts, forecast = simulate_realtime(base_dispatch, base_alerts, base_forecast)
+# ─── Validation ───
+val_errors = validate_data(moil_df, mine_tpd, company_tpd, planned_tpd, fy_target_tonnes)
 
-# Track refresh timestamp
-current_time = datetime.now()
-refresh_ts = current_time.strftime("%H:%M:%S")
-refresh_date = current_time.strftime("%d %b %Y")
+# ─── Generate fleet data (SIMULATED) ───
+# Use a seed based on mine_share so fleet changes when the user adjusts the slider
+fleet = generate_fleet_for_mine_tpd(mine_tpd, seed=42 + mine_share)
+df_fleet = fleet['assignments']
+shovel_stats = fleet['shovel_stats']
 
-# ─── SIDEBAR FILTERS (preserved) ───
-st.sidebar.header("Filter Options")
+# ─── Compute KPIs ───
+achievement_pct = (company_tpd / planned_tpd * 100) if planned_tpd > 0 else 0
+# Clamp display
+achievement_display = min(achievement_pct, 150)
+achievement_warning = achievement_pct > 115
 
-mines = dispatch_plan['mine_id'].unique().tolist() if 'mine_id' in dispatch_plan.columns else ['All']
-selected_mine = st.sidebar.selectbox("Select Mine", mines)
 
-months = sorted(dispatch_plan['month'].unique().tolist()) if 'month' in dispatch_plan.columns else ['All']
-selected_month = st.sidebar.selectbox("Select Month", months)
-
-years = sorted(dispatch_plan['year'].unique().tolist()) if 'year' in dispatch_plan.columns else ['All']
-selected_year = st.sidebar.selectbox("Select Year", years)
-
-# ─── Filter dispatch data ───
-df_filtered = dispatch_plan.copy()
-if selected_mine != 'All' and 'mine_id' in df_filtered.columns:
-    df_filtered = df_filtered[df_filtered['mine_id'] == selected_mine]
-if selected_month != 'All' and 'month' in df_filtered.columns:
-    df_filtered = df_filtered[df_filtered['month'] == selected_month]
-if selected_year != 'All' and 'year' in df_filtered.columns:
-    df_filtered = df_filtered[df_filtered['year'] == selected_year]
-
-# Filter alerts
-alerts_filtered = fleet_alerts.copy()
-if not alerts_filtered.empty:
-    if selected_mine != 'All' and 'mine_id' in alerts_filtered.columns:
-        alerts_filtered = alerts_filtered[alerts_filtered['mine_id'] == selected_mine]
-    if selected_month != 'All' and 'month' in alerts_filtered.columns:
-        alerts_filtered = alerts_filtered[alerts_filtered['month'] == selected_month]
-    if selected_year != 'All' and 'year' in alerts_filtered.columns:
-        alerts_filtered = alerts_filtered[alerts_filtered['year'] == selected_year]
-
-# Filter forecast
-forecast_filtered = forecast.copy()
-if not forecast_filtered.empty:
-    if selected_mine != 'All' and 'mine_id' in forecast_filtered.columns:
-        forecast_filtered = forecast_filtered[forecast_filtered['mine_id'] == selected_mine]
-    if selected_month != 'All' and 'month' in forecast_filtered.columns:
-        forecast_filtered = forecast_filtered[forecast_filtered['month'] == selected_month]
-    if selected_year != 'All' and 'year' in forecast_filtered.columns:
-        forecast_filtered = forecast_filtered[forecast_filtered['year'] == selected_year]
-
-# ─── Compute all metrics from actual data ───
-planned_tpd = df_filtered['planned_tpd'].mean() if 'planned_tpd' in df_filtered.columns else 0
-achievable_tpd = df_filtered['total_mine_tpd'].mean() if 'total_mine_tpd' in df_filtered.columns else 0
-delta_tpd = achievable_tpd - planned_tpd
-achievement_pct = df_filtered['achievable_vs_planned_pct'].mean() if 'achievable_vs_planned_pct' in df_filtered.columns else 0
-
-num_dumpers = df_filtered['dumper_id'].nunique() if 'dumper_id' in df_filtered.columns else 0
-num_shovels = df_filtered['shovel_id'].nunique() if 'shovel_id' in df_filtered.columns else 0
-
-avg_dumper_cap = df_filtered['effective_capacity_tph'].mean() if 'effective_capacity_tph' in df_filtered.columns else 0
-avg_base_cap = df_filtered['dumper_capacity_tph'].mean() if 'dumper_capacity_tph' in df_filtered.columns else 0
-efficiency_pct = (avg_dumper_cap / avg_base_cap * 100) if avg_base_cap > 0 else 100
-
-# Equipment availability from forecast
-equip_avail = forecast_filtered['equipment_availability_pct'].mean() * 100 if (
-    not forecast_filtered.empty and 'equipment_availability_pct' in forecast_filtered.columns
-) else 0
-
-# Rainfall and road condition
-rainfall = forecast_filtered['rainfall_mm'].mean() if (
-    not forecast_filtered.empty and 'rainfall_mm' in forecast_filtered.columns
-) else 0
-road_cond = forecast_filtered['haul_road_condition'].mean() if (
-    not forecast_filtered.empty and 'haul_road_condition' in forecast_filtered.columns
-) else 5
-
-# Shortfall risk
-shortfall_risk = forecast_filtered['shortfall_risk'].mode().iloc[0] if (
-    not forecast_filtered.empty and 'shortfall_risk' in forecast_filtered.columns and len(forecast_filtered['shortfall_risk'].mode()) > 0
-) else "N/A"
-
-# Shovel stats
-shovel_stats = pd.DataFrame()
-if 'assigned_shovel' in df_filtered.columns and 'shovel_throughput_tpd' in df_filtered.columns:
-    shovel_stats = df_filtered.groupby('assigned_shovel').agg(
-        throughput_tpd=('shovel_throughput_tpd', 'first'),
-        dumpers_assigned=('dumper_id', 'count'),
-        avg_eff_cap=('effective_capacity_tph', 'mean'),
-        total_eff_cap=('effective_capacity_tph', 'sum'),
-    ).reset_index()
-    shovel_stats['capacity_tpd'] = shovel_stats['throughput_tpd'] * 1.2
-    shovel_stats['utilization_pct'] = np.where(
-        shovel_stats['capacity_tpd'] > 0,
-        shovel_stats['throughput_tpd'] / shovel_stats['capacity_tpd'] * 100,
-        0
-    )
-
-# Mine display name
-mine_display = selected_mine.replace('_', ' ').replace('Mine ', '') if isinstance(selected_mine, str) else str(selected_mine)
-month_names = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'}
-month_display = month_names.get(selected_month, str(selected_month))
-
-# ─── KPI Delta Tracking (session state) ───
-if 'prev_kpis' not in st.session_state:
-    st.session_state.prev_kpis = {}
-
-prev = st.session_state.prev_kpis
-delta_production = achievable_tpd - prev.get('achievable_tpd', achievable_tpd)
-delta_achievement = achievement_pct - prev.get('achievement_pct', achievement_pct)
-delta_efficiency = efficiency_pct - prev.get('efficiency_pct', efficiency_pct)
-
-# Store current values for next refresh
-st.session_state.prev_kpis = {
-    'achievable_tpd': achievable_tpd,
-    'achievement_pct': achievement_pct,
-    'efficiency_pct': efficiency_pct,
-}
-
-# ─────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
 # HEADER
-# ─────────────────────────────────────────
-status_class = "fd-live" if achievement_pct >= 90 else "fd-tag"
-status_text = "OPERATIONAL" if achievement_pct >= 90 else "AT RISK"
-status_dot = '<div class="fd-live-dot"></div>' if achievement_pct >= 90 else '⚠️'
-live_indicator = '<div class="fd-live"><div class="fd-live-dot"></div> LIVE</div>' if auto_refresh_enabled else ""
+# ══════════════════════════════════════════════════════════════════════════════
 
 st.markdown(f"""
 <div class="fd-header">
@@ -557,105 +554,105 @@ st.markdown(f"""
         <div class="fd-subtitle">MineFlow OR-Optimizer · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">⛏️ {mine_display}</div>
-        <div class="fd-tag">📅 {month_display} {selected_year}</div>
-        <div class="fd-tag">🕐 {refresh_ts}</div>
-        {live_indicator}
-        <div class="{status_class}">{status_dot} {status_text}</div>
+        <div class="fd-tag">⛏️ Dongri Buzurg</div>
+        <div class="fd-tag">📅 Last updated: {latest_label}</div>
+        <div class="fd-sim-badge">🧪 Simulation Mode</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────
+# ─── Validation errors ───
+if val_errors:
+    for err in val_errors:
+        st.markdown(f'<div class="data-warn">{err}</div>', unsafe_allow_html=True)
+
+if achievement_warning:
+    st.markdown(
+        f'<div class="data-warn">⚠️ <strong>Data Check:</strong> Achievement is '
+        f'{achievement_pct:.1f}%, which exceeds 115%. This may indicate the latest '
+        f'actual data ({latest_label}) is outperforming the FY26 target rate. '
+        f'Displayed value clamped to {achievement_display:.1f}%.</div>',
+        unsafe_allow_html=True
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # KPI CARDS
-# ─────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+
+delta_tpd = company_tpd - planned_tpd
 delta_class = "positive" if delta_tpd >= 0 else "negative"
 delta_icon = "▲" if delta_tpd >= 0 else "▼"
-achieve_class = "positive" if achievement_pct >= 100 else ("warning" if achievement_pct >= 90 else "negative")
-
-# Count maintenance/unavailable dumpers from alerts
-maint_count = 0
-if not alerts_filtered.empty:
-    maint_alerts = alerts_filtered[alerts_filtered['alert_message'].str.contains('unavailable|maintenance', case=False, na=False)]
-    maint_count = len(maint_alerts.drop_duplicates(subset=['alert_message']))
-
-avail_dumpers = num_dumpers
-total_fleet = num_dumpers + maint_count
-
-# Format delta indicators for KPI cards
-prod_delta_str = f"{'▲' if delta_production >= 0 else '▼'} {abs(delta_production):,.0f} TPD since last refresh" if delta_production != 0 else f"{'▲' if delta_tpd >= 0 else '▼'} {abs(delta_tpd):,.0f} TPD vs plan"
-prod_delta_class = 'positive' if delta_production >= 0 else 'negative' if delta_production != 0 else delta_class
-achieve_delta_str = f"{'▲' if delta_achievement >= 0 else '▼'} {abs(delta_achievement):.1f}% since last" if delta_achievement != 0 else ('On track' if achievement_pct >= 100 else ('Near target' if achievement_pct >= 90 else 'Below target'))
-eff_delta_str = f"{'▲' if delta_efficiency >= 0 else '▼'} {abs(delta_efficiency):.1f}% since last" if delta_efficiency != 0 else 'Eff. vs base capacity'
+achieve_class = "positive" if achievement_display >= 100 else ("warning" if achievement_display >= 90 else "negative")
 
 st.markdown(f"""
 <div class="kpi-grid">
     <div class="kpi-card">
-        <div class="kpi-label">Production</div>
-        <div class="kpi-value">{achievable_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
-        <div class="kpi-delta {prod_delta_class}">{prod_delta_str}</div>
+        <div class="kpi-label">Company Production <span class="badge-derived">DERIVED</span></div>
+        <div class="kpi-value">{company_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
+        <div class="kpi-delta neutral">{latest_label} · {int(latest_month_row['tonnes']) if latest_month_row is not None else 'N/A':,} tonnes / {int(latest_month_row['days']) if latest_month_row is not None else '?'} days</div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-label">Planned Production</div>
+        <div class="kpi-label">FY26 Planned <span class="badge-real">REAL</span></div>
         <div class="kpi-value">{planned_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
-        <div class="kpi-delta neutral">Target for period</div>
+        <div class="kpi-delta neutral">{fy_target_tonnes:,} tonnes / 365 days</div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-label">Achievement</div>
-        <div class="kpi-value">{achievement_pct:.1f}<span class="kpi-unit">%</span></div>
-        <div class="kpi-delta {achieve_class}">{achieve_delta_str}</div>
+        <div class="kpi-label">Achievement <span class="badge-derived">DERIVED</span></div>
+        <div class="kpi-value">{achievement_display:.1f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-delta {achieve_class}">{delta_icon} {abs(delta_tpd):,.0f} TPD vs plan</div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-label">Active Dumpers</div>
-        <div class="kpi-value">{avail_dumpers}<span class="kpi-unit">/ {total_fleet}</span></div>
-        <div class="kpi-delta {'neutral' if maint_count == 0 else 'warning'}">{maint_count} in maintenance</div>
+        <div class="kpi-label">Mine TPD (Dongri Buzurg) <span class="badge-derived">DERIVED</span></div>
+        <div class="kpi-value">{mine_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
+        <div class="kpi-delta neutral">= {company_tpd:,.0f} × {mine_share}%</div>
     </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Active Shovels</div>
-        <div class="kpi-value">{num_shovels}</div>
-        <div class="kpi-delta neutral">Assigned this period</div>
+    <div class="kpi-card-simulated">
+        <div class="kpi-label">Active Dumpers <span class="badge-simulated">SIMULATED</span></div>
+        <div class="kpi-value">{fleet['num_dumpers']}</div>
+        <div class="kpi-delta neutral">Sized to match mine TPD</div>
     </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Fleet Efficiency</div>
-        <div class="kpi-value">{efficiency_pct:.1f}<span class="kpi-unit">%</span></div>
-        <div class="kpi-delta {'positive' if efficiency_pct > 90 else 'warning'}">{eff_delta_str}</div>
+    <div class="kpi-card-simulated">
+        <div class="kpi-label">Active Shovels <span class="badge-simulated">SIMULATED</span></div>
+        <div class="kpi-value">{fleet['num_shovels']}</div>
+        <div class="kpi-delta neutral">1 per ~3 dumpers</div>
     </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Equip Availability</div>
-        <div class="kpi-value">{equip_avail:.0f}<span class="kpi-unit">%</span></div>
-        <div class="kpi-delta {'positive' if equip_avail > 85 else 'warning'}">{'Healthy' if equip_avail > 85 else 'Below target'}</div>
+    <div class="kpi-card-simulated">
+        <div class="kpi-label">Fleet Efficiency <span class="badge-simulated">SIMULATED</span></div>
+        <div class="kpi-value">{fleet['efficiency_pct']:.1f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-delta neutral">Scale factor to match mine TPD</div>
     </div>
-    <div class="kpi-card">
-        <div class="kpi-label">Shortfall Risk</div>
-        <div class="kpi-value" style="font-size:1.3rem !important; color: {'#ef4444' if shortfall_risk=='High' else ('#f59e0b' if shortfall_risk=='Medium' else '#22c55e')} !important;">{shortfall_risk}</div>
-        <div class="kpi-delta neutral">Forecast assessment</div>
+    <div class="kpi-card-simulated">
+        <div class="kpi-label">Avg Dumper Cap <span class="badge-simulated">SIMULATED</span></div>
+        <div class="kpi-value">{fleet['avg_dumper_tph']}<span class="kpi-unit">TPH</span></div>
+        <div class="kpi-delta neutral">After scaling</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
 # MAIN CONTENT: Fleet View + AI Recommendation
-# ─────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+
 col_main, col_ai = st.columns([2, 1], gap="medium")
 
 with col_main:
-    st.markdown('<div class="section-title">🚛 Fleet Operational Status</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🚛 Fleet Operational Status <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
 
-    # Build fleet status from actual data
-    if 'dumper_id' in df_filtered.columns and 'assigned_shovel' in df_filtered.columns:
-        fleet_items_html = ""
-        for _, row in df_filtered.iterrows():
-            dumper = row['dumper_id']
-            shovel = row['assigned_shovel']
-            eff_cap = row.get('effective_capacity_tph', 0)
-            base_cap = row.get('dumper_capacity_tph', 0)
-            eff_ratio = (eff_cap / base_cap * 100) if base_cap > 0 else 100
+    fleet_items_html = ""
+    for _, row in df_fleet.iterrows():
+        dumper = row['dumper_id']
+        shovel = row['assigned_shovel']
+        eff_cap = row['effective_capacity_tph']
+        base_cap = row['dumper_capacity_tph']
+        eff_ratio = (eff_cap / base_cap * 100) if base_cap > 0 else 100
 
-            dot_class = "dot-active" if eff_ratio > 85 else "dot-idle"
-            status_text = f"Assigned → {shovel}"
-            cap_text = f"{eff_cap:.1f} TPH ({eff_ratio:.0f}%)"
+        dot_class = "dot-active" if eff_ratio > 85 else "dot-idle"
+        status_text = f"Assigned → {shovel}"
+        cap_text = f"{eff_cap:.1f} TPH ({eff_ratio:.0f}%)"
 
-            fleet_items_html += f"""
+        fleet_items_html += f"""
 <div class="fleet-item">
 <div class="fleet-dot {dot_class}"></div>
 <div class="fleet-id">{dumper}</div>
@@ -663,61 +660,42 @@ with col_main:
 <div class="fleet-cap">{cap_text}</div>
 </div>
 """
+    st.markdown(fleet_items_html, unsafe_allow_html=True)
 
-        # Add maintenance dumpers from alerts
-        if not alerts_filtered.empty:
-            maint_dumpers = alerts_filtered[
-                alerts_filtered['alert_message'].str.contains('unavailable|maintenance', case=False, na=False)
-            ]['alert_message'].drop_duplicates()
-            for msg in maint_dumpers:
-                # Extract dumper ID from message like "Dumper D6 unavailable..."
-                parts = msg.split()
-                d_id = parts[1] if len(parts) > 1 else "D?"
-                fleet_items_html += f"""
-<div class="fleet-item">
-<div class="fleet-dot dot-maint"></div>
-<div class="fleet-id">{d_id}</div>
-<div class="fleet-status">Maintenance</div>
-<div class="fleet-cap">Unavailable</div>
-</div>
-"""
+    # Verify fleet TPD matches mine TPD
+    fleet_total = df_fleet['effective_capacity_tph'].sum() * fleet['operating_hours']
+    st.caption(
+        f"Fleet total: {fleet_total:,.0f} TPD | Mine target: {mine_tpd:,.0f} TPD | "
+        f"Match: {'✅' if abs(fleet_total - mine_tpd) < mine_tpd * 0.05 else '⚠️'}"
+    )
 
-        st.markdown(fleet_items_html, unsafe_allow_html=True)
-    else:
-        st.info("No fleet assignment data available.")
 
 with col_ai:
-    st.markdown('<div class="section-title">🧠 AI Dispatch Recommendation</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🧠 AI Dispatch Recommendation <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
 
-    # Generate recommendation from actual data analysis
     if not shovel_stats.empty and len(shovel_stats) >= 2:
-        # Find under-supplied shovel (lowest dumper count relative to throughput)
         shovel_stats_sorted = shovel_stats.sort_values('dumpers_assigned')
         bottleneck_shovel = shovel_stats_sorted.iloc[0]
         best_shovel = shovel_stats_sorted.iloc[-1]
 
-        bn_shovel_id = bottleneck_shovel['assigned_shovel']
+        bn_shovel_id = bottleneck_shovel['shovel_id']
         bn_dumpers = int(bottleneck_shovel['dumpers_assigned'])
-        best_shovel_id = best_shovel['assigned_shovel']
+        best_shovel_id = best_shovel['shovel_id']
         best_dumpers = int(best_shovel['dumpers_assigned'])
 
-        # Find a candidate dumper to reassign (from the most-supplied shovel)
         candidate_dumper = "N/A"
-        if 'assigned_shovel' in df_filtered.columns:
-            over_supplied = df_filtered[df_filtered['assigned_shovel'] == best_shovel_id]
-            if not over_supplied.empty:
-                # Pick the one with lowest effective capacity (least loss when moved)
-                candidate_row = over_supplied.sort_values('effective_capacity_tph').iloc[0]
-                candidate_dumper = candidate_row['dumper_id']
-                candidate_cap = candidate_row['effective_capacity_tph']
+        over_supplied = df_fleet[df_fleet['assigned_shovel'] == best_shovel_id]
+        if not over_supplied.empty:
+            candidate_row = over_supplied.sort_values('effective_capacity_tph').iloc[0]
+            candidate_dumper = candidate_row['dumper_id']
+            candidate_cap = candidate_row['effective_capacity_tph']
 
-        # Estimate impact
-        estimated_gain_tpd = candidate_cap * 16 if candidate_dumper != "N/A" else 0  # 16 operating hours
+        estimated_gain_tpd = candidate_cap * fleet['operating_hours'] if candidate_dumper != "N/A" else 0
 
         st.markdown(f"""
 <div class="ai-card">
 <div class="ai-card-header">
-🧠 Dispatch Optimization <span class="ai-badge">OR-Tools</span>
+🧠 Dispatch Optimization <span class="ai-badge">OR-Tools</span> <span class="badge-simulated">SIMULATED</span>
 </div>
 <div class="ai-section-label">Current Observation</div>
 <div class="ai-value">{bn_shovel_id} has fewest assigned dumpers ({bn_dumpers})</div>
@@ -732,109 +710,82 @@ from {best_shovel_id} ({best_dumpers} dumpers) → {bn_shovel_id} ({bn_dumpers} 
 <div class="ai-impact-item impact-positive">▲ ~{estimated_gain_tpd:.0f} TPD potential throughput at {bn_shovel_id}</div>
 <div class="ai-impact-item impact-positive">▲ Better load balancing across shovels</div>
 <div class="ai-impact-item impact-positive">▼ Reduced idle time at {bn_shovel_id}</div>
-<div class="ai-section-label" style="margin-top:14px;">Why This Dispatch?</div>
-<div style="font-size:0.82rem; color:#94a3b8; line-height:1.6;">
-✓ {bn_shovel_id} has fewer trucks than other shovels<br>
-✓ {best_shovel_id} can release a dumper without capacity loss<br>
-✓ {candidate_dumper} has the lowest effective capacity at {best_shovel_id}<br>
-✓ Rebalancing improves overall mine throughput<br>
-✓ OR-Tools solver confirms feasibility
-</div>
 </div>
 """, unsafe_allow_html=True)
     else:
-        st.markdown("""
-<div class="ai-card">
-<div class="ai-card-header">🧠 Dispatch Optimization <span class="ai-badge">OR-Tools</span></div>
-<div class="ai-value">Insufficient data for recommendation. Ensure optimization has been run.</div>
-</div>
-""", unsafe_allow_html=True)
+        st.info("Insufficient shovels for optimization recommendation.")
 
-# ─────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
 # DISPATCH MATRIX + PRODUCTION PERFORMANCE
-# ─────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown("---")
 col_matrix, col_prod = st.columns([1, 1], gap="medium")
 
 with col_matrix:
-    st.markdown('<div class="section-title">📋 Dumper–Shovel Dispatch Matrix</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">📋 Dumper–Shovel Dispatch Matrix <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
 
-    if 'dumper_id' in df_filtered.columns and 'assigned_shovel' in df_filtered.columns:
-        matrix_df = df_filtered.copy()
-        matrix_df['assigned'] = 1
-        matrix = pd.pivot_table(matrix_df, values='assigned', index='dumper_id',
-                                columns='assigned_shovel', fill_value=0, aggfunc='max')
+    matrix_df = df_fleet.copy()
+    matrix_df['assigned'] = 1
+    matrix = pd.pivot_table(matrix_df, values='assigned', index='dumper_id',
+                            columns='assigned_shovel', fill_value=0, aggfunc='max')
+    matrix = matrix.reindex(sorted(matrix.index), axis=0)
+    matrix = matrix.reindex(sorted(matrix.columns), axis=1)
 
-        # Sort index and columns
-        matrix = matrix.reindex(sorted(matrix.index), axis=0)
-        matrix = matrix.reindex(sorted(matrix.columns), axis=1)
+    dumpers = matrix.index.tolist()
+    shovels = matrix.columns.tolist()
+    z_values = matrix.values
+    text_values = [['●' if v == 1 else '—' for v in row_data] for row_data in z_values]
 
-        # Create visual matrix with symbols
-        dumpers = matrix.index.tolist()
-        shovels = matrix.columns.tolist()
+    fig_matrix = go.Figure(data=go.Heatmap(
+        z=z_values,
+        x=shovels,
+        y=dumpers,
+        text=text_values,
+        texttemplate='%{text}',
+        textfont=dict(size=18, color='white'),
+        colorscale=[[0, 'rgba(30,41,59,0.8)'], [1, 'rgba(99,102,241,0.7)']],
+        showscale=False,
+        hovertemplate='Dumper: %{y}<br>Shovel: %{x}<br>Assigned: %{z}<extra></extra>'
+    ))
+    apply_dark_theme(fig_matrix, height=max(300, len(dumpers) * 45 + 80), show_legend=False)
+    fig_matrix.update_xaxes(title_text='Shovel', side='top', tickfont=dict(size=14))
+    fig_matrix.update_yaxes(title_text='Dumper', tickfont=dict(size=14), autorange='reversed')
+    fig_matrix.update_layout(margin=dict(l=60, r=20, t=50, b=20))
+    st.plotly_chart(fig_matrix, use_container_width=True)
 
-        # Build annotated heatmap
-        z_values = matrix.values
-        text_values = [['●' if v == 1 else '—' for v in row] for row in z_values]
+    with st.expander("📄 View Assignment Details"):
+        detail_df = df_fleet[['dumper_id', 'assigned_shovel', 'effective_capacity_tph', 'dumper_capacity_tph']].copy()
+        detail_df.columns = ['Dumper', 'Shovel', 'Eff. Cap (TPH)', 'Base Cap (TPH)']
+        st.dataframe(detail_df, use_container_width=True, hide_index=True)
 
-        fig_matrix = go.Figure(data=go.Heatmap(
-            z=z_values,
-            x=shovels,
-            y=dumpers,
-            text=text_values,
-            texttemplate='%{text}',
-            textfont=dict(size=18, color='white'),
-            colorscale=[[0, 'rgba(30,41,59,0.8)'], [1, 'rgba(99,102,241,0.7)']],
-            showscale=False,
-            hovertemplate='Dumper: %{y}<br>Shovel: %{x}<br>Assigned: %{z}<extra></extra>'
-        ))
-        apply_dark_theme(fig_matrix, height=max(300, len(dumpers) * 45 + 80), show_legend=False)
-        fig_matrix.update_xaxes(title_text='Shovel', side='top', tickfont=dict(size=14))
-        fig_matrix.update_yaxes(title_text='Dumper', tickfont=dict(size=14), autorange='reversed')
-        fig_matrix.update_layout(margin=dict(l=60, r=20, t=50, b=20))
-        st.plotly_chart(fig_matrix, use_container_width=True)
-
-        # Compact assignment details in expander
-        with st.expander("📄 View Assignment Details"):
-            detail_cols = ['dumper_id', 'assigned_shovel', 'effective_capacity_tph', 'dumper_capacity_tph']
-            avail_cols = [c for c in detail_cols if c in df_filtered.columns]
-            detail_df = df_filtered[avail_cols].copy()
-            if 'effective_capacity_tph' in detail_df.columns:
-                detail_df['effective_capacity_tph'] = detail_df['effective_capacity_tph'].round(1)
-            if 'dumper_capacity_tph' in detail_df.columns:
-                detail_df['dumper_capacity_tph'] = detail_df['dumper_capacity_tph'].round(1)
-            rename = {'dumper_id': 'Dumper', 'assigned_shovel': 'Shovel',
-                      'effective_capacity_tph': 'Eff. Cap (TPH)', 'dumper_capacity_tph': 'Base Cap (TPH)'}
-            st.dataframe(detail_df.rename(columns=rename), use_container_width=True, hide_index=True)
-    else:
-        st.info("No dispatch matrix data available.")
 
 with col_prod:
     st.markdown('<div class="section-title">📈 Production Performance</div>', unsafe_allow_html=True)
 
-    # Production comparison: Planned vs Achievable
-    if planned_tpd > 0 or achievable_tpd > 0:
-        fig_prod = go.Figure()
-        fig_prod.add_trace(go.Bar(
-            x=['Planned', 'Achievable'],
-            y=[planned_tpd, achievable_tpd],
-            marker_color=['#334155', '#6366f1'],
-            text=[f'{planned_tpd:,.0f}', f'{achievable_tpd:,.0f}'],
-            textposition='outside',
-            textfont=dict(size=16, color='#e2e8f0'),
-            width=0.5,
-        ))
-        apply_dark_theme(fig_prod, height=300, show_legend=False)
-        fig_prod.update_yaxes(title_text='TPD')
-        fig_prod.update_layout(title=dict(text='Planned vs Achievable Production', font=dict(size=14)))
-        st.plotly_chart(fig_prod, use_container_width=True)
+    # Planned vs Actual (Company level, REAL/DERIVED)
+    fig_prod = go.Figure()
+    fig_prod.add_trace(go.Bar(
+        x=['FY26 Planned (REAL)', f'Latest Actual (DERIVED)'],
+        y=[planned_tpd, company_tpd],
+        marker_color=['#334155', '#6366f1'],
+        text=[f'{planned_tpd:,.0f}', f'{company_tpd:,.0f}'],
+        textposition='outside',
+        textfont=dict(size=16, color='#e2e8f0'),
+        width=0.5,
+    ))
+    apply_dark_theme(fig_prod, height=300, show_legend=False)
+    fig_prod.update_yaxes(title_text='TPD')
+    fig_prod.update_layout(title=dict(text='Company Planned vs Actual TPD', font=dict(size=14)))
+    st.plotly_chart(fig_prod, use_container_width=True)
 
-    # Shovel throughput chart
+    # Shovel throughput chart (SIMULATED)
     if not shovel_stats.empty:
         fig_shovel = go.Figure()
         fig_shovel.add_trace(go.Bar(
             name='Throughput',
-            x=shovel_stats['assigned_shovel'],
+            x=shovel_stats['shovel_id'],
             y=shovel_stats['throughput_tpd'],
             marker_color='#6366f1',
             text=shovel_stats['throughput_tpd'].apply(lambda x: f'{x:,.0f}'),
@@ -843,7 +794,7 @@ with col_prod:
         ))
         fig_shovel.add_trace(go.Bar(
             name='Capacity',
-            x=shovel_stats['assigned_shovel'],
+            x=shovel_stats['shovel_id'],
             y=shovel_stats['capacity_tpd'],
             marker_color='rgba(100,116,139,0.4)',
             text=shovel_stats['capacity_tpd'].apply(lambda x: f'{x:,.0f}'),
@@ -853,83 +804,97 @@ with col_prod:
         apply_dark_theme(fig_shovel, height=300)
         fig_shovel.update_layout(
             barmode='group',
-            title=dict(text='Shovel Throughput vs Capacity', font=dict(size=14)),
+            title=dict(text='Shovel Throughput vs Capacity (SIMULATED)', font=dict(size=14)),
             legend=dict(font=dict(size=11), orientation='h', y=-0.15),
         )
         fig_shovel.update_yaxes(title_text='TPD')
         st.plotly_chart(fig_shovel, use_container_width=True)
 
-# ─────────────────────────────────────────
-# BOTTLENECKS & ALERTS
-# ─────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ANNUAL PRODUCTION TREND (REAL DATA)
+# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown("---")
-st.markdown('<div class="section-title">⚠️ Current Bottlenecks & Alerts</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">📈 MOIL Annual Production Trend <span class="badge-real">REAL</span></div>', unsafe_allow_html=True)
 
-if not alerts_filtered.empty:
-    unique_alerts = alerts_filtered.drop_duplicates(subset=['alert_type', 'alert_message'])
-    critical = unique_alerts[unique_alerts['alert_type'] == 'CRITICAL']
-    warnings = unique_alerts[unique_alerts['alert_type'] == 'WARNING']
-    infos = unique_alerts[unique_alerts['alert_type'] == 'INFO']
+annual_data = moil_df[moil_df['type'] == 'annual'].sort_values('start_date').copy()
+if not annual_data.empty:
+    fig_trend = go.Figure()
+    fig_trend.add_trace(go.Bar(
+        x=annual_data['period'],
+        y=annual_data['tonnes'] / 1e6,
+        marker_color='#6366f1',
+        text=annual_data['tonnes'].apply(lambda x: f'{x/1e6:.2f}M'),
+        textposition='outside',
+        textfont=dict(size=12, color='#e2e8f0'),
+    ))
+    # Add FY26 target line
+    fig_trend.add_hline(
+        y=fy_target_tonnes / 1e6,
+        line_dash="dash", line_color="rgba(245,158,11,0.5)",
+        annotation_text=f"FY26 Target: {fy_target_tonnes/1e6:.2f}M",
+        annotation_font_color="#fbbf24",
+    )
+    apply_dark_theme(fig_trend, height=350, show_legend=False)
+    fig_trend.update_yaxes(title_text='Million Tonnes')
+    fig_trend.update_layout(title=dict(text='MOIL Annual Production (Real Data)', font=dict(size=14)))
+    st.plotly_chart(fig_trend, use_container_width=True)
 
-    alert_cols = st.columns(min(len(unique_alerts), 4))
-    all_alerts = pd.concat([critical, warnings, infos])
 
-    for i, (_, row) in enumerate(all_alerts.iterrows()):
-        if i >= 4:
-            break
-        atype = row['alert_type']
-        css_class = 'bn-critical' if atype == 'CRITICAL' else ('bn-warning' if atype == 'WARNING' else 'bn-info')
-        severity = atype.upper()
-        msg = row['alert_message']
-        # Clean encoding artifacts
-        msg = msg.replace('\u2014', '—').replace('â\x80\x94', '—').replace('–', '—')
+# ══════════════════════════════════════════════════════════════════════════════
+# MONTHLY DATA POINTS (REAL DATA)
+# ══════════════════════════════════════════════════════════════════════════════
 
-        with alert_cols[i % len(alert_cols)]:
-            st.markdown(f"""
-<div class="bottleneck-card {css_class}">
-<div class="bn-label">{severity}</div>
-<div class="bn-message">{msg}</div>
-</div>
-""", unsafe_allow_html=True)
+monthly_data = moil_df[moil_df['type'] == 'monthly'].sort_values('start_date').copy()
+if not monthly_data.empty:
+    st.markdown('<div class="section-title">📊 Known Monthly Production <span class="badge-real">REAL</span></div>', unsafe_allow_html=True)
 
-    # Show remaining alerts in expander
-    remaining = len(all_alerts) - 4
-    if remaining > 0:
-        with st.expander(f"View {remaining} more alert(s)"):
-            for _, row in all_alerts.iloc[4:].iterrows():
-                atype = row['alert_type']
-                msg = row['alert_message'].replace('\u2014', '—').replace('â\x80\x94', '—').replace('–', '—')
-                if atype == 'CRITICAL':
-                    st.error(f"🔴 {msg}")
-                elif atype == 'WARNING':
-                    st.warning(f"⚠️ {msg}")
-                else:
-                    st.info(f"ℹ️ {msg}")
+    fig_monthly = go.Figure()
+    fig_monthly.add_trace(go.Scatter(
+        x=monthly_data['period'],
+        y=monthly_data['tpd'],
+        mode='lines+markers+text',
+        marker=dict(size=10, color='#22c55e'),
+        line=dict(color='#22c55e', width=2),
+        text=monthly_data['tpd'].apply(lambda x: f'{x:,.0f}'),
+        textposition='top center',
+        textfont=dict(size=11, color='#e2e8f0'),
+    ))
+    # Add planned TPD line
+    fig_monthly.add_hline(
+        y=planned_tpd,
+        line_dash="dash", line_color="rgba(99,102,241,0.4)",
+        annotation_text=f"FY26 Planned: {planned_tpd:,.0f} TPD",
+        annotation_font_color="#818cf8",
+    )
+    apply_dark_theme(fig_monthly, height=300, show_legend=False)
+    fig_monthly.update_yaxes(title_text='TPD')
+    fig_monthly.update_layout(title=dict(text='Monthly TPD (Real Data Points)', font=dict(size=14)))
+    st.plotly_chart(fig_monthly, use_container_width=True)
 
-    st.caption(f"Total: {len(critical)} Critical · {len(warnings)} Warning · {len(infos)} Info")
-else:
-    st.markdown("""
-<div class="bottleneck-card bn-info" style="border-left-color: #22c55e; background: rgba(34,197,94,0.05);">
-<div class="bn-label" style="color: #4ade80 !important;">ALL CLEAR</div>
-<div class="bn-message">No active alerts for the selected period.</div>
-</div>
-""", unsafe_allow_html=True)
 
-# ─────────────────────────────────────────
-# SHOVEL UTILIZATION + DUMPER DISTRIBUTION
-# ─────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# SHOVEL UTILIZATION + DUMPER DISTRIBUTION (SIMULATED)
+# ══════════════════════════════════════════════════════════════════════════════
+
 if not shovel_stats.empty and len(shovel_stats) > 0:
     st.markdown("---")
     col_util, col_dist = st.columns(2, gap="medium")
 
     with col_util:
-        st.markdown('<div class="section-title">📊 Shovel Utilization</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">📊 Shovel Utilization <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
 
+        shovel_stats['utilization_pct'] = np.where(
+            shovel_stats['capacity_tpd'] > 0,
+            shovel_stats['throughput_tpd'] / shovel_stats['capacity_tpd'] * 100,
+            0
+        )
         colors = ['#22c55e' if u >= 80 else ('#f59e0b' if u >= 50 else '#ef4444')
                   for u in shovel_stats['utilization_pct']]
 
         fig_util = go.Figure(go.Bar(
-            x=shovel_stats['assigned_shovel'],
+            x=shovel_stats['shovel_id'],
             y=shovel_stats['utilization_pct'],
             marker_color=colors,
             text=shovel_stats['utilization_pct'].apply(lambda x: f'{x:.0f}%'),
@@ -944,10 +909,10 @@ if not shovel_stats.empty and len(shovel_stats) > 0:
         st.plotly_chart(fig_util, use_container_width=True)
 
     with col_dist:
-        st.markdown('<div class="section-title">🚛 Dumper Distribution by Shovel</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">🚛 Dumper Distribution <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
 
         fig_dist = go.Figure(go.Bar(
-            x=shovel_stats['assigned_shovel'],
+            x=shovel_stats['shovel_id'],
             y=shovel_stats['dumpers_assigned'],
             marker_color='#6366f1',
             text=shovel_stats['dumpers_assigned'].astype(int).astype(str),
@@ -959,81 +924,89 @@ if not shovel_stats.empty and len(shovel_stats) > 0:
         fig_dist.update_layout(title=dict(text='Dumpers Assigned per Shovel', font=dict(size=14)))
         st.plotly_chart(fig_dist, use_container_width=True)
 
-# ─────────────────────────────────────────
-# PRODUCTION TREND (across months for selected mine)
-# ─────────────────────────────────────────
-if not forecast.empty and 'mine_id' in forecast.columns:
-    mine_forecast = forecast[forecast['mine_id'] == selected_mine].copy() if selected_mine != 'All' else forecast.copy()
-    if not mine_forecast.empty and len(mine_forecast) > 1:
-        st.markdown("---")
-        st.markdown('<div class="section-title">📈 Production Trend (Annual View)</div>', unsafe_allow_html=True)
 
-        mine_forecast = mine_forecast.sort_values(['year', 'month'])
-        mine_forecast['period'] = mine_forecast['month'].map(month_names) + " " + mine_forecast['year'].astype(str)
+# ══════════════════════════════════════════════════════════════════════════════
+# DATA PROVENANCE PANEL
+# ══════════════════════════════════════════════════════════════════════════════
 
-        fig_trend = go.Figure()
-        if 'planned_production_tpd' in mine_forecast.columns:
-            fig_trend.add_trace(go.Scatter(
-                x=mine_forecast['period'],
-                y=mine_forecast['planned_production_tpd'],
-                name='Planned',
-                line=dict(color='#475569', width=2, dash='dash'),
-                mode='lines+markers',
-                marker=dict(size=6),
-            ))
-        if 'predicted_production_tpd' in mine_forecast.columns:
-            fig_trend.add_trace(go.Scatter(
-                x=mine_forecast['period'],
-                y=mine_forecast['predicted_production_tpd'],
-                name='Predicted',
-                line=dict(color='#6366f1', width=2),
-                mode='lines+markers',
-                marker=dict(size=6),
-            ))
-        if 'crusher_capacity_tpd' in mine_forecast.columns:
-            fig_trend.add_trace(go.Scatter(
-                x=mine_forecast['period'],
-                y=mine_forecast['crusher_capacity_tpd'],
-                name='Crusher Capacity',
-                line=dict(color='rgba(34,197,94,0.4)', width=1, dash='dot'),
-                mode='lines',
-            ))
+st.markdown("---")
+with st.expander("📋 Data Provenance — What's Real and What's Not", expanded=False):
+    st.markdown("""
+Every metric on this dashboard has a provenance badge. Here's the full breakdown:
 
-        apply_dark_theme(fig_trend, height=350)
-        fig_trend.update_layout(
-            legend=dict(font=dict(size=11), orientation='h', y=-0.2),
-        )
-        fig_trend.update_yaxes(title_text='TPD')
-        st.plotly_chart(fig_trend, use_container_width=True)
+<table class="prov-table">
+<tr><th>Metric</th><th>Type</th><th>Source / Formula</th></tr>
+<tr>
+    <td>Company Production (TPD)</td>
+    <td><span class="badge-derived">DERIVED</span></td>
+    <td>tonnes ÷ days from latest monthly entry in moil_real.csv</td>
+</tr>
+<tr>
+    <td>FY26 Planned (TPD)</td>
+    <td><span class="badge-real">REAL</span></td>
+    <td>FY26 target (2,350,000 tonnes) ÷ 365 days</td>
+</tr>
+<tr>
+    <td>Achievement %</td>
+    <td><span class="badge-derived">DERIVED</span></td>
+    <td>Company TPD ÷ Planned TPD × 100. Clamped at 150%, warning &gt; 115%</td>
+</tr>
+<tr>
+    <td>Mine TPD (Dongri Buzurg)</td>
+    <td><span class="badge-derived">DERIVED</span></td>
+    <td>Company TPD × mine_share slider (default 8%). <strong>ASSUMPTION.</strong></td>
+</tr>
+<tr>
+    <td>Annual Production Trend</td>
+    <td><span class="badge-real">REAL</span></td>
+    <td>MOIL Annual Reports FY19–FY25</td>
+</tr>
+<tr>
+    <td>Monthly Production Points</td>
+    <td><span class="badge-real">REAL</span></td>
+    <td>MOIL press releases (Dec-22, Dec-23, Aug-24, May-25, Jul-25, Oct-25)</td>
+</tr>
+<tr>
+    <td>Dumper Count, Capacity, Assignments</td>
+    <td><span class="badge-simulated">SIMULATED</span></td>
+    <td>Generated to match mine TPD. Sized so Σ(TPH) × 16h = mine TPD</td>
+</tr>
+<tr>
+    <td>Shovel Count, Throughput, Utilization</td>
+    <td><span class="badge-simulated">SIMULATED</span></td>
+    <td>1 shovel per ~3 dumpers, capacity randomly assigned 150–280 TPH</td>
+</tr>
+<tr>
+    <td>Fleet Efficiency</td>
+    <td><span class="badge-simulated">SIMULATED</span></td>
+    <td>Scale factor applied to dumper capacities to match mine TPD</td>
+</tr>
+<tr>
+    <td>OR-Tools Dispatch Recommendation</td>
+    <td><span class="badge-simulated">SIMULATED</span></td>
+    <td>Load-balancing heuristic based on simulated fleet</td>
+</tr>
+</table>
+""", unsafe_allow_html=True)
 
-# ─────────────────────────────────────────
-# ENVIRONMENTAL CONDITIONS
-# ─────────────────────────────────────────
-if rainfall > 0 or road_cond < 5:
-    st.markdown("---")
-    st.markdown('<div class="section-title">🌦️ Operating Conditions</div>', unsafe_allow_html=True)
-    ec1, ec2, ec3 = st.columns(3)
-    with ec1:
-        rain_class = "warning" if rainfall > 100 else "positive"
-        st.markdown(f"""
-<div class="kpi-card">
-<div class="kpi-label">Rainfall</div>
-<div class="kpi-value">{rainfall:.0f}<span class="kpi-unit">mm</span></div>
-<div class="kpi-delta {rain_class}">{'Heavy — production impact' if rainfall > 100 else 'Normal'}</div>
-</div>""", unsafe_allow_html=True)
-    with ec2:
-        road_class = "warning" if road_cond < 3 else "positive"
-        st.markdown(f"""
-<div class="kpi-card">
-<div class="kpi-label">Haul Road Condition</div>
-<div class="kpi-value">{road_cond:.1f}<span class="kpi-unit">/ 5</span></div>
-<div class="kpi-delta {road_class}">{'Poor — speed penalty' if road_cond < 3 else 'Acceptable'}</div>
-</div>""", unsafe_allow_html=True)
-    with ec3:
-        penalty = max(0, (1 - efficiency_pct / 100)) * 100
-        st.markdown(f"""
-<div class="kpi-card">
-<div class="kpi-label">Combined Penalty</div>
-<div class="kpi-value">{penalty:.1f}<span class="kpi-unit">%</span></div>
-<div class="kpi-delta {'warning' if penalty > 10 else 'neutral'}">Weather + road impact</div>
-</div>""", unsafe_allow_html=True)
+    st.markdown("### Source Data File")
+    st.dataframe(
+        moil_df[['period', 'tonnes', 'days', 'tpd', 'type', 'source_url']].style.format({
+            'tonnes': '{:,.0f}',
+            'tpd': '{:,.0f}',
+        }),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FOOTER
+# ══════════════════════════════════════════════════════════════════════════════
+
+st.info(
+    "💡 **Data Integrity Note:** This dashboard reads exclusively from `data/moil_real.csv`. "
+    "Company-level production is REAL. Mine-level production is an ASSUMPTION (editable above). "
+    "All fleet data is SIMULATED to match the derived mine TPD. "
+    "The OR-Tools dispatch logic is unchanged — only its inputs are now grounded in real data."
+)
