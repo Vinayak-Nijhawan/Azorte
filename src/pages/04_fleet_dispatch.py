@@ -135,13 +135,95 @@ st.sidebar.header("⚙️ Fleet Configuration")
 st.sidebar.caption("Only **opencast** mines have truck-shovel dispatch. "
                     "Underground mines use shaft haulage.")
 
-selected_mine = st.sidebar.selectbox("Select Opencast Mine", opencast_mines,
-    index=opencast_mines.index('Dongri_Buzurg') if 'Dongri_Buzurg' in opencast_mines else 0)
-mine_display = selected_mine.replace('_', ' ')
-mine_cfg = cfg['mines'][selected_mine]
+current_month = datetime.now().month
+monsoon_on = current_month in cfg['monsoon']['months']
+monsoon_override = st.sidebar.checkbox(
+    f"Monsoon Derate ({cfg['monsoon']['derate_factor']:.0%})",
+    value=monsoon_on,
+    help=f"Currently {'active' if monsoon_on else 'inactive'} (Jun-Sep)")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Editable Assumptions")
+
+# Mine selector will be in the header, but we need it before assumptions
+# Use a placeholder — we'll define selected_mine via the header below
+if 'fleet_selected_mine' not in st.session_state:
+    st.session_state.fleet_selected_mine = 'Dongri_Buzurg' if 'Dongri_Buzurg' in opencast_mines else opencast_mines[0]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HEADER (with inline mine selector)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Build the header using native Streamlit columns so we can embed a selectbox
+monsoon_tag_html = '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:3px 12px;font-size:0.75rem;color:#374151;white-space:nowrap;"><span class="material-symbols-rounded" style="font-size:15px;">water_drop</span> Monsoon Derate</span>' if monsoon_override else ''
+
+# Header container with CSS styling
+st.markdown("""<style>
+.fleet-header-container {
+    background: #EBF2FA;
+    border: 1px solid rgba(59,130,246,0.18);
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+    border-left: 4px solid #FF9933;
+    position: relative;
+    overflow: hidden;
+}
+.fleet-header-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
+}
+.fleet-title { font-size: 1.35rem; font-weight: 700; color: #111827; margin: 0; display: flex; align-items: center; gap: 8px; }
+.fleet-subtitle { font-size: 0.78rem; color: #4B5563; margin-top: 3px; }
+.fleet-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fleet-tag-pill { display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #374151; white-space: nowrap; }
+.fleet-op-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); border-radius: 20px; padding: 3px 12px; font-size: 0.7rem; color: #059669; font-weight: 700; white-space: nowrap; }
+.fleet-op-dot { width: 6px; height: 6px; border-radius: 50%; background: #059669; }
+/* Hide label and reduce padding on the inline mine selector */
+div[data-testid="stSelectbox"].mine-header-select label { display: none !important; }
+div[data-testid="stSelectbox"].mine-header-select { margin-top: -10px; margin-bottom: -10px; }
+</style>""", unsafe_allow_html=True)
+
+# Start the styled container
+st.markdown('<div class="fleet-header-container">', unsafe_allow_html=True)
+
+hdr_left, hdr_right = st.columns([3, 2])
+
+with hdr_left:
+    st.markdown('<div class="fleet-title"><span class="material-symbols-rounded" style="font-size:22px;">local_shipping</span> Intelligent Fleet Dispatch</div>', unsafe_allow_html=True)
+    st.markdown('<div class="fleet-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>', unsafe_allow_html=True)
+
+with hdr_right:
+    # Sub-columns for mine selector + tags
+    rc1, rc2 = st.columns([1, 1])
+    with rc1:
+        selected_mine = st.selectbox(
+            "Mine", opencast_mines,
+            index=opencast_mines.index(st.session_state.fleet_selected_mine) if st.session_state.fleet_selected_mine in opencast_mines else 0,
+            key="fleet_mine_header",
+            label_visibility="collapsed"
+        )
+        st.session_state.fleet_selected_mine = selected_mine
+    with rc2:
+        st.markdown(f"""<div class="fleet-tags">
+            <span class="fleet-tag-pill"><span class="material-symbols-rounded" style="font-size:15px;">calendar_month</span> {latest_label}</span>
+            {monsoon_tag_html}
+            <span class="fleet-op-badge"><span class="fleet-op-dot"></span> OPERATIONAL</span>
+        </div>""", unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+mine_display = selected_mine.replace('_', ' ')
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIDEBAR ASSUMPTIONS (mine selector is now in header above)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+mine_cfg = cfg['mines'][selected_mine]
 
 mine_share = st.sidebar.slider(
     f"Mine Share — {mine_display}", 1, 30,
@@ -159,13 +241,6 @@ target_util = st.sidebar.slider(
     value=float(cfg['availability']['target_utilization']), step=0.05,
     help="Equipment mechanical availability target")
 
-current_month = datetime.now().month
-monsoon_on = current_month in cfg['monsoon']['months']
-monsoon_override = st.sidebar.checkbox(
-    f"Monsoon Derate ({cfg['monsoon']['derate_factor']:.0%})",
-    value=monsoon_on,
-    help=f"Currently {'active' if monsoon_on else 'inactive'} (Jun-Sep)")
-
 num_runs = st.sidebar.slider("Comparison Runs", 5, 50, value=cfg['num_runs'], step=5,
     help="Number of seeded replications per strategy")
 
@@ -177,7 +252,6 @@ mine_tpd = company_tpd * (mine_share / 100)
 # SIMULATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Override config values with sidebar inputs
 fleet_cfg_run = fleet_cfg.copy()
 fleet_cfg_run['fleet_simulation'] = dict(cfg)
 fleet_cfg_run['fleet_simulation']['stripping_ratio'] = stripping_ratio
@@ -190,10 +264,8 @@ sim = FleetSimulation(
     month=current_month if monsoon_override else None
 )
 
-# Run single shift (OR-Tools)
 result = sim.simulate_shift(strategy='or_tools', seed=cfg['random_seed'])
 
-# Run comparison (cached)
 @st.cache_data(show_spinner="Running 3-strategy comparison...")
 def run_cached_comparison(_mine, _tpd, _sr, _util, _mon, _runs, _seed):
     s = FleetSimulation(fleet_cfg_run, _mine, _tpd,
@@ -203,28 +275,6 @@ def run_cached_comparison(_mine, _tpd, _sr, _util, _mon, _runs, _seed):
 comparison = run_cached_comparison(
     selected_mine, mine_tpd, stripping_ratio, target_util,
     monsoon_override, num_runs, cfg['random_seed'])
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# HEADER
-# ═══════════════════════════════════════════════════════════════════════════════
-
-monsoon_tag = '<div class="fd-tag"><span class="material-symbols-rounded">water_drop</span> Monsoon Derate Active</div>' if monsoon_override else ''
-sim_badge = '<div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>'
-st.markdown(f"""
-<div class="fd-header">
-    <div class="fd-header-left">
-        <h1><span class="material-symbols-rounded">local_shipping</span> Intelligent Fleet Dispatch</h1>
-        <div class="fd-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>
-    </div>
-    <div class="fd-header-right">
-        <div class="fd-tag"><span class="material-symbols-rounded">architecture</span> {mine_display}</div>
-        <div class="fd-tag"><span class="material-symbols-rounded">calendar_month</span> {latest_label}</div>
-        {monsoon_tag}
-        {sim_badge}
-    </div>
-</div>
-""", unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
