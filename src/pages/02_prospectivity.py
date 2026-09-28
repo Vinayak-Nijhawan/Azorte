@@ -267,7 +267,7 @@ with col_map:
         height=600,
         margin=dict(l=0, r=0, t=10, b=0),
         legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01,
-                    bgcolor="rgba(0,0,0,0.7)", font=dict(size=11)),
+                    bgcolor="rgba(0,0,0,0.85)", font=dict(size=13, color="white")),
     )
 
     st.plotly_chart(fig, use_container_width=True)
