@@ -131,17 +131,15 @@ else:
 opencast_mines = get_opencast_mines(fleet_cfg)
 cfg = fleet_cfg['fleet_simulation']
 
-st.sidebar.header("⚙️ Fleet Configuration")
-st.sidebar.caption("Only **opencast** mines have truck-shovel dispatch. "
-                    "Underground mines use shaft haulage.")
-
-selected_mine = st.sidebar.selectbox("Select Opencast Mine", opencast_mines,
-    index=opencast_mines.index('Dongri_Buzurg') if 'Dongri_Buzurg' in opencast_mines else 0)
+st.sidebar.selectbox("Select Mine", opencast_mines,
+    index=opencast_mines.index('Dongri_Buzurg') if 'Dongri_Buzurg' in opencast_mines else 0,
+    key="fleet_mine_select")
+selected_mine = st.session_state.fleet_mine_select
 mine_display = selected_mine.replace('_', ' ')
 mine_cfg = cfg['mines'][selected_mine]
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Editable Assumptions")
+st.sidebar.caption("**Simulation Parameters**")
 
 mine_share = st.sidebar.slider(
     f"Mine Share — {mine_display}", 1, 30,
@@ -209,22 +207,21 @@ comparison = run_cached_comparison(
 # HEADER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-monsoon_tag = '<div class="fd-tag"><span class="material-symbols-rounded">water_drop</span> Monsoon Derate Active</div>' if monsoon_override else ''
-sim_badge = '<div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>'
+monsoon_tag = '<div class="fd-tag">🌧️ Monsoon Derate Active</div>' if monsoon_override else ''
 st.markdown(f"""
 <div class="fd-header">
     <div class="fd-header-left">
-        <h1><span class="material-symbols-rounded">local_shipping</span> Intelligent Fleet Dispatch</h1>
+        <h1>🚛 Intelligent Fleet Dispatch</h1>
         <div class="fd-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag"><span class="material-symbols-rounded">architecture</span> {mine_display}</div>
-        <div class="fd-tag"><span class="material-symbols-rounded">calendar_month</span> {latest_label}</div>
+        <div class="fd-tag">⛏️ {mine_display}</div>
         {monsoon_tag}
-        {sim_badge}
+        <div class="fd-live"><div class="fd-live-dot"></div> OPERATIONAL</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
+st.caption(f"📊 **Data Source:** REAL production (MOIL Annual Reports) + DERIVED estimates + SIMULATED fleet dispatch (SimPy DES). See column badges for provenance.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
