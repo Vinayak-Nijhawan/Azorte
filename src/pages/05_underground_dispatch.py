@@ -418,7 +418,15 @@ for status, msg in checks:
 
 with st.expander("📋 Data Provenance & Assumptions"):
     st.markdown("""
-    **Every value below is an ASSUMPTION.** No value comes from MOIL internal data.
+    ### 1. Corporate & Mine KPIs
+    | Metric | Type | Value | Source / Formula |
+    |---|---|---|---|
+    | FY26 Plan | **REAL** | {plan:,.0f} TPD | [MOIL FY26 Target]({fy_url}) |
+    | Latest Monthly | **REAL** | {comp:,.0f} TPD | [MOIL PR {lbl}]({mo_url}) |
+    | Mine TPD Target | **DERIVED** | {mine:,.0f} TPD | `min(capacity, Latest Monthly × Mine Share %)` |
+    
+    ### 2. Fleet Specifications & Assumptions
+    **Every value below is a SIMULATED ASSUMPTION.** No value comes from MOIL internal data.
     Sources: UNVERIFIED ASSUMPTION unless specified.
 
     | Parameter | Value | Source / Rationale |
@@ -441,5 +449,9 @@ with st.expander("📋 Data Provenance & Assumptions"):
         ls=cfg['lhd_class']['loaded_speed_kmh'], es=cfg['lhd_class']['empty_speed_kmh'],
         llt=cfg['lhd_class']['load_time_min'], ldt=cfg['lhd_class']['dump_time_min'],
         sp=cfg['hoist']['skip_payload_t'], hd=cfg['hoist']['depth_m'], ws=cfg['hoist']['winding_speed_ms'],
-        opc=cfg['ore_pass']['capacity_t'], bw=cfg['shift']['blast_window_min']
+        opc=cfg['ore_pass']['capacity_t'], bw=cfg['shift']['blast_window_min'],
+        plan=planned_tpd, comp=company_tpd, mine=mine_tpd,
+        fy_url=fy26_target_row['source_url'].iloc[0] if not fy26_target_row.empty else "#",
+        mo_url=latest_month['source_url'] if latest_month is not None else "#",
+        lbl=latest_label
     ))

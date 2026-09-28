@@ -475,9 +475,17 @@ for status, msg in checks:
 # ASSUMPTIONS PANEL
 # ═══════════════════════════════════════════════════════════════════════════════
 
-with st.expander("📋 All Assumptions — every SIMULATED value traces back to these"):
+with st.expander("📋 Data Provenance & Assumptions"):
     st.markdown("""
-    **Every value below is an ASSUMPTION.** No value comes from MOIL internal data.
+    ### 1. Corporate & Mine KPIs
+    | Metric | Type | Value | Source / Formula |
+    |---|---|---|---|
+    | FY26 Plan | **REAL** | {plan:,.0f} TPD | [MOIL FY26 Target]({fy_url}) |
+    | Latest Monthly | **REAL** | {comp:,.0f} TPD | [MOIL PR {lbl}]({mo_url}) |
+    | Mine TPD Target | **DERIVED** | {mine:,.0f} TPD | `Latest Monthly × Mine Share %` |
+    
+    ### 2. Fleet Specifications & Assumptions
+    **Every value below is a SIMULATED ASSUMPTION.** No value comes from MOIL internal data.
     Sources: UNVERIFIED ASSUMPTION unless specified.
 
     | Parameter | Value | Source / Rationale |
@@ -519,6 +527,10 @@ with st.expander("📋 All Assumptions — every SIMULATED value traces back to 
         msc=cfg['shovel_classes']['medium']['capacity_tph'],
         mslt=cfg['shovel_classes']['medium']['load_time_min'],
         dt=cfg['timing']['dump_time_min'], st_=cfg['timing']['spot_time_min'],
+        plan=planned_tpd, comp=company_tpd, mine=mine_tpd,
+        fy_url=fy26_target_row['source_url'].iloc[0] if not fy26_target_row.empty else "#",
+        mo_url=latest_month['source_url'] if latest_month is not None else "#",
+        lbl=latest_label
     ))
 
     st.markdown("### Mine-Specific Assumptions")
