@@ -148,6 +148,10 @@ def main():
         }])[features]
         
         predicted_tpd = model.predict(X_pred)[0]
+        # Cap prediction to baseline capacity (mines cannot exceed 100% of theoretical max)
+        predicted_tpd = min(predicted_tpd, baseline_tpd)
+        # Cap prediction to baseline capacity (mines cannot exceed 100% of theoretical max)
+        predicted_tpd = min(predicted_tpd, baseline_tpd)
         
         # Calculate Risk
         ratio = predicted_tpd / baseline_tpd

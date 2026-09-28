@@ -313,6 +313,10 @@ def main():
                 
                 X_pred = pd.DataFrame([features])[FEATURE_COLS]
                 predicted_tpd = model.predict(X_pred)[0]
+                # Cap prediction to baseline capacity (mines cannot exceed 100% of theoretical max)
+                predicted_tpd = min(predicted_tpd, baseline_tpd)
+                # Cap prediction to baseline capacity (mines cannot exceed 100% of theoretical max)
+                predicted_tpd = min(predicted_tpd, baseline_tpd)
                 
                 lag_values.append(predicted_tpd)
                 lag_values = lag_values[-3:]

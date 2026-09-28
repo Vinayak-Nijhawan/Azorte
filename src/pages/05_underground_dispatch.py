@@ -1,13 +1,7 @@
 """
-MOIL-GeoSync — Intelligent Fleet Dispatch (SimPy DES)
+MOIL-GeoSync — Underground Fleet Dispatch (SimPy DES)
 ======================================================
-Physically realistic discrete-event simulation for OPENCAST mines only.
-Underground mines (Balaghat, Gumgaon, etc.) use shaft haulage, not trucks.
-
-Data provenance:
-  REAL      = MOIL annual reports / press releases
-  DERIVED   = formula from real data (e.g. TPD = tonnes / days)
-  SIMULATED = SimPy DES output — see config/fleet_config.yaml for assumptions
+Physically realistic discrete-event simulation for UNDERGROUND mines only.
 """
 
 import os
@@ -23,13 +17,13 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 MOIL_REAL_PATH = os.path.join(DATA_DIR, "moil_real.csv")
-CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "fleet_config.yaml")
+UG_CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "underground_config.yaml")
 
 sys.path.insert(0, PROJECT_ROOT)
-from src.fleet_sim import load_config, get_opencast_mines, FleetSimulation, derive_cycle_time
+from src.underground_sim import load_config, get_underground_mines, UndergroundSimulation
 
 # ─── Page config ───
-st.set_page_config(page_title="Fleet Dispatch · MineFlow", page_icon="🚛", layout="wide")
+st.set_page_config(page_title="UG Dispatch · MineFlow", page_icon="🚇", layout="wide")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CSS
@@ -107,15 +101,16 @@ def load_moil_real():
     df = pd.read_csv(MOIL_REAL_PATH)
     df['start_date'] = pd.to_datetime(df['start_date'])
     df['end_date'] = pd.to_datetime(df['end_date'])
-    df['tpd'] = df['tonnes'] / df['days']
+    if 'days' in df.columns and 'tonnes' in df.columns:
+        df['tpd'] = df['tonnes'] / df['days']
     return df
 
 @st.cache_data
-def load_fleet_config():
-    return load_config(CONFIG_PATH)
+def load_ug_config():
+    return load_config(UG_CONFIG_PATH)
 
 moil_df = load_moil_real()
-fleet_cfg = load_fleet_config()
+ug_cfg = load_ug_config()
 
 if moil_df.empty:
     st.error("data/moil_real.csv not found.")
@@ -141,15 +136,15 @@ else:
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
 
-opencast_mines = get_opencast_mines(fleet_cfg)
-cfg = fleet_cfg['fleet_simulation']
+ug_mines = get_underground_mines(ug_cfg)
+cfg = ug_cfg['underground_simulation']
 
 st.sidebar.header("⚙️ Fleet Configuration")
-st.sidebar.caption("Only **opencast** mines have truck-shovel dispatch. "
-                    "Underground mines use shaft haulage.")
+st.sidebar.caption("Only **underground** mines have shaft haulage dispatch. "
+                    "Opencast mines use truck/shovel dispatch.")
 
-selected_mine = st.sidebar.selectbox("Select Opencast Mine", opencast_mines,
-    index=opencast_mines.index('Dongri_Buzurg') if 'Dongri_Buzurg' in opencast_mines else 0)
+selected_mine = st.sidebar.selectbox("Select Underground Mine", ug_mines,
+    index=ug_mines.index('Balaghat') if 'Balaghat' in ug_mines else 0)
 mine_display = selected_mine.replace('_', ' ')
 mine_cfg = cfg['mines'][selected_mine]
 
@@ -157,82 +152,65 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("Editable Assumptions")
 
 mine_share = st.sidebar.slider(
-    f"Mine Share — {mine_display}", 1, 30,
+    f"Mine Share — {mine_display}", 1, 50,
     value=mine_cfg['mine_share_pct'],
-    key=f"share_{selected_mine}",
-    help="Estimated % of MOIL total production (ASSUMPTION)")
-
-stripping_ratio = st.sidebar.slider(
-    "Stripping Ratio (waste:ore)", 1.0, 8.0,
-    value=float(cfg['stripping_ratio']), step=0.5,
-    help="Tonnes of waste removed per tonne of ore")
+    key=f"ug_share_{selected_mine}",
+    help="ASSUMPTION - not MOIL data")
 
 target_util = st.sidebar.slider(
     "Target Utilisation", 0.60, 0.95,
     value=float(cfg['availability']['target_utilization']), step=0.05,
     help="Equipment mechanical availability target")
 
-current_month = datetime.now().month
-monsoon_on = current_month in cfg['monsoon']['months']
-monsoon_override = st.sidebar.checkbox(
-    f"Monsoon Derate ({cfg['monsoon']['derate_factor']:.0%})",
-    value=monsoon_on,
-    help=f"Currently {'active' if monsoon_on else 'inactive'} (Jun-Sep)")
-
 num_runs = st.sidebar.slider("Comparison Runs", 5, 50, value=cfg['num_runs'], step=5,
     help="Number of seeded replications per strategy")
 
 # Derived mine TPD
 mine_tpd = company_tpd * (mine_share / 100)
+# Cap by capacity if real data exists
+if 'capacity_tpy' in mine_cfg:
+    max_tpd = mine_cfg['capacity_tpy'] / 365.0
+    if mine_tpd > max_tpd:
+        mine_tpd = max_tpd
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIMULATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Override config values with sidebar inputs
-fleet_cfg_run = fleet_cfg.copy()
-fleet_cfg_run['fleet_simulation'] = dict(cfg)
-fleet_cfg_run['fleet_simulation']['stripping_ratio'] = stripping_ratio
-fleet_cfg_run['fleet_simulation']['availability'] = dict(cfg['availability'])
-fleet_cfg_run['fleet_simulation']['availability']['target_utilization'] = target_util
-fleet_cfg_run['fleet_simulation']['num_runs'] = num_runs
+ug_cfg_run = ug_cfg.copy()
+ug_cfg_run['underground_simulation'] = dict(cfg)
+ug_cfg_run['underground_simulation']['availability'] = dict(cfg['availability'])
+ug_cfg_run['underground_simulation']['availability']['target_utilization'] = target_util
+ug_cfg_run['underground_simulation']['num_runs'] = num_runs
 
-sim = FleetSimulation(
-    fleet_cfg_run, selected_mine, mine_tpd,
-    month=current_month if monsoon_override else None
-)
+sim = UndergroundSimulation(ug_cfg_run, selected_mine, mine_tpd)
 
-# Run single shift (OR-Tools)
-result = sim.simulate_shift(strategy='or_tools', seed=cfg['random_seed'])
+# Run single shift (CP-SAT Blended)
+result = sim.simulate_shift(strategy='cp_sat', seed=cfg['random_seed'])
 
 # Run comparison (cached)
 @st.cache_data(show_spinner="Running 3-strategy comparison...")
-def run_cached_comparison(_mine, _tpd, _sr, _util, _mon, _runs, _seed):
-    s = FleetSimulation(fleet_cfg_run, _mine, _tpd,
-                        month=current_month if _mon else None)
+def run_cached_comparison(_mine, _tpd, _util, _runs, _seed):
+    s = UndergroundSimulation(ug_cfg_run, _mine, _tpd)
     return s.run_comparison(num_runs=_runs)
 
-comparison = run_cached_comparison(
-    selected_mine, mine_tpd, stripping_ratio, target_util,
-    monsoon_override, num_runs, cfg['random_seed'])
+comparison = run_cached_comparison(selected_mine, mine_tpd, target_util, num_runs, cfg['random_seed'])
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HEADER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-monsoon_tag = '<div class="fd-tag">🌧️ Monsoon Derate Active</div>' if monsoon_override else ''
 st.markdown(f"""
 <div class="fd-header">
     <div>
-        <h1>🚛 Intelligent Fleet Dispatch</h1>
+        <h1>🚇 Underground Fleet Dispatch</h1>
         <div class="fd-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
         <div class="fd-tag">⛏️ {mine_display}</div>
         <div class="fd-tag">📅 Last updated: {latest_label}</div>
-        {monsoon_tag}
         <div class="fd-sim-badge">🧪 Simulation Mode</div>
     </div>
 </div>
@@ -268,7 +246,7 @@ st.markdown(f"""
     <div class="kpi-card">
         <div class="kpi-label">Mine TPD ({mine_display}) <span class="badge-derived">DERIVED</span></div>
         <div class="kpi-value">{mine_tpd:,.0f}<span class="kpi-unit">TPD</span></div>
-        <div class="kpi-delta neutral">= {company_tpd:,.0f} x {mine_share}%</div>
+        <div class="kpi-delta neutral">= min(capacity, {company_tpd:,.0f} x {mine_share}%)</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -280,117 +258,102 @@ st.markdown(f"""
 
 st.markdown('<div class="section-title">📐 Fleet Sizing — Derived from Physics <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
 
-dumper_cfg = cfg['dumper_classes'][mine_cfg['dumper_class']]
-shovel_cfg_data = cfg['shovel_classes'][mine_cfg['shovel_class']]
-
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown("**Ore Haulage**")
+    st.markdown("**LHD (Tramming)**")
     st.markdown(f"""
     | Parameter | Value |
     |---|---|
-    | Payload | **{dumper_cfg['payload_t']} t** ({mine_cfg['dumper_class']}) |
-    | Haul distance | **{mine_cfg['haul_distance_km']['ore']} km** |
-    | Cycle time | **{sim.ore_cycle_min:.1f} min** |
-    | TPH | **{sim.ore_tph:.1f} t/h** |
-    | Dumpers needed | **{sim.num_ore_dumpers}** |
+    | Payload | **{sim.lhd_payload} t** |
+    | Avg Tram | **{sum(sim.tram_dists)/sim.num_dp:.0f} m** |
+    | Cycle time | **{sim.avg_lhd_cycle_min:.1f} min** |
+    | TPH (Avg) | **{sim.avg_lhd_tph:.1f} t/h** |
+    | LHDs needed | **{sim.num_lhds}** |
     """)
 
 with col2:
-    st.markdown("**Waste Haulage**")
-    waste_tpd = mine_tpd * stripping_ratio
+    st.markdown("**Skip Hoist**")
     st.markdown(f"""
     | Parameter | Value |
     |---|---|
-    | Payload | **{dumper_cfg['payload_t']} t** ({mine_cfg['dumper_class']}) |
-    | Haul distance | **{mine_cfg['haul_distance_km']['waste']} km** |
-    | Cycle time | **{sim.waste_cycle_min:.1f} min** |
-    | TPH | **{sim.waste_tph:.1f} t/h** |
-    | Dumpers needed | **{sim.num_waste_dumpers}** |
+    | Payload | **{sim.hoist_payload} t** |
+    | Depth | **{sim.hoist_depth} m** |
+    | Cycle time | **{sim.hoist_cycle_s:.1f} s** |
+    | Max TPH | **{sim.hoist_tph:.1f} t/h** |
+    | Ore Pass Cap | **{sim.ore_pass_cap} t** |
     """)
 
 with col3:
-    st.markdown("**Fleet Summary**")
+    st.markdown("**System Summary**")
+    fleet_max_tpd = sim.avg_lhd_tph * sim.num_lhds * sim.shift_hours * sim.shifts_per_day * target_util
+    hoist_max_tpd = sim.hoist_tph * sim.shift_hours * sim.shifts_per_day * target_util
+    bottleneck = "Hoist" if hoist_max_tpd < mine_tpd else "LHDs"
     st.markdown(f"""
     | Parameter | Value |
     |---|---|
-    | **Total dumpers** | **{sim.num_dumpers}** ({sim.num_ore_dumpers} ore + {sim.num_waste_dumpers} waste) |
-    | **Shovels** | **{sim.num_shovels}** (match-factor) |
-    | Shovel class | {mine_cfg['shovel_class']} ({shovel_cfg_data['capacity_tph']} TPH) |
-    | Stripping ratio | {stripping_ratio:.1f}:1 |
-    | Ore target | {mine_tpd:,.0f} TPD |
-    | Waste target | {waste_tpd:,.0f} TPD |
+    | **Mine Target** | **{mine_tpd:,.0f} TPD** |
+    | Max LHD Cap | {fleet_max_tpd:,.0f} TPD |
+    | Max Hoist Cap | {hoist_max_tpd:,.0f} TPD |
+    | **Bottleneck** | **{bottleneck}** |
     """)
 
-st.caption(f"📐 **Formula:** dumpers = ceil(TPD / (TPH × {sim.shift_hours}h × {sim.shifts_per_day} shifts × {target_util:.0%} util)). "
-           f"Shovels via match-factor: ceil(fleet_TPH / shovel_TPH).")
+st.caption(f"📐 **Formula:** LHDs = ceil(TPD / (LHD_TPH × {sim.shift_hours}h × {sim.shifts_per_day} shifts × {target_util:.0%} util)).")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SIMULATION RESULTS — OR-Tools (single run)
+# SIMULATION RESULTS — CP-SAT (single run)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 st.markdown("---")
-st.markdown('<div class="section-title">🔬 Simulation Results — OR-Tools Dynamic Dispatch <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
-
-ore_tpd_achieved = result['ore_tonnes'] * sim.shifts_per_day
-waste_tpd_achieved = result['waste_tonnes'] * sim.shifts_per_day
+st.markdown('<div class="section-title">🔬 Simulation Results — CP-SAT Blended Dispatch <span class="badge-simulated">SIMULATED</span></div>', unsafe_allow_html=True)
 
 st.markdown(f"""
 <div class="kpi-grid">
     <div class="kpi-card-sim">
-        <div class="kpi-label">Ore Achieved <span class="badge-simulated">SIM</span></div>
-        <div class="kpi-value">{result['ore_tonnes']:,.0f}<span class="kpi-unit">t/shift</span></div>
-        <div class="kpi-delta neutral">{ore_tpd_achieved:,.0f} TPD ({sim.shifts_per_day} shifts)</div>
+        <div class="kpi-label">Tonnes Hoisted <span class="badge-simulated">SIM</span></div>
+        <div class="kpi-value">{result['tonnes_hoisted']:,.0f}<span class="kpi-unit">t/shift</span></div>
+        <div class="kpi-delta neutral">{result['tonnes_hoisted'] * sim.shifts_per_day:,.0f} TPD</div>
     </div>
     <div class="kpi-card-sim">
-        <div class="kpi-label">Waste Moved <span class="badge-simulated">SIM</span></div>
-        <div class="kpi-value">{result['waste_tonnes']:,.0f}<span class="kpi-unit">t/shift</span></div>
-        <div class="kpi-delta neutral">{waste_tpd_achieved:,.0f} TPD</div>
+        <div class="kpi-label">Avg Grade <span class="badge-simulated">SIM</span></div>
+        <div class="kpi-value">{result['avg_grade']:.1f}<span class="kpi-unit">% Mn</span></div>
+        <div class="kpi-delta neutral">Blended at ore pass</div>
     </div>
     <div class="kpi-card-sim">
-        <div class="kpi-label">Avg Queue Time <span class="badge-simulated">SIM</span></div>
-        <div class="kpi-value">{result['avg_queue_time']:.1f}<span class="kpi-unit">min</span></div>
-        <div class="kpi-delta neutral">Per dumper per shift</div>
-    </div>
-    <div class="kpi-card-sim">
-        <div class="kpi-label">Fleet Utilisation <span class="badge-simulated">SIM</span></div>
-        <div class="kpi-value">{result['avg_utilisation']:.1f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-label">LHD Utilisation <span class="badge-simulated">SIM</span></div>
+        <div class="kpi-value">{result['lhd_utilisation']:.1f}<span class="kpi-unit">%</span></div>
         <div class="kpi-delta neutral">Target: {target_util:.0%}</div>
     </div>
     <div class="kpi-card-sim">
-        <div class="kpi-label">Total Trips <span class="badge-simulated">SIM</span></div>
-        <div class="kpi-value">{result['total_trips']}</div>
-        <div class="kpi-delta neutral">All dumpers, one shift</div>
+        <div class="kpi-label">Hoist Utilisation <span class="badge-simulated">SIM</span></div>
+        <div class="kpi-value">{result['hoist_utilisation']:.1f}<span class="kpi-unit">%</span></div>
+        <div class="kpi-delta neutral">Continuous operation</div>
     </div>
     <div class="kpi-card-sim">
-        <div class="kpi-label">Avg Idle Time <span class="badge-simulated">SIM</span></div>
-        <div class="kpi-value">{result['avg_idle_time']:.1f}<span class="kpi-unit">min</span></div>
-        <div class="kpi-delta neutral">Per dumper per shift</div>
+        <div class="kpi-label">Ore Pass Starved <span class="badge-simulated">SIM</span></div>
+        <div class="kpi-value">{result['starve_events']}</div>
+        <div class="kpi-delta neutral">Hoist waited for ore</div>
+    </div>
+    <div class="kpi-card-sim">
+        <div class="kpi-label">Ore Pass Overflow <span class="badge-simulated">SIM</span></div>
+        <div class="kpi-value">{result['overflow_events']}</div>
+        <div class="kpi-delta neutral">LHD waited to dump</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Dumper log table
-st.markdown("**Dumper-Level Results** (single shift)")
-log_df = result['dumper_logs']
+# LHD log table
+st.markdown("**LHD-Level Results** (single shift)")
+log_df = result['lhd_logs']
 if not log_df.empty:
-    display_cols = ['dumper_id', 'material', 'trips', 'tonnes_hauled',
-                    'queue_time_min', 'idle_time_min', 'breakdown_time_min', 'utilisation_pct']
     st.dataframe(
-        log_df[display_cols].style.format({
-            'tonnes_hauled': '{:.0f}', 'queue_time_min': '{:.1f}',
-            'idle_time_min': '{:.1f}', 'breakdown_time_min': '{:.1f}',
-            'utilisation_pct': '{:.1f}%',
+        log_df.style.format({
+            'tonnes': '{:.0f}', 'queue_time_min': '{:.1f}',
+            'idle_time_min': '{:.1f}', 'utilisation_pct': '{:.1f}%',
         }).background_gradient(subset=['utilisation_pct'], cmap='RdYlGn', vmin=60, vmax=100),
         use_container_width=True, hide_index=True,
     )
-
-# Shovel utilisation
-shovel_util = result['shovel_utilisation']
-st.markdown(f"**Shovel Utilisation:** " + " | ".join(
-    f"S{i+1}: **{u:.1f}%**" for i, u in enumerate(shovel_util)))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -405,53 +368,31 @@ comp_rows = []
 for label, data in comparison.items():
     comp_rows.append({
         'Strategy': label,
-        'Ore (t/shift)': f"{data['ore_mean']:,.0f} ± {data['ore_std']:.0f}",
-        'Waste (t/shift)': f"{data['waste_mean']:,.0f} ± {data['waste_std']:.0f}",
-        'Queue Time (min)': f"{data['queue_mean']:.1f} ± {data['queue_std']:.1f}",
-        'Utilisation (%)': f"{data['util_mean']:.1f} ± {data['util_std']:.1f}",
-        'Shovel Imbalance (%)': f"{data['imbalance_mean']:.1f}",
+        'Hoisted (t/shift)': f"{data['hoisted_mean']:,.0f} ± {data['hoisted_std']:.0f}",
+        'Grade (% Mn)': f"{data['grade_mean']:.1f} ± {data['grade_std']:.1f}",
+        'LHD Util (%)': f"{data['util_mean']:.1f} ± {data['util_std']:.1f}",
+        'Starve Events': f"{data['starve_mean']:.1f}",
+        'Overflow Events': f"{data['overflow_mean']:.1f}",
     })
 comp_df = pd.DataFrame(comp_rows)
 st.dataframe(comp_df, use_container_width=True, hide_index=True)
 
-# Improvement vs Fixed
-fixed = comparison.get('Fixed Assignment', {})
-if fixed:
-    for label in ['Nearest-Shovel Greedy', 'OR-Tools Dynamic']:
-        d = comparison.get(label, {})
-        if d and fixed['ore_mean'] > 0:
-            ore_imp = (d['ore_mean'] - fixed['ore_mean']) / fixed['ore_mean'] * 100
-            queue_imp = (d['queue_mean'] - fixed['queue_mean']) / fixed['queue_mean'] * 100 if fixed['queue_mean'] > 0 else 0
-            st.markdown(f"**{label} vs Fixed:** Ore {ore_imp:+.1f}%, Queue time {queue_imp:+.1f}%")
-
 # Comparison chart
 strategies = list(comparison.keys())
-ore_means = [comparison[s]['ore_mean'] for s in strategies]
-queue_means = [comparison[s]['queue_mean'] for s in strategies]
+hoisted_means = [comparison[s]['hoisted_mean'] for s in strategies]
+grade_means = [comparison[s]['grade_mean'] for s in strategies]
 
 fig = go.Figure()
-fig.add_trace(go.Bar(name='Ore (t/shift)', x=strategies, y=ore_means,
+fig.add_trace(go.Bar(name='Hoisted (t/shift)', x=strategies, y=hoisted_means,
     marker_color=['#94a3b8', '#3b82f6', '#22c55e'],
-    text=[f'{v:,.0f}' for v in ore_means], textposition='outside'))
+    text=[f'{v:,.0f}' for v in hoisted_means], textposition='outside'))
 fig.update_layout(
-    title='Ore Tonnes per Shift by Strategy',
+    title='Tonnes Hoisted per Shift by Strategy',
     yaxis_title='Tonnes/shift',
     plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
     font=dict(color='#1e293b'), height=350, margin=dict(t=50, b=40),
 )
 st.plotly_chart(fig, use_container_width=True)
-
-fig2 = go.Figure()
-fig2.add_trace(go.Bar(name='Avg Queue Time', x=strategies, y=queue_means,
-    marker_color=['#ef4444', '#f59e0b', '#22c55e'],
-    text=[f'{v:.1f} min' for v in queue_means], textposition='outside'))
-fig2.update_layout(
-    title='Average Queue Time by Strategy',
-    yaxis_title='Minutes',
-    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-    font=dict(color='#1e293b'), height=350, margin=dict(t=50, b=40),
-)
-st.plotly_chart(fig2, use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -482,7 +423,7 @@ with st.expander("📋 Data Provenance & Assumptions"):
     |---|---|---|---|
     | FY26 Plan | **REAL** | {plan:,.0f} TPD | [MOIL FY26 Target]({fy_url}) |
     | Latest Monthly | **REAL** | {comp:,.0f} TPD | [MOIL PR {lbl}]({mo_url}) |
-    | Mine TPD Target | **DERIVED** | {mine:,.0f} TPD | `Latest Monthly × Mine Share %` |
+    | Mine TPD Target | **DERIVED** | {mine:,.0f} TPD | `min(capacity, Latest Monthly × Mine Share %)` |
     
     ### 2. Fleet Specifications & Assumptions
     **Every value below is a SIMULATED ASSUMPTION.** No value comes from MOIL internal data.
@@ -492,69 +433,25 @@ with st.expander("📋 Data Provenance & Assumptions"):
     |---|---|---|
     | Shift duration | {sh}h × {spd} shifts/day | UNVERIFIED ASSUMPTION |
     | Target utilisation | {tu:.0%} | UNVERIFIED ASSUMPTION |
-    | MTBF | {mtbf}h | UNVERIFIED ASSUMPTION |
-    | MTTR | {mttr}h | UNVERIFIED ASSUMPTION |
-    | Monsoon derate | {md:.0%} | UNVERIFIED ASSUMPTION |
-    | Stripping ratio | {sr:.1f}:1 | UNVERIFIED ASSUMPTION |
-    | Cycle variation | Lognormal σ={cv} | UNVERIFIED ASSUMPTION |
-    | Crusher dump points | {cdp} | UNVERIFIED ASSUMPTION |
-    | Heavy dumper payload | {hp}t | UNVERIFIED ASSUMPTION |
-    | Heavy loaded speed | {hls} km/h | UNVERIFIED ASSUMPTION |
-    | Heavy empty speed | {hes} km/h | UNVERIFIED ASSUMPTION |
-    | Medium dumper payload | {mp}t | UNVERIFIED ASSUMPTION |
-    | Medium loaded speed | {mls} km/h | UNVERIFIED ASSUMPTION |
-    | Medium empty speed | {mes} km/h | UNVERIFIED ASSUMPTION |
-    | Large shovel capacity | {lsc} TPH | UNVERIFIED ASSUMPTION |
-    | Large shovel load time | {lslt} min | UNVERIFIED ASSUMPTION |
-    | Medium shovel capacity | {msc} TPH | UNVERIFIED ASSUMPTION |
-    | Medium shovel load time | {mslt} min | UNVERIFIED ASSUMPTION |
-    | Dump time | {dt} min | UNVERIFIED ASSUMPTION |
-    | Spot time | {st_} min | UNVERIFIED ASSUMPTION |
+    | MTBF / MTTR | {mtbf}h / {mttr}h | UNVERIFIED ASSUMPTION |
+    | LHD payload | {lp}t | UNVERIFIED ASSUMPTION |
+    | LHD speeds | {ls} loaded / {es} empty km/h | UNVERIFIED ASSUMPTION |
+    | LHD load/dump time | {llt}m / {ldt}m | UNVERIFIED ASSUMPTION |
+    | Skip hoist payload | {sp}t | UNVERIFIED ASSUMPTION |
+    | Hoist depth | {hd}m | UNVERIFIED ASSUMPTION |
+    | Winding speed | {ws} m/s | UNVERIFIED ASSUMPTION |
+    | Ore pass capacity | {opc}t | UNVERIFIED ASSUMPTION |
+    | Blast window | {bw} min/shift | UNVERIFIED ASSUMPTION |
     """.format(
         sh=cfg['shift']['hours'], spd=cfg['shift']['shifts_per_day'],
-        tu=target_util, mtbf=cfg['availability']['mtbf_hours'],
-        mttr=cfg['availability']['mttr_hours'],
-        md=cfg['monsoon']['derate_factor'], sr=stripping_ratio,
-        cv=cfg['cycle_variation']['sigma'], cdp=cfg['crusher']['dump_points'],
-        hp=cfg['dumper_classes']['heavy']['payload_t'],
-        hls=cfg['dumper_classes']['heavy']['loaded_speed_kmh'],
-        hes=cfg['dumper_classes']['heavy']['empty_speed_kmh'],
-        mp=cfg['dumper_classes']['medium']['payload_t'],
-        mls=cfg['dumper_classes']['medium']['loaded_speed_kmh'],
-        mes=cfg['dumper_classes']['medium']['empty_speed_kmh'],
-        lsc=cfg['shovel_classes']['large']['capacity_tph'],
-        lslt=cfg['shovel_classes']['large']['load_time_min'],
-        msc=cfg['shovel_classes']['medium']['capacity_tph'],
-        mslt=cfg['shovel_classes']['medium']['load_time_min'],
-        dt=cfg['timing']['dump_time_min'], st_=cfg['timing']['spot_time_min'],
+        tu=target_util, mtbf=cfg['availability']['mtbf_hours'], mttr=cfg['availability']['mttr_hours'],
+        lp=cfg['lhd_class']['payload_t'],
+        ls=cfg['lhd_class']['loaded_speed_kmh'], es=cfg['lhd_class']['empty_speed_kmh'],
+        llt=cfg['lhd_class']['load_time_min'], ldt=cfg['lhd_class']['dump_time_min'],
+        sp=cfg['hoist']['skip_payload_t'], hd=cfg['hoist']['depth_m'], ws=cfg['hoist']['winding_speed_ms'],
+        opc=cfg['ore_pass']['capacity_t'], bw=cfg['shift']['blast_window_min'],
         plan=planned_tpd, comp=company_tpd, mine=mine_tpd,
         fy_url=fy26_target_row['source_url'].iloc[0] if not fy26_target_row.empty else "#",
         mo_url=latest_month['source_url'] if latest_month is not None else "#",
         lbl=latest_label
     ))
-
-    st.markdown("### Mine-Specific Assumptions")
-    mine_data = []
-    for m, mc in cfg['mines'].items():
-        mine_data.append({
-            'Mine': m.replace('_', ' '),
-            'Type': mc['type'],
-            'Dumper Class': mc['dumper_class'],
-            'Shovel Class': mc['shovel_class'],
-            'Ore Haul (km)': mc['haul_distance_km']['ore'],
-            'Waste Haul (km)': mc['haul_distance_km']['waste'],
-            'Share (%)': mc['mine_share_pct'],
-        })
-    st.dataframe(pd.DataFrame(mine_data), use_container_width=True, hide_index=True)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# FOOTER
-# ═══════════════════════════════════════════════════════════════════════════════
-
-st.info(
-    "💡 **Data Integrity:** Company-level production is REAL (MOIL reports). "
-    f"Mine TPD ({mine_display}) is DERIVED (company × {mine_share}% ASSUMPTION). "
-    "All fleet data is SIMULATED via SimPy DES with config/fleet_config.yaml assumptions. "
-    "Edit assumptions in the sidebar or YAML file."
-)
