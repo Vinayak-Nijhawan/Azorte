@@ -154,31 +154,62 @@ if 'fleet_selected_mine' not in st.session_state:
 # HEADER (with inline mine selector)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Build the header using native Streamlit columns so we can embed a selectbox
-monsoon_tag_html = '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:3px 12px;font-size:0.75rem;color:#374151;white-space:nowrap;"><span class="material-symbols-rounded" style="font-size:15px;">water_drop</span> Monsoon Derate</span>' if monsoon_override else ''
+# Build the header using native Streamlit container + CSS :has() marker
+monsoon_tag_html = '<span class="fleet-tag-pill"><span class="material-symbols-rounded" style="font-size:15px;">water_drop</span> Monsoon Derate</span>' if monsoon_override else ''
 
-# CSS to style the st.container to look like our fd-header
+# CSS — uses :has(#fleet-hdr) to target ONLY the header container
 st.markdown("""<style>
-/* Style the first container (header) with orange left border */
-div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"]:first-child {
+/* Target the specific container that has our marker */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(#fleet-hdr) {
     background: #EBF2FA !important;
     border: 1px solid rgba(59,130,246,0.18) !important;
     border-left: 4px solid #FF9933 !important;
     border-radius: 14px !important;
+    overflow: hidden !important;
 }
-div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"]:first-child > div {
+div[data-testid="stVerticalBlockBorderWrapper"]:has(#fleet-hdr) > div {
     background: transparent !important;
 }
-.fleet-title { font-size: 1.35rem !important; font-weight: 700 !important; color: #111827 !important; margin: 0 !important; }
-.fleet-subtitle { font-size: 0.78rem !important; color: #4B5563 !important; margin-top: 2px !important; }
-.fleet-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-.fleet-tag-pill { display: inline-flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #374151; white-space: nowrap; }
-.fleet-op-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); border-radius: 20px; padding: 3px 12px; font-size: 0.7rem; color: #059669; font-weight: 700; white-space: nowrap; }
-.fleet-op-dot { width: 6px; height: 6px; border-radius: 50%; background: #059669; }
+.fleet-title {
+    font-size: 1.4rem !important; font-weight: 700 !important;
+    color: #111827 !important; margin: 0 !important;
+    line-height: 1.3 !important;
+}
+.fleet-subtitle {
+    font-size: 0.78rem !important; color: #4B5563 !important;
+    margin-top: 2px !important;
+}
+.fleet-tags {
+    display: flex !important; align-items: center !important;
+    gap: 8px !important; flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+}
+.fleet-tag-pill {
+    display: inline-flex !important; align-items: center !important;
+    gap: 4px !important; background: #fff !important;
+    border: 1px solid #e5e7eb !important; border-radius: 20px !important;
+    padding: 4px 12px !important; font-size: 0.72rem !important;
+    color: #374151 !important; white-space: nowrap !important;
+}
+.fleet-op-badge {
+    display: inline-flex !important; align-items: center !important;
+    gap: 5px !important; background: rgba(16,185,129,0.15) !important;
+    border: 1px solid rgba(16,185,129,0.3) !important;
+    border-radius: 20px !important; padding: 4px 12px !important;
+    font-size: 0.7rem !important; color: #059669 !important;
+    font-weight: 700 !important; white-space: nowrap !important;
+}
+.fleet-op-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #059669;
+    display: inline-block;
+}
 </style>""", unsafe_allow_html=True)
 
-# Use native st.container for the header box
+# Header container
 with st.container(border=True):
+    # Hidden marker for CSS targeting
+    st.markdown('<div id="fleet-hdr"></div>', unsafe_allow_html=True)
+
     hdr_left, hdr_right = st.columns([3, 2])
 
     with hdr_left:
@@ -186,21 +217,18 @@ with st.container(border=True):
         st.markdown('<div class="fleet-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>', unsafe_allow_html=True)
 
     with hdr_right:
-        rc1, rc2 = st.columns([1, 1])
-        with rc1:
-            selected_mine = st.selectbox(
-                "Mine", opencast_mines,
-                index=opencast_mines.index(st.session_state.fleet_selected_mine) if st.session_state.fleet_selected_mine in opencast_mines else 0,
-                key="fleet_mine_header",
-                label_visibility="collapsed"
-            )
-            st.session_state.fleet_selected_mine = selected_mine
-        with rc2:
-            st.markdown(f"""<div class="fleet-tags">
-                <span class="fleet-tag-pill"><span class="material-symbols-rounded" style="font-size:15px;">calendar_month</span> {latest_label}</span>
-                {monsoon_tag_html}
-                <span class="fleet-op-badge"><span class="fleet-op-dot"></span> OPERATIONAL</span>
-            </div>""", unsafe_allow_html=True)
+        selected_mine = st.selectbox(
+            "Select Mine", opencast_mines,
+            index=opencast_mines.index(st.session_state.fleet_selected_mine) if st.session_state.fleet_selected_mine in opencast_mines else 0,
+            key="fleet_mine_header",
+            label_visibility="collapsed"
+        )
+        st.session_state.fleet_selected_mine = selected_mine
+        st.markdown(f"""<div class="fleet-tags">
+            <span class="fleet-tag-pill"><span class="material-symbols-rounded" style="font-size:14px;">calendar_month</span> {latest_label}</span>
+            {monsoon_tag_html}
+            <span class="fleet-op-badge"><span class="fleet-op-dot"></span> OPERATIONAL</span>
+        </div>""", unsafe_allow_html=True)
 
 mine_display = selected_mine.replace('_', ' ')
 
