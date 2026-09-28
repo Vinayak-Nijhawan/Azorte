@@ -540,6 +540,7 @@ mine_share = st.sidebar.slider(
     min_value=1, max_value=30,
     value=DEFAULT_SHARES.get(selected_mine, 8),
     step=1,
+    key=f"mine_share_{selected_mine}",
     help=f"⚠️ ASSUMPTION — not MOIL data. "
          f"{mine_display}'s estimated share of total MOIL production. "
          f"Formula: Mine TPD = Company TPD × (mine_share / 100)"
