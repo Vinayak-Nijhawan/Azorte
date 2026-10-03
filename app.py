@@ -22,7 +22,7 @@ st.set_page_config(
 # At login: hashlib.sha256(user_input.encode()).hexdigest() is compared
 # against these stored hashes. No plaintext passwords in code.
 # ═══════════════════════════════════════════════════════════════════════════════
-USERS = {
+DEFAULT_USERS = {
     "admin": {
         "name": "Vinayak Nijhawan",
         "role": "Admin",
@@ -50,6 +50,10 @@ USERS = {
     },
 }
 
+# Initialize session-state user store (mutable — account management can add users)
+if "app_users" not in st.session_state:
+    st.session_state.app_users = dict(DEFAULT_USERS)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ROLE → ALLOWED PAGES
@@ -58,10 +62,10 @@ ROLE_PAGES = {
     "Admin":        ["Overview", "GeoProspect AI", "Production Forecast",
                      "Fleet Dispatch", "Underground Dispatch", "What-If Simulator",
                      "AI Explainability", "G-Sync AI", "Financial ROI",
-                     "Data & Model Info"],
+                     "Data & Model Info", "Account Management"],
     "Mine Manager": ["Overview", "Production Forecast", "Fleet Dispatch",
                      "Underground Dispatch", "What-If Simulator", "G-Sync AI",
-                     "Financial ROI", "Data & Model Info"],
+                     "Financial ROI", "Data & Model Info", "Account Management"],
     "Geologist":    ["Overview", "GeoProspect AI", "What-If Simulator",
                      "AI Explainability", "G-Sync AI", "Data & Model Info"],
     "Operator":     ["Overview", "Fleet Dispatch", "Underground Dispatch",
@@ -82,12 +86,14 @@ PAGE_ICONS = {
     "G-Sync AI": ":material/smart_toy:",
     "Financial ROI": ":material/attach_money:",
     "Data & Model Info": ":material/info:",
+    "Account Management": ":material/manage_accounts:",
 }
 
 # Navigation sections (for sidebar grouping)
 COMMAND_CENTER = ["Overview", "GeoProspect AI", "Production Forecast",
                   "Fleet Dispatch", "Underground Dispatch", "What-If Simulator"]
 INTELLIGENCE = ["AI Explainability", "G-Sync AI", "Financial ROI", "Data & Model Info"]
+ADMIN_SECTION = ["Account Management"]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -104,6 +110,7 @@ ALL_PAGES = {
     "G-Sync AI": st.Page("src/pages/08_ai_assistant.py", title="G-Sync AI", icon=":material/smart_toy:"),
     "Financial ROI": st.Page("src/pages/09_financial.py", title="Financial ROI", icon=":material/attach_money:"),
     "Data & Model Info": st.Page("src/pages/05_methodology.py", title="Data & Model Info", icon=":material/info:"),
+    "Account Management": st.Page("src/pages/10_account.py", title="Account Management", icon=":material/manage_accounts:"),
 }
 
 
@@ -116,7 +123,7 @@ if "authenticated" not in st.session_state:
 if not st.session_state.authenticated:
     # ── NOT LOGGED IN → Show login page only (no sidebar) ──
     from src.pages.login import render_login
-    render_login(USERS)
+    render_login(st.session_state.app_users)
 
 else:
     # ── LOGGED IN → Show dashboard with role-filtered sidebar ──
@@ -162,13 +169,23 @@ else:
                     st.page_link(ALL_PAGES[page_name], label=page_name,
                                  icon=PAGE_ICONS.get(page_name, ":material/circle:"))
 
-        # 4. FOOTER — STATUS & PROFILE
+        # 4. NAVIGATION — ADMIN (role-filtered)
+        has_admin = any(p in allowed for p in ADMIN_SECTION)
+        if has_admin:
+            st.write("")  # Spacer
+            st.caption("ADMIN")
+            for page_name in ADMIN_SECTION:
+                if page_name in allowed and page_name in ALL_PAGES:
+                    st.page_link(ALL_PAGES[page_name], label=page_name,
+                                 icon=PAGE_ICONS.get(page_name, ":material/circle:"))
+
+        # 5. FOOTER — STATUS & PROFILE
         st.divider()
         st.markdown("🟢 **All systems operational**")
         st.caption("Last sync 2 min ago")
         st.markdown(f"**{user_name}** · *{role}*")
 
-        # 5. LOGOUT BUTTON
+        # 6. LOGOUT BUTTON
         if st.button("🚪 Logout", use_container_width=True):
             for key in ["authenticated", "user_name", "user_role", "username"]:
                 if key in st.session_state:

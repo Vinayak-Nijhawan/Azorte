@@ -2,10 +2,12 @@
 MOIL-GeoSync — Login Page
 =========================
 Session-state based authentication with role-based access control.
+Manual login + one-click role cards + guest demo access.
 """
 
 import hashlib
 import streamlit as st
+
 
 def render_login(users: dict):
     """Render the login page UI and handle authentication."""
@@ -20,101 +22,65 @@ def render_login(users: dict):
     # ── Login Page CSS ──
     st.html("""
     <style>
-        .login-wrapper {
-            min-height: 90vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        .login-card {
-            background: #FFFFFF;
-            border: 1px solid rgba(17, 24, 39, 0.1);
-            border-radius: 16px;
-            padding: 48px 40px 36px;
-            width: 100%;
-            max-width: 420px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-        }
         .login-brand {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
-        .login-brand-icon {
-            font-size: 2.2rem;
-            margin-bottom: 8px;
-        }
+        .login-brand-icon { font-size: 2.2rem; margin-bottom: 8px; }
         .login-brand h1 {
-            font-size: 1.6rem !important;
-            font-weight: 700 !important;
-            color: #111827 !important;
-            margin: 0 0 4px 0 !important;
+            font-size: 1.6rem !important; font-weight: 700 !important;
+            color: #111827 !important; margin: 0 0 4px 0 !important;
             letter-spacing: -0.5px;
         }
         .login-brand p {
-            font-size: 0.82rem !important;
-            color: #6B7280 !important;
+            font-size: 0.82rem !important; color: #6B7280 !important;
             margin: 0 !important;
         }
         .login-divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 16px 0;
-            font-size: 0.75rem;
-            color: #9CA3AF;
+            display: flex; align-items: center; gap: 12px;
+            margin: 20px 0; font-size: 0.75rem; color: #9CA3AF;
         }
         .login-divider::before, .login-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #E5E7EB;
+            content: ''; flex: 1; height: 1px; background: #E5E7EB;
+        }
+        .login-section-label {
+            font-size: 0.72rem !important; color: #6B7280 !important;
+            text-transform: uppercase; letter-spacing: 1px;
+            font-weight: 600 !important; margin-bottom: 12px !important;
+            text-align: center;
         }
         .login-footer {
-            text-align: center;
-            margin-top: 28px;
-            padding-top: 20px;
+            text-align: center; margin-top: 28px; padding-top: 20px;
             border-top: 1px solid #F3F4F6;
         }
         .login-footer p {
-            font-size: 0.7rem !important;
-            color: #9CA3AF !important;
+            font-size: 0.7rem !important; color: #9CA3AF !important;
             margin: 2px 0 !important;
         }
-        .login-roles {
-            background: #F9FAFB;
-            border: 1px solid #E5E7EB;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-top: 16px;
+        .role-card {
+            background: #F9FAFB; border: 1px solid #E5E7EB;
+            border-radius: 10px; padding: 14px 10px; text-align: center;
+            transition: all 0.2s ease; cursor: pointer;
         }
-        .login-roles summary {
-            font-size: 0.72rem;
-            color: #6B7280;
-            cursor: pointer;
-            font-weight: 500;
+        .role-card:hover {
+            border-color: #000080; background: rgba(0,0,128,0.04);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
-        .login-roles table {
-            width: 100%;
-            font-size: 0.7rem;
-            color: #374151;
-            margin-top: 8px;
-            border-collapse: collapse;
+        .role-icon { font-size: 1.5rem; margin-bottom: 4px; }
+        .role-name {
+            font-size: 0.78rem !important; font-weight: 600 !important;
+            color: #111827 !important; margin: 0 !important;
         }
-        .login-roles td {
-            padding: 3px 8px;
-            border-bottom: 1px solid #F3F4F6;
-        }
-        .login-roles td:first-child {
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-weight: 500;
-            color: #111827;
+        .role-desc {
+            font-size: 0.62rem !important; color: #6B7280 !important;
+            margin: 2px 0 0 0 !important;
         }
     </style>
     """)
 
     # ── Layout: centered login card ──
-    col_l, col_c, col_r = st.columns([1, 1.2, 1])
+    col_l, col_c, col_r = st.columns([1, 1.3, 1])
 
     with col_c:
         # Branding
@@ -127,7 +93,7 @@ def render_login(users: dict):
         </div>
         """)
 
-        # Login form
+        # ── Manual Login Form ──
         with st.form("login_form", clear_on_submit=False, border=False):
             username = st.text_input("Username", placeholder="Enter your username")
             password = st.text_input("Password", type="password", placeholder="Enter your password")
@@ -138,28 +104,49 @@ def render_login(users: dict):
                 input_hash = hashlib.sha256(password.encode()).hexdigest()
                 user = users.get(username.lower().strip())
                 if user and user["password_hash"] == input_hash:
-                    st.session_state.authenticated = True
-                    st.session_state.user_name = user["name"]
-                    st.session_state.user_role = user["role"]
-                    st.session_state.username = username.lower().strip()
-                    st.rerun()
+                    _do_login(user["name"], user["role"], username.lower().strip())
                 else:
                     st.error("❌ Invalid username or password")
             else:
                 st.warning("Please enter both username and password")
 
-        # Divider
+        # ── Divider ──
+        st.html('<div class="login-divider">or quick login as</div>')
+
+        # ── One-Click Role Cards ──
+        st.html('<div class="login-section-label">Select a Demo Role</div>')
+
+        _ROLE_CARDS = [
+            ("👑", "Admin", "Full Access", "admin"),
+            ("⛏️", "Mine Manager", "Operations", "mine_mgr"),
+            ("🔬", "Geologist", "Exploration", "geologist"),
+            ("🔧", "Operator", "Fleet Ops", "operator"),
+            ("👁️", "Viewer", "Read-Only", "viewer"),
+        ]
+
+        cols = st.columns(5)
+        for idx, (icon, role_label, desc, uname) in enumerate(_ROLE_CARDS):
+            with cols[idx]:
+                st.html(f"""
+                <div class="role-card">
+                    <div class="role-icon">{icon}</div>
+                    <p class="role-name">{role_label}</p>
+                    <p class="role-desc">{desc}</p>
+                </div>
+                """)
+                if st.button(f"Login as {role_label}", key=f"role_{uname}",
+                             use_container_width=True):
+                    user = users[uname]
+                    _do_login(user["name"], user["role"], uname)
+
+        # ── Divider ──
         st.html('<div class="login-divider">or</div>')
 
-        # Guest Demo button
+        # ── Guest Demo Button ──
         if st.button("👤 Continue as Guest (Full Demo Access)", use_container_width=True):
-            st.session_state.authenticated = True
-            st.session_state.user_name = "Guest User"
-            st.session_state.user_role = "Admin"
-            st.session_state.username = "guest"
-            st.rerun()
+            _do_login("Guest User", "Admin", "guest")
 
-        # Footer
+        # ── Footer ──
         st.html("""
         <div class="login-footer">
             <p>Team Azorte · SIH 2026 · PS 26009</p>
@@ -167,16 +154,11 @@ def render_login(users: dict):
         </div>
         """)
 
-        # Demo credentials hint
-        st.html("""
-        <details class="login-roles">
-            <summary>📋 Demo Credentials</summary>
-            <table>
-                <tr><td>admin</td><td>admin123</td><td>👑 Full Access</td></tr>
-                <tr><td>mine_mgr</td><td>mine2026</td><td>⛏️ Mine Manager</td></tr>
-                <tr><td>geologist</td><td>geo2026</td><td>🔬 Geologist</td></tr>
-                <tr><td>operator</td><td>ops2026</td><td>🔧 Operator</td></tr>
-                <tr><td>viewer</td><td>view2026</td><td>👁️ Viewer</td></tr>
-            </table>
-        </details>
-        """)
+
+def _do_login(name: str, role: str, username: str):
+    """Set session state and rerun."""
+    st.session_state.authenticated = True
+    st.session_state.user_name = name
+    st.session_state.user_role = role
+    st.session_state.username = username
+    st.rerun()

@@ -568,15 +568,16 @@ _QUICK_LINKS = [
     ("src/pages/08_ai_assistant.py", "G-Sync AI", ":material/smart_toy:"),
     ("src/pages/09_financial.py", "Financial ROI", ":material/attach_money:"),
     ("src/pages/05_methodology.py", "Data & Model Info", ":material/info:"),
+    ("src/pages/10_account.py", "Account Management", ":material/manage_accounts:"),
 ]
 
 _ROLE_PAGES = {
     "Admin":        ["GeoProspect AI", "Production Forecast", "Fleet Dispatch",
                      "What-If Simulator", "AI Explainability", "G-Sync AI",
-                     "Financial ROI", "Data & Model Info"],
+                     "Financial ROI", "Data & Model Info", "Account Management"],
     "Mine Manager": ["Production Forecast", "Fleet Dispatch",
                      "What-If Simulator", "G-Sync AI", "Financial ROI",
-                     "Data & Model Info"],
+                     "Data & Model Info", "Account Management"],
     "Geologist":    ["GeoProspect AI", "What-If Simulator",
                      "AI Explainability", "G-Sync AI", "Data & Model Info"],
     "Operator":     ["Fleet Dispatch", "G-Sync AI"],
