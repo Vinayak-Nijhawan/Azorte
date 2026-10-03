@@ -57,25 +57,6 @@ def render_login(users: dict):
             font-size: 0.7rem !important; color: #9CA3AF !important;
             margin: 2px 0 !important;
         }
-        .role-card {
-            background: #F9FAFB; border: 1px solid #E5E7EB;
-            border-radius: 10px; padding: 14px 10px; text-align: center;
-            transition: all 0.2s ease; cursor: pointer;
-        }
-        .role-card:hover {
-            border-color: #000080; background: rgba(0,0,128,0.04);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .role-icon { font-size: 1.5rem; margin-bottom: 4px; }
-        .role-name {
-            font-size: 0.78rem !important; font-weight: 600 !important;
-            color: #111827 !important; margin: 0 !important;
-        }
-        .role-desc {
-            font-size: 0.62rem !important; color: #6B7280 !important;
-            margin: 2px 0 0 0 !important;
-        }
     </style>
     """)
 
@@ -113,28 +94,42 @@ def render_login(users: dict):
         # ── Divider ──
         st.html('<div class="login-divider">or quick login as</div>')
 
-        # ── One-Click Role Cards ──
-        st.html('<div class="login-section-label">Select a Demo Role</div>')
+        # ── One-Click Role Buttons (styled as cards via CSS) ──
+        st.html("""
+        <div class="login-section-label">Select a Demo Role</div>
+        <style>
+            /* Make role buttons look like cards */
+            div[data-testid="stHorizontalBlock"] > div > div > div > div > button[kind="secondary"] {
+                min-height: 90px !important;
+                border-radius: 10px !important;
+                border: 1px solid #E5E7EB !important;
+                background: #F9FAFB !important;
+                color: #111827 !important;
+                font-weight: 600 !important;
+                font-size: 0.82rem !important;
+                transition: all 0.2s ease !important;
+            }
+            div[data-testid="stHorizontalBlock"] > div > div > div > div > button[kind="secondary"]:hover {
+                border-color: #000080 !important;
+                background: rgba(0,0,128,0.04) !important;
+                transform: translateY(-2px) !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+            }
+        </style>
+        """)
 
         _ROLE_CARDS = [
-            ("👑", "Admin", "Full Access · All Modules", "admin"),
-            ("⛏️", "Mine Manager", "Operations · Fleet · Finance", "mine_mgr"),
-            ("🔬", "Geologist", "Exploration · AI · Maps", "geologist"),
-            ("🔧", "Operator", "Fleet Dispatch · Field Ops", "operator"),
-            ("👁️", "Viewer", "Read-Only · Reports", "viewer"),
+            ("👑", "Admin", "admin"),
+            ("⛏️", "Mine Mgr", "mine_mgr"),
+            ("🔬", "Geologist", "geologist"),
+            ("🔧", "Operator", "operator"),
+            ("👁️", "Viewer", "viewer"),
         ]
 
         cols = st.columns(5)
-        for idx, (icon, role_label, desc, uname) in enumerate(_ROLE_CARDS):
+        for idx, (icon, label, uname) in enumerate(_ROLE_CARDS):
             with cols[idx]:
-                st.html(f"""
-                <div class="role-card">
-                    <div class="role-icon">{icon}</div>
-                    <p class="role-name">{role_label}</p>
-                    <p class="role-desc">{desc}</p>
-                </div>
-                """)
-                if st.button(f"{icon} {role_label}", key=f"role_{uname}",
+                if st.button(f"{icon}\n{label}", key=f"role_{uname}",
                              use_container_width=True):
                     user = users[uname]
                     _do_login(user["name"], user["role"], uname)
