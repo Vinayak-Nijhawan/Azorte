@@ -187,19 +187,18 @@ comparison = run_cached_comparison(selected_mine, mine_tpd, target_util, num_run
 # HEADER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-st.markdown(f"""
+st.html(f"""
 <div class="fd-header">
-    <div>
-        <h1>🚇 Underground Fleet Dispatch</h1>
+    <div class="fd-header-left">
+        <h1>⛏️ Underground Fleet Dispatch</h1>
         <div class="fd-subtitle">MineFlow OR-Optimizer · SimPy DES · MOIL Manganese Operations</div>
     </div>
     <div class="fd-header-right">
-        <div class="fd-tag">⛏️ {mine_display}</div>
-        <div class="fd-tag">📅 Last updated: {latest_label}</div>
-        <div class="fd-sim-badge">🧪 Simulation Mode</div>
+        <span class="fd-tag">⛏️ {mine_display}</span>
+        <span class="fd-live"><span class="fd-live-dot"></span> OPERATIONAL</span>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
