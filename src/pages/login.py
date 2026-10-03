@@ -117,11 +117,11 @@ def render_login(users: dict):
         st.html('<div class="login-section-label">Select a Demo Role</div>')
 
         _ROLE_CARDS = [
-            ("👑", "Admin", "Full Access", "admin"),
-            ("⛏️", "Mine Manager", "Operations", "mine_mgr"),
-            ("🔬", "Geologist", "Exploration", "geologist"),
-            ("🔧", "Operator", "Fleet Ops", "operator"),
-            ("👁️", "Viewer", "Read-Only", "viewer"),
+            ("👑", "Admin", "Full Access · All Modules", "admin"),
+            ("⛏️", "Mine Manager", "Operations · Fleet · Finance", "mine_mgr"),
+            ("🔬", "Geologist", "Exploration · AI · Maps", "geologist"),
+            ("🔧", "Operator", "Fleet Dispatch · Field Ops", "operator"),
+            ("👁️", "Viewer", "Read-Only · Reports", "viewer"),
         ]
 
         cols = st.columns(5)
@@ -134,7 +134,7 @@ def render_login(users: dict):
                     <p class="role-desc">{desc}</p>
                 </div>
                 """)
-                if st.button(f"Login as {role_label}", key=f"role_{uname}",
+                if st.button(f"{icon} {role_label}", key=f"role_{uname}",
                              use_container_width=True):
                     user = users[uname]
                     _do_login(user["name"], user["role"], uname)
