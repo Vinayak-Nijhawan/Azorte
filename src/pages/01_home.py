@@ -557,18 +557,45 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-col_a, col_b, col_c, col_d = st.columns(4)
-with col_a: st.page_link("src/pages/02_prospectivity.py", label="GeoProspect AI", icon=":material/explore:")
-with col_b: st.page_link("src/pages/03_production.py", label="Production Forecast", icon=":material/monitoring:")
-with col_c: st.page_link("src/pages/04_fleet_dispatch.py", label="Fleet Dispatch", icon=":material/local_shipping:")
-with col_d: st.page_link("src/pages/06_what_if.py", label="What-If Simulator", icon=":material/tune:")
+# ── Role-aware Quick Action links ──
+# Only show links to pages the current user's role can access
+_QUICK_LINKS = [
+    ("src/pages/02_prospectivity.py", "GeoProspect AI", ":material/explore:"),
+    ("src/pages/03_production.py", "Production Forecast", ":material/monitoring:"),
+    ("src/pages/04_fleet_dispatch.py", "Fleet Dispatch", ":material/local_shipping:"),
+    ("src/pages/06_what_if.py", "What-If Simulator", ":material/tune:"),
+    ("src/pages/07_explainability.py", "AI Explainability", ":material/science:"),
+    ("src/pages/08_ai_assistant.py", "G-Sync AI", ":material/smart_toy:"),
+    ("src/pages/09_financial.py", "Financial ROI", ":material/attach_money:"),
+    ("src/pages/05_methodology.py", "Data & Model Info", ":material/info:"),
+]
 
-st.write("")
-col_e, col_f, col_g, col_h = st.columns(4)
-with col_e: st.page_link("src/pages/07_explainability.py", label="AI Explainability", icon=":material/science:")
-with col_f: st.page_link("src/pages/08_ai_assistant.py", label="G-Sync AI", icon=":material/smart_toy:")
-with col_g: st.page_link("src/pages/09_financial.py", label="Financial ROI", icon=":material/attach_money:")
-with col_h: st.page_link("src/pages/05_methodology.py", label="Data & Model Info", icon=":material/info:")
+_ROLE_PAGES = {
+    "Admin":        ["GeoProspect AI", "Production Forecast", "Fleet Dispatch",
+                     "What-If Simulator", "AI Explainability", "G-Sync AI",
+                     "Financial ROI", "Data & Model Info"],
+    "Mine Manager": ["Production Forecast", "Fleet Dispatch",
+                     "What-If Simulator", "G-Sync AI", "Financial ROI",
+                     "Data & Model Info"],
+    "Geologist":    ["GeoProspect AI", "What-If Simulator",
+                     "AI Explainability", "G-Sync AI", "Data & Model Info"],
+    "Operator":     ["Fleet Dispatch", "G-Sync AI"],
+    "Viewer":       ["Production Forecast", "Financial ROI", "Data & Model Info"],
+}
+
+_user_role = st.session_state.get("user_role", "Admin")
+_allowed = _ROLE_PAGES.get(_user_role, _QUICK_LINKS)
+_visible = [(f, l, i) for f, l, i in _QUICK_LINKS if l in _allowed]
+
+# Render in rows of 4
+for row_start in range(0, len(_visible), 4):
+    row = _visible[row_start:row_start + 4]
+    cols = st.columns(max(len(row), 1))
+    for idx, (fpath, label, icon) in enumerate(row):
+        with cols[idx]:
+            st.page_link(fpath, label=label, icon=icon)
+    if row_start == 0 and len(_visible) > 4:
+        st.write("")
 
 
 
