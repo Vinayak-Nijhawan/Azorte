@@ -1,9 +1,9 @@
 {
     "SPECTRAL_FEATURES": "['iron_oxide_index', 'clay_index', 'ndvi']",
     "TOPO_FEATURES": "['elevation_m', 'slope_deg']",
-    "GEO_FEATURES": "['rock_type_encoded', 'fault_distance_km', 'shear_zone_proximity_km']",
-    "ENV_FEATURES": "['rainfall_mm', 'soil_moisture']",
-    "EXPECTED_FEATURES": "['iron_oxide_index', 'clay_index', 'ndvi', 'elevation_m', 'slope_deg', 'rock_type_encoded', 'fault_distance_km', 'shear_zone_proximity_km', 'rainfall_mm', 'soil_moisture']",
+    "GEO_FEATURES": "['rock_type_encoded', 'fault_distance_km']",
+    "ENV_FEATURES": "['rainfall_mm']",
+    "EXPECTED_FEATURES": "['iron_oxide_index', 'clay_index', 'ndvi', 'elevation_m', 'slope_deg', 'rock_type_encoded', 'fault_distance_km', 'rainfall_mm']",
     "TARGET_COL": "known_occurrence",
     "COORD_COLS": "['latitude', 'longitude']",
     "RANDOM_SEED": "42",

@@ -31,8 +31,8 @@ class Config:
     # Features
     SPECTRAL_FEATURES = ['iron_oxide_index', 'clay_index', 'ndvi']
     TOPO_FEATURES = ['elevation_m', 'slope_deg']
-    GEO_FEATURES = ['rock_type_encoded', 'fault_distance_km', 'shear_zone_proximity_km']
-    ENV_FEATURES = ['rainfall_mm', 'soil_moisture']
+    GEO_FEATURES = ['rock_type_encoded', 'fault_distance_km']
+    ENV_FEATURES = ['rainfall_mm']
     
     EXPECTED_FEATURES = SPECTRAL_FEATURES + TOPO_FEATURES + GEO_FEATURES + ENV_FEATURES
     TARGET_COL = 'known_occurrence'
@@ -143,12 +143,26 @@ class DataValidator:
 # ==============================================================================
 def create_spatial_blocks(df, block_size=Config.SPATIAL_BLOCK_SIZE):
     logger.info(f"Creating spatial blocks of {block_size} degrees...")
-    lat_block = np.floor(df['latitude'] / block_size).astype(int).astype(str)
-    lon_block = np.floor(df['longitude'] / block_size).astype(int).astype(str)
-    df['block_id'] = lat_block + "_" + lon_block
+    
+    # If block_id already exists (from rasterize_ngdr_labels.py), keep it
+    if 'block_id' not in df.columns:
+        lat_block = np.floor(df['latitude'] / block_size).astype(int).astype(str)
+        lon_block = np.floor(df['longitude'] / block_size).astype(int).astype(str)
+        df['block_id'] = lat_block + "_" + lon_block
     
     n_blocks = df['block_id'].nunique()
     logger.info(f"Generated {n_blocks} unique spatial blocks.")
+    
+    # Use lease_block_id for CV grouping if available (ensures lease integrity across folds)
+    if 'lease_block_id' in df.columns:
+        df['cv_group'] = df['lease_block_id']
+        n_cv_groups = df['cv_group'].nunique()
+        pos_cv_groups = df.loc[df[Config.TARGET_COL] == 1, 'cv_group'].nunique()
+        logger.info(f"Using lease_block_id for CV grouping: {n_cv_groups} groups, {pos_cv_groups} with positives.")
+    else:
+        df['cv_group'] = df['block_id']
+        logger.info("No lease_block_id found. Using block_id for CV grouping.")
+    
     return df
 
 # ==============================================================================
@@ -272,10 +286,16 @@ def apply_domain_rules(df):
 def evaluate_spatial_cv(df):
     logger.info("--- Starting Spatial Block Cross-Validation ---")
     
-    gkf = GroupKFold(n_splits=Config.N_CV_FOLDS)
+    # Use cv_group for fold assignment (lease_block_id when available)
+    groups = df['cv_group'].values
+    n_positive_groups = df.loc[df[Config.TARGET_COL] == 1, 'cv_group'].nunique()
+    n_folds = min(Config.N_CV_FOLDS, n_positive_groups)
+    if n_folds < Config.N_CV_FOLDS:
+        logger.warning(f"Only {n_positive_groups} positive-containing groups. Reducing folds to {n_folds}.")
+    
+    gkf = GroupKFold(n_splits=n_folds)
     X_raw = df[Config.EXPECTED_FEATURES].copy()
     y = df[Config.TARGET_COL].values
-    groups = df['block_id'].values
     
     cv_metrics = []
     out_of_fold_preds = np.zeros(len(df))
@@ -304,6 +324,14 @@ def evaluate_spatial_cv(df):
         
         # Evaluation on Fold (PU-Aware)
         p_val_idx = np.where(y_val == 1)[0]
+        p_train_count = np.sum(y_train == 1)
+        
+        # Count independent leases and blocks in val
+        val_leases = 0
+        val_blocks = 0
+        if 'lease_id' in df.columns:
+            val_leases = df.iloc[val_idx].loc[df.iloc[val_idx][Config.TARGET_COL] == 1, 'lease_id'].nunique()
+        val_blocks = df.iloc[val_idx].loc[df.iloc[val_idx][Config.TARGET_COL] == 1, 'cv_group'].nunique()
         
         if len(p_val_idx) > 0:
             recall_at_05 = np.mean(val_preds_mean[p_val_idx] >= 0.5)
@@ -318,9 +346,16 @@ def evaluate_spatial_cv(df):
             'pr_auc_relative': pr_auc,
             'n_train': len(train_idx),
             'n_val': len(val_idx),
-            'n_val_positives': len(p_val_idx)
+            'n_train_positives': int(p_train_count),
+            'n_val_positives': len(p_val_idx),
+            'n_val_leases': int(val_leases),
+            'n_val_blocks': int(val_blocks),
         })
-        logger.info(f"Fold {fold+1} | Val Positives: {len(p_val_idx)} | Recall@0.5: {recall_at_05:.3f}")
+        logger.info(
+            f"Fold {fold+1} | Train P: {int(p_train_count)} | "
+            f"Val P: {len(p_val_idx)} ({int(val_leases)} leases, {int(val_blocks)} blocks) | "
+            f"Recall@0.5: {recall_at_05:.3f}"
+        )
 
     metrics_df = pd.DataFrame(cv_metrics)
     metrics_df.to_csv(Config.METRICS_DIR / "spatial_cv_metrics.csv", index=False)
@@ -550,6 +585,10 @@ def main(data_path):
     export_cols = Config.COORD_COLS + Config.EXPECTED_FEATURES + [
         'raw_score', 'prediction_std', 'adjusted_score', 'prospectivity_class', 'confidence'
     ]
+    # Include traceability columns if present
+    for extra_col in ['block_id', 'cv_group', 'lease_id']:
+        if extra_col in df.columns:
+            export_cols.append(extra_col)
     df[export_cols].to_csv(Config.PRED_DIR / "final_predictions.csv", index=False)
     
     # Generate Maps

@@ -323,3 +323,94 @@ Outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
     
 2026-09-26 13:35:35,510 [INFO] Pipeline Execution Completed Successfully!
 2026-09-26 13:35:35,510 [INFO] All outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+2026-10-13 00:02:31,239 [INFO] Initializing MOIL-GeoSync PU Learning Pipeline...
+2026-10-13 00:02:31,284 [INFO] Renamed 'mn_occurrence' -> 'known_occurrence'
+2026-10-13 00:02:31,285 [INFO] --- Data Validation Started ---
+2026-10-13 00:02:31,285 [INFO] Dataset shape: (16931, 19)
+2026-10-13 00:02:31,285 [ERROR] Missing required features: ['shear_zone_proximity_km', 'soil_moisture']
+2026-10-13 00:05:48,335 [INFO] Initializing MOIL-GeoSync PU Learning Pipeline...
+2026-10-13 00:05:48,478 [INFO] Renamed 'mn_occurrence' -> 'known_occurrence'
+2026-10-13 00:05:48,479 [INFO] --- Data Validation Started ---
+2026-10-13 00:05:48,479 [INFO] Dataset shape: (16931, 19)
+2026-10-13 00:05:48,512 [INFO] Target distribution: 55 Known Positives (1), 16876 Unlabeled (0)
+2026-10-13 00:05:48,513 [INFO] --- Data Validation Passed ---
+2026-10-13 00:05:48,513 [INFO] Creating spatial blocks of 0.1 degrees...
+2026-10-13 00:05:48,518 [INFO] Generated 182 unique spatial blocks.
+2026-10-13 00:05:48,523 [INFO] Using lease_block_id for CV grouping: 182 groups, 19 with positives.
+2026-10-13 00:05:48,523 [INFO] --- Starting Spatial Block Cross-Validation ---
+2026-10-13 00:06:10,663 [INFO] Fold 1 | Train P: 41 | Val P: 14 (12 leases, 7 blocks) | Recall@0.5: 1.000
+2026-10-13 00:06:32,133 [INFO] Fold 2 | Train P: 48 | Val P: 7 (7 leases, 3 blocks) | Recall@0.5: 0.714
+2026-10-13 00:06:52,203 [INFO] Fold 3 | Train P: 44 | Val P: 11 (11 leases, 3 blocks) | Recall@0.5: 0.818
+2026-10-13 00:07:14,112 [INFO] Fold 4 | Train P: 50 | Val P: 5 (5 leases, 2 blocks) | Recall@0.5: 0.400
+2026-10-13 00:07:36,485 [INFO] Fold 5 | Train P: 37 | Val P: 18 (17 leases, 4 blocks) | Recall@0.5: 0.556
+2026-10-13 00:07:36,531 [INFO] Training Final Full Model on all data...
+2026-10-13 00:07:55,659 [INFO] Calculating Feature Importance...
+2026-10-13 00:08:00,589 [INFO] Saving models and predictions...
+2026-10-13 00:08:03,512 [INFO] Generating Maps...
+2026-10-13 00:08:08,556 [INFO] 
+
+==================================================
+MOIL-GEOSYNC FINAL PIPELINE REPORT
+==================================================
+Date generated: 2026-10-13 00:08:08
+
+1. DATASET SUMMARY
+-------------------
+Total samples: 16931
+Known positives (Label=1): 55
+Unlabeled samples (Label=0): 16876
+Spatial blocks created: 182
+
+2. FEATURE SUMMARY
+-------------------
+Spectral (Sentinel-2): iron_oxide_index, clay_index, ndvi
+Topography (SRTM DEM): elevation_m, slope_deg
+Geology (GSI-Simulated): rock_type_encoded, fault_distance_km
+Environment (APIs): rainfall_mm
+
+3. METHODOLOGY
+-------------------
+Algorithm: Positive-Unlabeled (PU) Bagging Random Forest
+Number of PU Bags: 50
+Unlabeled Sampling Ratio: 1.0:1
+Spatial CV: GroupKFold (5 Folds) block size 0.1 deg
+
+4. EVALUATION (Spatial CV)
+-------------------
+Mean Recall on Known Positives: 0.698 +/- 0.232
+Mean PR-AUC (Relative to U): 0.029 +/- 0.026
+
+* Note: Ordinary binary accuracy and ROC-AUC are excluded as U samples are not confirmed negatives.
+
+5. FEATURE IMPORTANCE (Top 5)
+-------------------
+          Feature  Importance
+      elevation_m    0.214813
+fault_distance_km    0.180762
+rock_type_encoded    0.159255
+      rainfall_mm    0.109309
+       clay_index    0.094741
+* Note: Feature importance indicates model reliance, NOT geological causation.
+
+6. DOMAIN ADJUSTMENT (NDVI)
+-------------------
+Points penalized due to dense vegetation (NDVI > 0.7): 107
+Penalty factor: 0.7
+
+7. PROSPECTIVITY DISTRIBUTION
+-------------------
+HIGH (>= 0.8): 50 points
+MEDIUM (0.4 - 0.8): 6390 points
+LOW (< 0.4): 10491 points
+
+8. REPRODUCIBILITY
+-------------------
+Random Seed: 42
+Outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+==================================================
+    
+2026-10-13 00:08:08,560 [INFO] Pipeline Execution Completed Successfully!
+2026-10-13 00:08:08,561 [INFO] All outputs saved to: C:\Users\vinay\OneDrive\Desktop\SIH\pipeline_outputs
+2026-10-13 00:24:42,634 [INFO] Creating spatial blocks of 0.1 degrees...
+2026-10-13 00:24:42,640 [INFO] Generated 182 unique spatial blocks.
+2026-10-13 00:24:42,646 [INFO] Using lease_block_id for CV grouping: 182 groups, 19 with positives.

@@ -2,21 +2,21 @@
 ==================================================
 MOIL-GEOSYNC FINAL PIPELINE REPORT
 ==================================================
-Date generated: 2026-09-26 13:35:35
+Date generated: 2026-10-13 00:08:08
 
 1. DATASET SUMMARY
 -------------------
-Total samples: 23957
-Known positives (Label=1): 2233
-Unlabeled samples (Label=0): 21724
-Spatial blocks created: 270
+Total samples: 16931
+Known positives (Label=1): 55
+Unlabeled samples (Label=0): 16876
+Spatial blocks created: 182
 
 2. FEATURE SUMMARY
 -------------------
 Spectral (Sentinel-2): iron_oxide_index, clay_index, ndvi
 Topography (SRTM DEM): elevation_m, slope_deg
-Geology (GSI-Simulated): rock_type_encoded, fault_distance_km, shear_zone_proximity_km
-Environment (APIs): rainfall_mm, soil_moisture
+Geology (GSI-Simulated): rock_type_encoded, fault_distance_km
+Environment (APIs): rainfall_mm
 
 3. METHODOLOGY
 -------------------
@@ -27,31 +27,31 @@ Spatial CV: GroupKFold (5 Folds) block size 0.1 deg
 
 4. EVALUATION (Spatial CV)
 -------------------
-Mean Recall on Known Positives: 0.819 +/- 0.034
-Mean PR-AUC (Relative to U): 0.523 +/- 0.023
+Mean Recall on Known Positives: 0.698 +/- 0.232
+Mean PR-AUC (Relative to U): 0.029 +/- 0.026
 
 * Note: Ordinary binary accuracy and ROC-AUC are excluded as U samples are not confirmed negatives.
 
 5. FEATURE IMPORTANCE (Top 5)
 -------------------
-                Feature  Importance
-      rock_type_encoded    0.325662
-      fault_distance_km    0.194318
-shear_zone_proximity_km    0.122872
-            elevation_m    0.104657
-            rainfall_mm    0.055866
+          Feature  Importance
+      elevation_m    0.214813
+fault_distance_km    0.180762
+rock_type_encoded    0.159255
+      rainfall_mm    0.109309
+       clay_index    0.094741
 * Note: Feature importance indicates model reliance, NOT geological causation.
 
 6. DOMAIN ADJUSTMENT (NDVI)
 -------------------
-Points penalized due to dense vegetation (NDVI > 0.7): 292
+Points penalized due to dense vegetation (NDVI > 0.7): 107
 Penalty factor: 0.7
 
 7. PROSPECTIVITY DISTRIBUTION
 -------------------
-HIGH (>= 0.8): 2403 points
-MEDIUM (0.4 - 0.8): 4040 points
-LOW (< 0.4): 17514 points
+HIGH (>= 0.8): 50 points
+MEDIUM (0.4 - 0.8): 6390 points
+LOW (< 0.4): 10491 points
 
 8. REPRODUCIBILITY
 -------------------
