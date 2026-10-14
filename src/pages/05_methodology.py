@@ -63,7 +63,7 @@ data_sources = pd.DataFrame([
     {"Data": "Sentinel-2 Imagery", "Source": "Google Earth Engine (Copernicus)", "Type": "REAL", "Records": "23,957 grid points", "Purpose": "NDVI, Iron Oxide Index, Clay Index"},
     {"Data": "Geological Lithology", "Source": "NGDR GSI — State Lithology Maps", "Type": "REAL", "Records": "63,000+ polygons (MH+MP)", "Purpose": "37 unique rock types for prospectivity"},
     {"Data": "Structural Faults", "Source": "NGDR GSI — FAULT_STATE GeoJSON", "Type": "REAL", "Records": "2,542 fault lines (984 MH + 1,558 MP)", "Purpose": "Fault proximity analysis"},
-    {"Data": "Mining Lease Polygons", "Source": "NGDR GSI — INDIA_MAJOR_LEASE_2022", "Type": "REAL", "Records": "84 manganese lease polygons", "Purpose": "PU learning labels (known Mn occurrences)"},
+    {"Data": "Mining Lease Polygons", "Source": "NGDR GSI — INDIA_MAJOR_LEASE_2022", "Type": "REAL", "Records": "66 Mn leases in study area (94 total)", "Purpose": "Polygon-rasterized PU labels (55 grid positives, 52 independent leases)"},
     {"Data": "Elevation / Terrain", "Source": "SRTM DEM via Google Earth Engine", "Type": "REAL", "Records": "23,593 points", "Purpose": "Elevation (m) and slope (°)"},
     {"Data": "Weather / Rainfall", "Source": "Open-Meteo Historical API", "Type": "REAL", "Records": "1,200 mine-month records", "Purpose": "Rainfall, temperature, rainy days"},
     {"Data": "MOIL Production", "Source": "MOIL Annual Reports + BSE Filings", "Type": "REAL", "Records": "10 mines × 120 months", "Purpose": "Production forecasting & optimization"},
@@ -75,9 +75,11 @@ st.dataframe(data_sources, use_container_width=True, hide_index=True)
 # ================================================================
 st.header("2. GeoProspect AI Model")
 st.markdown("""
-- **Architecture**: PU Bagging Random Forest (K=30 bootstrap iterations, 100 trees each)
-- **Training Data**: 16,931 grid points, 17 confirmed Mn positives across 11 independent 0.1° spatial blocks
-- **Validation**: 3-Fold Spatial Block Cross-Validation (GroupKFold by 0.1° block) — prevents geographic data leakage
+- **Architecture**: PU Bagging Random Forest (K=50 bootstrap iterations, 150 trees each)
+- **Training Data**: 16,931 grid points, **55 confirmed Mn positives** across **19 independent 0.1° spatial blocks** (52 independent NGDR mining leases)
+- **Labeling**: Polygon-rasterized — grid points inside lease polygons get `known_occurrence=1`; small leases mapped to nearest grid point
+- **Validation**: 5-Fold Lease-Grouped Spatial Block Cross-Validation (GroupKFold by `lease_block_id`) — prevents geographic data leakage & keeps all points of one lease in same fold
+- **Leakage Check**: Distance-ring analysis confirms NO mine-scar leakage (boundary score drop = 0.003)
 - **Features**: 8 real features — no synthetic or assumed features
 """)
 
@@ -91,24 +93,24 @@ except Exception:
 st.markdown("""
 <div class="geo-kpi-grid" style="grid-template-columns: repeat(4,1fr);">
     <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">ROC-AUC</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">my_location</span></div></div>
-        <div class="geo-kpi-value">0.81</div>
-        <div class="geo-kpi-footer"><span class="geo-trend-up">↑ Good Ranking</span></div>
+        <div class="geo-kpi-header"><div class="geo-kpi-title">Mean Recall@0.5</div><div class="geo-kpi-icon geo-icon-green"><span class=\"material-symbols-rounded\">my_location</span></div></div>
+        <div class="geo-kpi-value">0.70</div>
+        <div class="geo-kpi-footer"><span class="geo-trend-up">&uarr; 5-Fold Spatial CV</span></div>
     </div>
     <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">Balanced Accuracy</div><div class="geo-kpi-icon geo-icon-blue">⚖️</div></div>
-        <div class="geo-kpi-value">0.77</div>
-        <div class="geo-kpi-footer"><span class="geo-trend-up">↑ Better than Random</span></div>
+        <div class="geo-kpi-header"><div class="geo-kpi-title">Recall @ Top-5% Area</div><div class="geo-kpi-icon geo-icon-blue">&#9878;&#65039;</div></div>
+        <div class="geo-kpi-value">0.38</div>
+        <div class="geo-kpi-footer"><span class="geo-trend-up">&uarr; 21/55 positives captured</span></div>
     </div>
     <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">PR-AUC</div><div class="geo-kpi-icon geo-icon-purple">🔎</div></div>
-        <div class="geo-kpi-value">0.06</div>
-        <div class="geo-kpi-footer"><span class="geo-trend-neutral">60× better than random</span></div>
+        <div class="geo-kpi-header"><div class="geo-kpi-title">PR-AUC</div><div class="geo-kpi-icon geo-icon-purple">&#128270;</div></div>
+        <div class="geo-kpi-value">0.029</div>
+        <div class="geo-kpi-footer"><span class="geo-trend-neutral">9&times; better than random</span></div>
     </div>
     <div class="geo-kpi-card">
-        <div class="geo-kpi-header"><div class="geo-kpi-title">Ensemble Size</div><div class="geo-kpi-icon geo-icon-amber">🌳</div></div>
-        <div class="geo-kpi-value">30</div>
-        <div class="geo-kpi-footer"><span class="geo-trend-neutral">PU-Bagging RFs</span></div>
+        <div class="geo-kpi-header"><div class="geo-kpi-title">Ensemble Size</div><div class="geo-kpi-icon geo-icon-amber">&#127795;</div></div>
+        <div class="geo-kpi-value">50 &times; 150</div>
+        <div class="geo-kpi-footer"><span class="geo-trend-neutral">PU Bags &times; Trees = 7,500</span></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -125,10 +127,10 @@ if prospect_model and isinstance(prospect_model, dict) and 'models' in prospect_
     }).sort_values('Importance', ascending=True)
     fig_fi = px.bar(fi_data, x='Importance', y='Feature', orientation='h',
                     color='Importance', color_continuous_scale='RdYlGn_r',
-                    title="Feature Importance (Averaged across 30 PU-Bagging Models)")
+                    title="Feature Importance (Averaged across 50 PU-Bagging Models)")
     fig_fi.update_layout(height=350, showlegend=False)
     st.plotly_chart(fig_fi, use_container_width=True)
-    st.caption("✅ All 8 features from real data sources. Excluded: shear_zone_proximity_km, soil_moisture, prospectivity_signal.")
+    st.caption("✅ All 8 features from real data sources. Top geological drivers: elevation (21.5%), fault distance (18.1%), rock type (15.9%). Spectral ablation test confirmed NO mine-scar leakage.")
 
 # ================================================================
 # 3. PRODUCTION FORECAST MODEL — REAL METRICS
